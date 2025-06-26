@@ -132,7 +132,7 @@ impl GitVersioner {
         }
     }
 
-    /// Calculate version for release branch
+    /// Calculate the version for release branch
     fn calculate_release_version(&self, release_version: &Version) -> Result<Version> {
         // Find the latest tag on this release branch
         let latest_release_tag = self.find_latest_release_tag(release_version)?;
@@ -236,56 +236,61 @@ mod tests {
 
     impl TestRepo {
         fn new() -> Self {
-            // Create a temporary directory for the repository
-            let temp_dir = tempfile::tempdir().unwrap();
-            let path = temp_dir.path().to_path_buf();
+            let repo = Self::create_empty_directory();
 
             // Create a simple test repository with a single commit
             // We'll use the command-line git for this to ensure it's properly initialized
             std::process::Command::new("git")
                 .args(["init"])
-                .current_dir(&path)
+                .current_dir(&repo.path)
                 .output()
                 .expect("Failed to initialize git repository");
 
             std::process::Command::new("git")
                 .args(["config", "user.name", "Test User"])
-                .current_dir(&path)
+                .current_dir(&repo.path)
                 .output()
                 .expect("Failed to configure git user name");
 
             std::process::Command::new("git")
                 .args(["config", "user.email", "test@example.com"])
-                .current_dir(&path)
+                .current_dir(&repo.path)
                 .output()
                 .expect("Failed to configure git user email");
 
             // Create a README file
-            fs::write(path.join("README.md"), "# Test Repository\n\nThis is a test repository.").unwrap();
+            fs::write(repo.path.join("README.md"), "# Test Repository\n\nThis is a test repository.").unwrap();
 
             std::process::Command::new("git")
                 .args(["add", "README.md"])
-                .current_dir(&path)
+                .current_dir(&repo.path)
                 .output()
                 .expect("Failed to add README.md to git index");
 
             std::process::Command::new("git")
                 .args(["commit", "-m", "Initial commit"])
-                .current_dir(&path)
+                .current_dir(&repo.path)
                 .output()
                 .expect("Failed to create initial commit");
 
             // Create the trunk branch
             std::process::Command::new("git")
                 .args(["branch", "trunk"])
-                .current_dir(&path)
+                .current_dir(&repo.path)
                 .output()
                 .expect("Failed to create trunk branch");
 
             // We don't need to open the repository with git2 anymore
             // since we're using command-line git for all operations
 
-            Self { path, _temp_dir: temp_dir }
+            repo
+        }
+
+        fn create_empty_directory() -> TestRepo {
+            let temp_dir = tempfile::tempdir().unwrap();
+            let path = temp_dir.path().to_path_buf();
+            let repo = Self { path, _temp_dir: temp_dir };
+            repo
         }
 
         fn commit(&self, message: &str) -> Oid {
