@@ -1,32 +1,24 @@
 use anyhow::{anyhow, Result};
-use git2::{Oid, Repository};
+use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Prerelease, Version};
 use std::path::Path;
 
-/// Represents the type of branch in a trunk-based development workflow
 #[derive(Debug, PartialEq, Eq)]
-pub enum BranchKind {
-    /// Main development branch (trunk)
-    Trunk,
-    /// Release branch (e.g., release/1.0.0)
-    Release(Version),
-    /// Feature branch or other branch type
-    Other(String),
+pub enum BranchType {
+    Trunk,  // Main development branch (trunk)
+    Release(Version),  // Release branch (e.g., release/1.0.0)
+    Other(String),  // Feature branch or any other branch type
 }
 
-/// Represents a version tag in the repository
 #[derive(Debug, Clone)]
 pub struct VersionTag {
-    /// The semantic version
     pub version: Version,
-    /// The commit ID this tag points to
     pub commit_id: Oid,
 }
 
-/// Main struct for Git version calculation
 pub struct GitVersioner {
-    branch_kind: BranchKind,
+    branch_type: BranchType,
     version_tags: Vec<VersionTag>,
 }
 
@@ -34,26 +26,31 @@ impl GitVersioner {
     /// Create a new GitVersioner instance for the repository at the given path
     pub fn new<P: AsRef<Path>>(repo_path: P) -> Result<Self> {
         let repo = Repository::open(repo_path)?;
-        let branch_kind = Self::determine_branch_kind(&repo)?;
+        let branch_type = Self::determine_current_branch_type(&repo)?;
         let version_tags = Self::collect_version_tags(&repo)?;
 
         Ok(Self {
-            branch_kind,
+            branch_type,
             version_tags,
         })
     }
 
-    /// Determine the kind of branch we're currently on
-    fn determine_branch_kind(repo: &Repository) -> Result<BranchKind> {
-        let head = repo.head()?;
-        if !head.is_branch() {
+    fn determine_current_branch_type(repo: &Repository) -> Result<BranchType> {
+        match repo.head() {
+            Ok(head) => Self::determine_branch_type_from(head),
+            Err(error) => Err(anyhow!("Failed to get HEAD: {}", error)),
+        }
+    }
+
+    fn determine_branch_type_from(reference: Reference) -> Result<BranchType> {
+        if !reference.is_branch() {
             return Err(anyhow!("HEAD is not on a branch"));
         }
 
-        let branch_name = head.shorthand().unwrap_or("unknown");
+        let branch_name = reference.shorthand().unwrap_or("unknown");
 
         if branch_name == "trunk" || branch_name == "main" || branch_name == "master" {
-            return Ok(BranchKind::Trunk);
+            return Ok(BranchType::Trunk);
         }
 
         // Check if it's a release branch
@@ -61,12 +58,12 @@ impl GitVersioner {
         if let Some(captures) = release_regex.captures(branch_name) {
             if let Some(version_str) = captures.get(1) {
                 if let Ok(version) = Version::parse(version_str.as_str()) {
-                    return Ok(BranchKind::Release(version));
+                    return Ok(BranchType::Release(version));
                 }
             }
         }
 
-        Ok(BranchKind::Other(branch_name.to_string()))
+        Ok(BranchType::Other(branch_name.to_string()))
     }
 
     /// Collect all version tags from the repository
@@ -104,10 +101,10 @@ impl GitVersioner {
 
     /// Calculate the current version based on the repository state
     pub fn calculate_version(&self) -> Result<Version> {
-        match &self.branch_kind {
-            BranchKind::Trunk => self.calculate_trunk_version(),
-            BranchKind::Release(release_version) => self.calculate_release_version(release_version),
-            BranchKind::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
+        match &self.branch_type {
+            BranchType::Trunk => self.calculate_trunk_version(),
+            BranchType::Release(release_version) => self.calculate_release_version(release_version),
+            BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
     }
 
@@ -209,7 +206,7 @@ impl GitVersioner {
                tag.version.minor == version.minor && 
                tag.version.patch == version.patch {
 
-                // Check if it's an rc tag
+                // Check if it's a rc tag
                 if let Some(captures) = rc_regex.captures(tag.version.pre.as_str()) {
                     if let Some(rc_str) = captures.get(1) {
                         if let Ok(rc_num) = rc_str.as_str().parse::<u64>() {
@@ -367,17 +364,13 @@ mod tests {
     fn test_trunk_versioning() {
         let test_repo = TestRepo::new();
 
-        // Use the trunk branch that was created in TestRepo::new
         test_repo.checkout_branch("trunk");
-
-        // First commit on trunk
         test_repo.commit("Initial trunk commit");
 
         // Calculate version - should be 0.1.0-rc.0 as no tags exist
         let versioner = GitVersioner::new(&test_repo.path).unwrap();
         let version = versioner.calculate_version().unwrap();
-        let mut expected = Version::new(0, 1, 0);
-        expected.pre = Prerelease::new("rc.0").unwrap();
+        let expected = Version::parse("0.1.0-rc.0").unwrap();
         assert_eq!(version, expected);
 
         // Add a tag and check version calculation
