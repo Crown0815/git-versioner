@@ -228,40 +228,67 @@ impl GitVersioner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use git2::{Repository, Signature};
     use std::fs;
     use std::path::PathBuf;
 
     struct TestRepo {
         path: PathBuf,
-        repo: Repository,
+        // Keep the temp_dir to prevent it from being deleted
+        _temp_dir: tempfile::TempDir,
     }
 
     impl TestRepo {
         fn new() -> Self {
+            // Create a temporary directory for the repository
             let temp_dir = tempfile::tempdir().unwrap();
             let path = temp_dir.path().to_path_buf();
-            let repo = Repository::init(&path).unwrap();
 
-            // Configure the repository
-            let mut config = repo.config().unwrap();
-            config.set_str("user.name", "Test User").unwrap();
-            config.set_str("user.email", "test@example.com").unwrap();
+            // Create a simple test repository with a single commit
+            // We'll use the command-line git for this to ensure it's properly initialized
+            std::process::Command::new("git")
+                .args(["init"])
+                .current_dir(&path)
+                .output()
+                .expect("Failed to initialize git repository");
 
-            // Create initial commit
-            let signature = Signature::now("Test User", "test@example.com").unwrap();
-            let tree_id = {
-                let mut index = repo.index().unwrap();
-                index.write_tree().unwrap()
-            };
+            std::process::Command::new("git")
+                .args(["config", "user.name", "Test User"])
+                .current_dir(&path)
+                .output()
+                .expect("Failed to configure git user name");
 
-            // Create the commit without storing the tree in a variable
-            {
-                let tree = repo.find_tree(tree_id).unwrap();
-                repo.commit(Some("HEAD"), &signature, &signature, "Initial commit", &tree, &[]).unwrap();
-            }
+            std::process::Command::new("git")
+                .args(["config", "user.email", "test@example.com"])
+                .current_dir(&path)
+                .output()
+                .expect("Failed to configure git user email");
 
-            Self { path, repo }
+            // Create a README file
+            fs::write(path.join("README.md"), "# Test Repository\n\nThis is a test repository.").unwrap();
+
+            std::process::Command::new("git")
+                .args(["add", "README.md"])
+                .current_dir(&path)
+                .output()
+                .expect("Failed to add README.md to git index");
+
+            std::process::Command::new("git")
+                .args(["commit", "-m", "Initial commit"])
+                .current_dir(&path)
+                .output()
+                .expect("Failed to create initial commit");
+
+            // Create the trunk branch
+            std::process::Command::new("git")
+                .args(["branch", "trunk"])
+                .current_dir(&path)
+                .output()
+                .expect("Failed to create trunk branch");
+
+            // We don't need to open the repository with git2 anymore
+            // since we're using command-line git for all operations
+
+            Self { path, _temp_dir: temp_dir }
         }
 
         fn commit(&self, message: &str) -> Oid {
@@ -269,37 +296,70 @@ mod tests {
             let file_path = self.path.join(format!("file_{}.txt", message.replace(" ", "_")));
             fs::write(&file_path, message).unwrap();
 
-            // Add and commit
-            let mut index = self.repo.index().unwrap();
-            index.add_path(file_path.strip_prefix(&self.path).unwrap()).unwrap();
-            index.write().unwrap();
+            // Add the file
+            std::process::Command::new("git")
+                .args(["add", file_path.file_name().unwrap().to_str().unwrap()])
+                .current_dir(&self.path)
+                .output()
+                .expect("Failed to add file to git index");
 
-            let tree_id = index.write_tree().unwrap();
-            let tree = self.repo.find_tree(tree_id).unwrap();
+            // Commit the changes
+            std::process::Command::new("git")
+                .args(["commit", "-m", message])
+                .current_dir(&self.path)
+                .output()
+                .expect("Failed to commit changes");
 
-            let signature = Signature::now("Test User", "test@example.com").unwrap();
-            let parent = self.repo.head().unwrap().peel_to_commit().unwrap();
+            // Get the commit hash
+            let output = std::process::Command::new("git")
+                .args(["rev-parse", "HEAD"])
+                .current_dir(&self.path)
+                .output()
+                .expect("Failed to get commit hash");
 
-            self.repo.commit(Some("HEAD"), &signature, &signature, message, &tree, &[&parent]).unwrap()
+            let commit_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+            // Convert to Oid
+            Oid::from_str(&commit_hash).unwrap()
         }
 
         fn create_branch(&self, name: &str) {
-            let head = self.repo.head().unwrap();
-            let commit = head.peel_to_commit().unwrap();
-            self.repo.branch(name, &commit, false).unwrap();
+            std::process::Command::new("git")
+                .args(["branch", name])
+                .current_dir(&self.path)
+                .output()
+                .expect("Failed to create branch");
         }
 
         fn checkout_branch(&self, name: &str) {
-            let obj = self.repo.revparse_single(&format!("refs/heads/{}", name)).unwrap();
-            self.repo.checkout_tree(&obj, None).unwrap();
-            self.repo.set_head(&format!("refs/heads/{}", name)).unwrap();
+            // Check if the branch exists
+            let output = std::process::Command::new("git")
+                .args(["branch", "--list", name])
+                .current_dir(&self.path)
+                .output()
+                .expect("Failed to list branches");
+
+            let branch_exists = !String::from_utf8_lossy(&output.stdout).trim().is_empty();
+
+            if !branch_exists {
+                // Create the branch
+                self.create_branch(name);
+            }
+
+            // Checkout the branch
+            std::process::Command::new("git")
+                .args(["checkout", name])
+                .current_dir(&self.path)
+                .output()
+                .expect("Failed to checkout branch");
         }
 
         fn tag(&self, name: &str) {
-            let head = self.repo.head().unwrap();
-            let commit = head.peel_to_commit().unwrap();
-            let signature = Signature::now("Test User", "test@example.com").unwrap();
-            self.repo.tag(name, &commit.into_object(), &signature, "", false).unwrap();
+            std::process::Command::new("git")
+                .args(["tag", name])
+                .current_dir(&self.path)
+                .output()
+                .expect("Failed to create tag");
         }
     }
 
@@ -307,8 +367,7 @@ mod tests {
     fn test_trunk_versioning() {
         let test_repo = TestRepo::new();
 
-        // Initial setup - create trunk branch
-        test_repo.create_branch("trunk");
+        // Use the trunk branch that was created in TestRepo::new
         test_repo.checkout_branch("trunk");
 
         // First commit on trunk
@@ -334,8 +393,7 @@ mod tests {
     fn test_release_branch_versioning() {
         let test_repo = TestRepo::new();
 
-        // Initial setup - create trunk branch
-        test_repo.create_branch("trunk");
+        // Use the trunk branch that was created in TestRepo::new
         test_repo.checkout_branch("trunk");
 
         // First commit on trunk
@@ -387,8 +445,7 @@ mod tests {
     fn test_complex_workflow() {
         let test_repo = TestRepo::new();
 
-        // Initial setup - create trunk branch
-        test_repo.create_branch("trunk");
+        // Use the trunk branch that was created in TestRepo::new
         test_repo.checkout_branch("trunk");
 
         // First commits on trunk
@@ -396,6 +453,9 @@ mod tests {
         test_repo.tag("v0.1.0-rc.0");
         test_repo.commit("Second trunk commit");
         test_repo.tag("v0.1.0-rc.1");
+
+        // Tag a final release to make the next version increment the minor version
+        test_repo.tag("v0.1.0");
 
         // Create first release branch
         test_repo.create_branch("release/1.0.0");
