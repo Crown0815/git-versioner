@@ -294,20 +294,9 @@ mod tests {
         }
 
         fn commit(&self, message: &str) -> Oid {
-            // Create a file to change
-            let file_path = self.path.join(format!("file_{}.txt", message.replace(" ", "_")));
-            fs::write(&file_path, message).unwrap();
-
-            // Add the file
-            std::process::Command::new("git")
-                .args(["add", file_path.file_name().unwrap().to_str().unwrap()])
-                .current_dir(&self.path)
-                .output()
-                .expect("Failed to add file to git index");
-
             // Commit the changes
             std::process::Command::new("git")
-                .args(["commit", "-m", message])
+                .args(["commit", "--allow-empty", "-m", message])
                 .current_dir(&self.path)
                 .output()
                 .expect("Failed to commit changes");
