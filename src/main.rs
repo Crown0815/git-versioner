@@ -17,9 +17,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     let repo_path = args.repo_path.unwrap_or_else(|| std::env::current_dir().unwrap());
-
-    let versioner = GitVersioner::new(&repo_path)?;
-    let version = versioner.calculate_version()?;
+    let version = GitVersioner::calculate_version(&repo_path)?;
 
     if args.verbose {
         println!("Repository path: {}", repo_path.display());

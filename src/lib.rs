@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Prerelease, Version};
@@ -6,9 +6,9 @@ use std::path::Path;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum BranchType {
-    Trunk,  // Main development branch (trunk)
-    Release(Version),  // Release branch (e.g., release/1.0.0)
-    Other(String),  // Feature branch or any other branch type
+    Trunk,            // Main development branch (trunk)
+    Release(Version), // Release branch (e.g., release/1.0.0)
+    Other(String),    // Feature branch or any other branch type
 }
 
 #[derive(Debug, Clone)]
@@ -23,16 +23,24 @@ pub struct GitVersioner {
 }
 
 impl GitVersioner {
-    /// Create a new GitVersioner instance for the repository at the given path
-    pub fn new<P: AsRef<Path>>(repo_path: P) -> Result<Self> {
+    pub fn calculate_version<P: AsRef<Path>>(repo_path: P) -> Result<Version> {
         let repo = Repository::open(repo_path)?;
         let branch_type = Self::determine_current_branch_type(&repo)?;
         let version_tags = Self::collect_version_tags(&repo)?;
-
-        Ok(Self {
+        let versioner = Self {
             branch_type,
             version_tags,
-        })
+        };
+
+        match &versioner.branch_type {
+            BranchType::Trunk => versioner.calculate_trunk_version(),
+            BranchType::Release(release_version) => {
+                versioner.calculate_release_version(&release_version)
+            }
+            BranchType::Other(_) => Err(anyhow!(
+                "Version calculation not supported for non-trunk/release branches"
+            )),
+        }
     }
 
     fn determine_current_branch_type(repo: &Repository) -> Result<BranchType> {
@@ -85,10 +93,7 @@ impl GitVersioner {
                         tag_obj.id()
                     };
 
-                    version_tags.push(VersionTag {
-                        version,
-                        commit_id,
-                    });
+                    version_tags.push(VersionTag { version, commit_id });
                 }
             }
         }
@@ -97,15 +102,6 @@ impl GitVersioner {
         version_tags.sort_by(|a, b| a.version.cmp(&b.version));
 
         Ok(version_tags)
-    }
-
-    /// Calculate the current version based on the repository state
-    pub fn calculate_version(&self) -> Result<Version> {
-        match &self.branch_type {
-            BranchType::Trunk => self.calculate_trunk_version(),
-            BranchType::Release(release_version) => self.calculate_release_version(release_version),
-            BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
-        }
     }
 
     /// Calculate version for trunk branch
@@ -163,7 +159,9 @@ impl GitVersioner {
     /// Find the latest version tag on the trunk branch
     fn find_latest_trunk_tag(&self) -> Result<Option<VersionTag>> {
         // Get all tags that are reachable from the trunk but don't have pre-release components
-        let mut released_tags = self.version_tags.iter()
+        let mut released_tags = self
+            .version_tags
+            .iter()
             .filter(|tag| tag.version.pre.is_empty())
             .cloned()
             .collect::<Vec<_>>();
@@ -178,10 +176,12 @@ impl GitVersioner {
     /// Find the latest version tag on a specific release branch
     fn find_latest_release_tag(&self, release_version: &Version) -> Result<Option<VersionTag>> {
         // Get all tags that match the major.minor of the release version
-        let mut matching_tags = self.version_tags.iter()
+        let mut matching_tags = self
+            .version_tags
+            .iter()
             .filter(|tag| {
-                tag.version.major == release_version.major && 
-                tag.version.minor == release_version.minor
+                tag.version.major == release_version.major
+                    && tag.version.minor == release_version.minor
             })
             .cloned()
             .collect::<Vec<_>>();
@@ -202,10 +202,10 @@ impl GitVersioner {
 
         for tag in &self.version_tags {
             // Check if the tag matches our version's major.minor.patch
-            if tag.version.major == version.major && 
-               tag.version.minor == version.minor && 
-               tag.version.patch == version.patch {
-
+            if tag.version.major == version.major
+                && tag.version.minor == version.minor
+                && tag.version.patch == version.patch
+            {
                 // Check if the tag is a release candidate
                 if let Some(captures) = rc_regex.captures(tag.version.pre.as_str()) {
                     if let Some(rc_str) = captures.get(1) {
@@ -230,7 +230,7 @@ mod tests {
 
     struct TestRepo {
         path: PathBuf,
-        _temp_dir: tempfile::TempDir,  // Keep the temp_dir to prevent it from being deleted
+        _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
     }
 
     impl TestRepo {
@@ -243,19 +243,28 @@ mod tests {
         fn create_empty_path() -> Self {
             let temp_dir = tempfile::tempdir().unwrap();
             let path = temp_dir.path().to_path_buf();
-            Self { path, _temp_dir: temp_dir }
+            Self {
+                path,
+                _temp_dir: temp_dir,
+            }
         }
 
         fn initialize(&self) {
             self.execute(&["init"], "initialize repository");
             self.execute(&["config", "user.name", "tester"], "configure user.name");
-            self.execute(&["config", "user.email", "tester@test.com"], "configure user.email");
+            self.execute(
+                &["config", "user.email", "tester@test.com"],
+                "configure user.email",
+            );
             self.commit("initial commit");
             self.create_branch("trunk");
         }
 
         fn commit(&self, message: &str) -> Oid {
-            self.execute(&["commit", "--allow-empty", "-m", message], format!("commit {message}").as_str());
+            self.execute(
+                &["commit", "--allow-empty", "-m", message],
+                format!("commit {message}").as_str(),
+            );
             let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
 
             let commit_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -267,7 +276,10 @@ mod tests {
         }
 
         fn checkout_branch(&self, name: &str) {
-            self.execute(&["switch", name], format!("checkout branch {name}").as_str());
+            self.execute(
+                &["switch", name],
+                format!("checkout branch {name}").as_str(),
+            );
         }
 
         fn tag(&self, name: &str) {
@@ -288,18 +300,15 @@ mod tests {
         let test_repo = TestRepo::new();
 
         test_repo.checkout_branch("trunk");
-        test_repo.commit("Initial trunk commit");
 
         // Calculate version - should be 0.1.0-rc.0 as no tags exist
-        let versioner = GitVersioner::new(&test_repo.path).unwrap();
-        let version = versioner.calculate_version().unwrap();
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let expected = Version::parse("0.1.0-rc.0").unwrap();
         assert_eq!(version, expected);
 
         // Add a tag and check version calculation
         test_repo.tag("v0.1.0");
-        let versioner = GitVersioner::new(&test_repo.path).unwrap();
-        let version = versioner.calculate_version().unwrap();
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let mut expected = Version::new(0, 2, 0);
         expected.pre = Prerelease::new("rc.1").unwrap();
         assert_eq!(version, expected);
@@ -324,8 +333,7 @@ mod tests {
         test_repo.commit("First release commit");
 
         // Calculate version - should be 1.0.1-rc.1
-        let versioner = GitVersioner::new(&test_repo.path).unwrap();
-        let version = versioner.calculate_version().unwrap();
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let mut expected = Version::new(1, 0, 1);
         expected.pre = Prerelease::new("rc.1").unwrap();
         assert_eq!(version, expected);
@@ -337,8 +345,7 @@ mod tests {
         test_repo.commit("Second release commit");
 
         // Calculate version - should be 1.0.1-rc.2
-        let versioner = GitVersioner::new(&test_repo.path).unwrap();
-        let version = versioner.calculate_version().unwrap();
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let mut expected = Version::new(1, 0, 1);
         expected.pre = Prerelease::new("rc.2").unwrap();
         assert_eq!(version, expected);
@@ -350,8 +357,7 @@ mod tests {
         test_repo.commit("Third release commit");
 
         // Calculate version - should be 1.0.2-rc.1
-        let versioner = GitVersioner::new(&test_repo.path).unwrap();
-        let version = versioner.calculate_version().unwrap();
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let mut expected = Version::new(1, 0, 2);
         expected.pre = Prerelease::new("rc.1").unwrap();
         assert_eq!(version, expected);
@@ -380,8 +386,7 @@ mod tests {
         test_repo.commit("Third trunk commit");
 
         // Calculate version on trunk - should be 0.2.0-rc.1
-        let versioner = GitVersioner::new(&test_repo.path).unwrap();
-        let version = versioner.calculate_version().unwrap();
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let mut expected = Version::new(0, 2, 0);
         expected.pre = Prerelease::new("rc.1").unwrap();
         assert_eq!(version, expected);
@@ -397,8 +402,7 @@ mod tests {
         test_repo.tag("v1.0.0"); // Final release
 
         // Calculate version on the release branch - should be 1.0.1-rc.1
-        let versioner = GitVersioner::new(&test_repo.path).unwrap();
-        let version = versioner.calculate_version().unwrap();
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let mut expected = Version::new(1, 0, 1);
         expected.pre = Prerelease::new("rc.1").unwrap();
         assert_eq!(version, expected);
