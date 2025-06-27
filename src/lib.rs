@@ -244,10 +244,7 @@ mod tests {
         }
 
         fn commit(&self, message: &str) -> Oid {
-            self.execute(
-                &["commit", "--allow-empty", "-m", message],
-                format!("commit {message}").as_str(),
-            );
+            self.execute(&["commit", "--allow-empty", "-m", message], &format!("commit {message}"));
             let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
 
             let commit_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -255,16 +252,16 @@ mod tests {
         }
 
         fn branch(&self, name: &str) {
-            self.execute(&["branch", name], format!("branch {name}").as_str());
+            self.execute(&["branch", name], &format!("branch {name}"));
             self.checkout(name);
         }
 
         fn checkout(&self, name: &str) {
-            self.execute(&["checkout", name], format!("checkout {name}").as_str());
+            self.execute(&["checkout", name], &format!("checkout {name}"));
         }
 
         fn tag(&self, name: &str) {
-            self.execute(&["tag", name], format!("create tag {name}").as_str());
+            self.execute(&["tag", name], &format!("create tag {name}"));
         }
 
         fn execute(&self, command: &[&str], description: &str) -> Output {
@@ -272,7 +269,7 @@ mod tests {
                 .args(command)
                 .current_dir(&self.path)
                 .output()
-                .expect(format!("Failed to {description}").as_str())
+                .expect(&format!("Failed to {description}"))
         }
     }
 
