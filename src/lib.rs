@@ -399,30 +399,31 @@ mod tests {
         repo.commit_and_assert("1.4.0-rc.1");
     }
 
-    fn assert_version(repo: &TestRepo, expected: &str) {
-        let repo_path = &repo.path;
-        let actual = GitVersioner::calculate_version(repo_path, TRUNK_BRANCH_REGEX).unwrap();
-        let expected = Version::parse(expected).unwrap();
-        assert_eq!(actual, expected, "Expected HEAD version: {}, found: {}\n\n Git Graph:\n-------\n{}------", expected, actual, repo.graph());
-    }
-
     #[rstest]
-    fn test_custom_trunk_regex(repo: TestRepo) {
-        // Initialize with trunk branch
+    fn test_custom_trunk_feature(repo: TestRepo) {
         repo.commit("Initial commit");
-
-        // Rename trunk to custom-trunk
-        repo.execute(&["branch", "custom-trunk"], "create custom-trunk branch");
-        repo.execute(&["checkout", "custom-trunk"], "checkout custom-trunk");
+        repo.branch("custom-trunk");
         repo.execute(&["branch", "-D", "trunk"], "delete trunk branch");
 
-        // This should fail with the default regex
-        let repo_path = &repo.path;
-        let result = GitVersioner::calculate_version(repo_path, TRUNK_BRANCH_REGEX);
+        let result = GitVersioner::calculate_version(&repo.path, TRUNK_BRANCH_REGEX);
         assert!(result.is_err(), "Expected error with default trunk regex, but got: {:?}", result);
 
-        // This should succeed with a custom regex
-        let result = GitVersioner::calculate_version(&repo.path, r"^custom-trunk$");
-        assert!(result.is_ok(), "Expected success with custom trunk regex, but got: {:?}", result);
+        assert_version_with_custom_trunk(&repo, "0.1.0-rc.1", r"^custom-trunk$");
+    }
+
+    fn assert_version(repo: &TestRepo, expected: &str) {
+        assert_version_with_custom_trunk(repo, expected, TRUNK_BRANCH_REGEX);
+    }
+
+    fn assert_version_with_custom_trunk(repo: &TestRepo, expected: &str, trunk_branch_regex: &str) {
+        let actual = GitVersioner::calculate_version(&repo.path, trunk_branch_regex).unwrap();
+        let expected = Version::parse(expected).unwrap();
+        assert_eq!(
+            actual,
+            expected,
+            "Expected HEAD version: {}, found: {}\n\n Git Graph:\n-------\n{}------",
+            expected,
+            actual,
+            repo.graph());
     }
 }
