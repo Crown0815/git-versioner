@@ -225,132 +225,61 @@ impl GitVersioner {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
     use std::path::PathBuf;
+    use std::process::Output;
 
     struct TestRepo {
         path: PathBuf,
-        // Keep the temp_dir to prevent it from being deleted
-        _temp_dir: tempfile::TempDir,
+        _temp_dir: tempfile::TempDir,  // Keep the temp_dir to prevent it from being deleted
     }
 
     impl TestRepo {
         fn new() -> Self {
-            let repo = Self::create_empty_directory();
-
-            // Create a simple test repository with a single commit
-            // We'll use the command-line git for this to ensure it's properly initialized
-            std::process::Command::new("git")
-                .args(["init"])
-                .current_dir(&repo.path)
-                .output()
-                .expect("Failed to initialize git repository");
-
-            std::process::Command::new("git")
-                .args(["config", "user.name", "Test User"])
-                .current_dir(&repo.path)
-                .output()
-                .expect("Failed to configure git user name");
-
-            std::process::Command::new("git")
-                .args(["config", "user.email", "test@example.com"])
-                .current_dir(&repo.path)
-                .output()
-                .expect("Failed to configure git user email");
-
-            // Create a README file
-            fs::write(repo.path.join("README.md"), "# Test Repository\n\nThis is a test repository.").unwrap();
-
-            std::process::Command::new("git")
-                .args(["add", "README.md"])
-                .current_dir(&repo.path)
-                .output()
-                .expect("Failed to add README.md to git index");
-
-            std::process::Command::new("git")
-                .args(["commit", "-m", "Initial commit"])
-                .current_dir(&repo.path)
-                .output()
-                .expect("Failed to create initial commit");
-
-            // Create the trunk branch
-            std::process::Command::new("git")
-                .args(["branch", "trunk"])
-                .current_dir(&repo.path)
-                .output()
-                .expect("Failed to create trunk branch");
-
-            // We don't need to open the repository with git2 anymore
-            // since we're using command-line git for all operations
-
+            let repo = Self::create_empty_path();
+            repo.initialize();
             repo
         }
 
-        fn create_empty_directory() -> TestRepo {
+        fn create_empty_path() -> Self {
             let temp_dir = tempfile::tempdir().unwrap();
             let path = temp_dir.path().to_path_buf();
-            let repo = Self { path, _temp_dir: temp_dir };
-            repo
+            Self { path, _temp_dir: temp_dir }
+        }
+
+        fn initialize(&self) {
+            self.execute(&["init"], "initialize repository");
+            self.execute(&["config", "user.name", "tester"], "configure user.name");
+            self.execute(&["config", "user.email", "tester@test.com"], "configure user.email");
+            self.commit("initial commit");
+            self.create_branch("trunk");
         }
 
         fn commit(&self, message: &str) -> Oid {
-            // Commit the changes
-            std::process::Command::new("git")
-                .args(["commit", "--allow-empty", "-m", message])
-                .current_dir(&self.path)
-                .output()
-                .expect("Failed to commit changes");
-
-            // Get the commit hash
-            let output = std::process::Command::new("git")
-                .args(["rev-parse", "HEAD"])
-                .current_dir(&self.path)
-                .output()
-                .expect("Failed to get commit hash");
+            self.execute(&["commit", "--allow-empty", "-m", message], format!("commit {message}").as_str());
+            let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
 
             let commit_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
-
-            // Convert to Oid
             Oid::from_str(&commit_hash).unwrap()
         }
 
         fn create_branch(&self, name: &str) {
-            std::process::Command::new("git")
-                .args(["branch", name])
-                .current_dir(&self.path)
-                .output()
-                .expect("Failed to create branch");
+            self.execute(&["branch", name], format!("create branch {name}").as_str());
         }
 
         fn checkout_branch(&self, name: &str) {
-            // Check if the branch exists
-            let output = std::process::Command::new("git")
-                .args(["branch", "--list", name])
-                .current_dir(&self.path)
-                .output()
-                .expect("Failed to list branches");
-
-            let branch_exists = !String::from_utf8_lossy(&output.stdout).trim().is_empty();
-
-            if !branch_exists {
-                // Create the branch
-                self.create_branch(name);
-            }
-
-            // Checkout the branch
-            std::process::Command::new("git")
-                .args(["checkout", name])
-                .current_dir(&self.path)
-                .output()
-                .expect("Failed to checkout branch");
+            self.execute(&["switch", name], format!("checkout branch {name}").as_str());
         }
 
         fn tag(&self, name: &str) {
+            self.execute(&["tag", name], format!("create tag {name}").as_str());
+        }
+
+        fn execute(&self, command: &[&str], description: &str) -> Output {
             std::process::Command::new("git")
-                .args(["tag", name])
+                .args(command)
                 .current_dir(&self.path)
                 .output()
-                .expect("Failed to create tag");
+                .expect(format!("Failed to {description}").as_str())
         }
     }
 
