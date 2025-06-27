@@ -101,9 +101,9 @@ impl GitVersioner {
     }
 
     /// Calculate version for trunk branch
-    fn calculate_trunk_version(&self, x: &Repository) -> Result<Version> {
-        // Find the latest version tag on the trunk
+    fn calculate_trunk_version(&self, repo: &Repository) -> Result<Version> {
         let latest_trunk_tag = self.find_latest_trunk_tag()?;
+
 
         // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
@@ -117,9 +117,13 @@ impl GitVersioner {
 
             Ok(new_version)
         } else {
-            // If no tags exist, start with 0.1.0-rc.0
+            let mut revwalk = repo.revwalk()?;
+            revwalk.push_head()?;
+            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+            let count = revwalk.count();
+            
             let mut version = Version::new(0, 1, 0);
-            version.pre = Prerelease::new("rc.0")?;
+            version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
         }
     }
@@ -330,10 +334,10 @@ mod tests {
 
     #[rstest]
     fn test_full_workflow(repo: TestRepo) {
-        repo.commit("0.1.0-rc.0");
-        assert_version_matches(&repo, "0.1.0-rc.0");
         repo.commit("0.1.0-rc.1");
         assert_version_matches(&repo, "0.1.0-rc.1");
+        repo.commit("0.1.0-rc.2");
+        assert_version_matches(&repo, "0.1.0-rc.2");
         // repo.branch("release/1.0.0");
         // assert_version_matches(&repo, "1.0.0-rc.0");
         // repo.checkout("trunk");
