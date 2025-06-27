@@ -18,43 +18,44 @@ pub struct VersionSource {
 }
 
 pub struct GitVersioner {
-    branch_type: BranchType,
     version_tags: Vec<VersionSource>,
     version_branches: Vec<VersionSource>,
 }
 
+pub const TRUNK_BRANCH_REGEX: &'static str = r"^(trunk|main|master)$";
+
 impl GitVersioner {
-    pub fn calculate_version<P: AsRef<Path>>(repo_path: P) -> Result<Version> {
+    pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
         let repo = Repository::open(repo_path)?;
 
-        let versioner = Self {
-            branch_type: Self::determine_current_branch_type(&repo)?,
-            version_tags: Self::collect_version_tags(&repo)?,
-            version_branches: Self::collect_sources_from_release_branches(&repo)?
+        let trunk_branch_regex = Regex::new(trunk_branch_regex)?;
+
+        let branch_type = match repo.head() {
+            Ok(head) => Self::determine_branch_type_from_regex(head, &trunk_branch_regex)?,
+            Err(error) => return Err(anyhow!("Failed to get HEAD: {}", error)),
         };
 
-        match &versioner.branch_type {
+        let versioner = Self {
+            version_tags: Self::collect_version_tags(&repo)?,
+            version_branches: Self::collect_sources_from_release_branches(&repo)?,
+        };
+
+        match branch_type {
             BranchType::Trunk => versioner.calculate_version_for_trunk(&repo),
-            BranchType::Release(version) => versioner.calculate_release_version(&repo, version),
+            BranchType::Release(version) => versioner.calculate_release_version(&repo, &version),
             BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
     }
 
-    fn determine_current_branch_type(repo: &Repository) -> Result<BranchType> {
-        match repo.head() {
-            Ok(head) => Self::determine_branch_type_from(head),
-            Err(error) => Err(anyhow!("Failed to get HEAD: {}", error)),
-        }
-    }
-
-    fn determine_branch_type_from(reference: Reference) -> Result<BranchType> {
+    fn determine_branch_type_from_regex(reference: Reference, trunk_regex: &Regex) -> Result<BranchType> {
         if !reference.is_branch() {
             return Err(anyhow!("HEAD is not on a branch"));
         }
 
         let branch_name = reference.shorthand().unwrap_or("unknown");
 
-        if branch_name == "trunk" || branch_name == "main" || branch_name == "master" {
+        // Use the provided trunk branch regex
+        if trunk_regex.is_match(branch_name) {
             return Ok(BranchType::Trunk);
         }
 
@@ -428,13 +429,13 @@ mod tests {
         repo.commit_and_assert("1.1.1-rc.2");
         repo.tag("v1.1.1");
         assert_version(&repo, "1.1.1");
-        
+
         repo.checkout("trunk");
         repo.commit_and_assert("1.2.0-rc.2");
         repo.branch("release/1.2.0");
         repo.checkout("trunk");
         repo.commit_and_assert("1.3.0-rc.1");
-        
+
         repo.checkout("release/1.2.0");
         repo.commit_and_assert("1.2.0-rc.3");
         repo.commit_and_assert("1.2.0-rc.4");
@@ -444,7 +445,7 @@ mod tests {
         repo.commit_and_assert("1.2.1-rc.2");
         repo.tag("v1.2.1");
         assert_version(&repo, "1.2.1");
-        
+
         repo.checkout("trunk");
         repo.commit_and_assert("1.3.0-rc.2");
         repo.tag("v1.3.0");
@@ -453,8 +454,29 @@ mod tests {
     }
 
     fn assert_version(repo: &TestRepo, expected: &str) {
-        let actual = GitVersioner::calculate_version(&repo.path).unwrap();
+        let repo_path = &repo.path;
+        let actual = GitVersioner::calculate_version(repo_path, TRUNK_BRANCH_REGEX).unwrap();
         let expected = Version::parse(expected).unwrap();
         assert_eq!(actual, expected, "Expected HEAD version: {}, found: {}\n\n Git Graph:\n-------\n{}------", expected, actual, repo.graph());
+    }
+
+    #[rstest]
+    fn test_custom_trunk_regex(repo: TestRepo) {
+        // Initialize with trunk branch
+        repo.commit("Initial commit");
+
+        // Rename trunk to custom-trunk
+        repo.execute(&["branch", "custom-trunk"], "create custom-trunk branch");
+        repo.execute(&["checkout", "custom-trunk"], "checkout custom-trunk");
+        repo.execute(&["branch", "-D", "trunk"], "delete trunk branch");
+
+        // This should fail with the default regex
+        let repo_path = &repo.path;
+        let result = GitVersioner::calculate_version(repo_path, TRUNK_BRANCH_REGEX);
+        assert!(result.is_err(), "Expected error with default trunk regex, but got: {:?}", result);
+
+        // This should succeed with a custom regex
+        let result = GitVersioner::calculate_version(&repo.path, r"^custom-trunk$");
+        assert!(result.is_ok(), "Expected success with custom trunk regex, but got: {:?}", result);
     }
 }

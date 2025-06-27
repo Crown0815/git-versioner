@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use git_versioner::GitVersioner;
+use git_versioner::{GitVersioner, TRUNK_BRANCH_REGEX};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
@@ -17,7 +17,7 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     let repo_path = args.repo_path.unwrap_or_else(|| std::env::current_dir().unwrap());
-    let version = GitVersioner::calculate_version(&repo_path)?;
+    let version = GitVersioner::calculate_version(&repo_path, TRUNK_BRANCH_REGEX)?;
 
     if args.verbose {
         println!("Repository path: {}", repo_path.display());
