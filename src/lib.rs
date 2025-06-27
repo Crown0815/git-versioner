@@ -236,29 +236,15 @@ mod tests {
 
     impl TestRepo {
         fn new() -> Self {
-            let repo = Self::create_empty_path();
-            repo.initialize();
-            repo
-        }
-
-        fn create_empty_path() -> Self {
             let temp_dir = tempfile::tempdir().unwrap();
             let path = temp_dir.path().to_path_buf();
-            Self {
-                path,
-                _temp_dir: temp_dir,
-            }
+            Self { path, _temp_dir: temp_dir }
         }
 
         fn initialize(&self) {
             self.execute(&["init"], "initialize repository");
             self.execute(&["config", "user.name", "tester"], "configure user.name");
-            self.execute(
-                &["config", "user.email", "tester@test.com"],
-                "configure user.email",
-            );
-            self.commit("initial commit");
-            self.branch("trunk");
+            self.execute(&["config", "user.email", "tester@test.com"], "configure user.email");
         }
 
         fn commit(&self, message: &str) -> Oid {
@@ -301,14 +287,10 @@ mod tests {
     #[fixture]
     fn repo() -> TestRepo {
         let repo = TestRepo::new();
-        repo.checkout("trunk");
+        repo.initialize();
+        repo.commit("initial commit");
+        repo.create_and_checkout("trunk");
         repo
-    }
-
-    fn assert_version_matches(test_repo: &TestRepo, expected: &str) {
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let expected = Version::parse(expected).unwrap();
-        assert_eq!(version, expected);
     }
 
     #[rstest]
@@ -344,7 +326,8 @@ mod tests {
         repo.commit("trunk commit 2");
         repo.tag("v0.1.0-rc.1");
         repo.tag("v0.1.0");
-        repo.branch("release/1.0.0");
+        repo.create_and_checkout("release/1.0.0");
+        repo.checkout("trunk");
         repo.commit("trunk commit 3");
         assert_version_matches(&repo, "0.2.0-rc.1");
 
@@ -355,5 +338,11 @@ mod tests {
         repo.tag("v1.0.0-rc.2");
         repo.tag("v1.0.0");
         assert_version_matches(&repo, "1.0.1-rc.1");
+    }
+
+    fn assert_version_matches(repo: &TestRepo, expected: &str) {
+        let actual = GitVersioner::calculate_version(&repo.path).unwrap();
+        let expected = Version::parse(expected).unwrap();
+        assert_eq!(actual, expected);
     }
 }
