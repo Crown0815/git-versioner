@@ -34,7 +34,7 @@ impl GitVersioner {
 
         match &versioner.branch_type {
             BranchType::Trunk => versioner.calculate_version_for_trunk(&repo),
-            BranchType::Release(release_version) => versioner.calculate_release_version(release_version),
+            BranchType::Release(release_version) => versioner.calculate_release_version(&repo, release_version),
             BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
     }
@@ -129,23 +129,28 @@ impl GitVersioner {
     }
 
     /// Calculate the version for the release branch
-    fn calculate_release_version(&self, release_version: &Version) -> Result<Version> {
+    fn calculate_release_version(&self, repo: &Repository, release_version: &Version) -> Result<Version> {
         // Find the latest tag on this release branch
         let latest_release_tag = self.find_latest_release_tag(release_version)?;
 
         if let Some(tag) = latest_release_tag {
             let mut new_version = tag.version.clone();
 
-            // If the tag has no pre-release component, it's a released version.
-            // So we increment the patch version for the next release candidate
-            if new_version.pre.is_empty() {
-                new_version.patch += 1;
-                new_version.pre = Prerelease::new("rc.1")?;
-            } else {
-                // It's already a release candidate, so increment the rc number
-                let rc_number = self.get_next_rc_number(&new_version)?;
-                new_version.pre = Prerelease::new(&format!("rc.{}", rc_number))?;
+            new_version.patch += 1;
+
+            let mut revwalk = repo.revwalk()?;
+            revwalk.push_head()?;
+            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+            let mut count = 0;
+            for oid in revwalk {
+                let oid = oid?;
+                if oid == tag.commit_id {
+                    break; // Stop counting when the specific commit is reached
+                }
+                count += 1;
             }
+            
+            new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
 
             Ok(new_version)
         } else {
@@ -182,6 +187,7 @@ impl GitVersioner {
             .filter(|tag| {
                 tag.version.major == release_version.major
                     && tag.version.minor == release_version.minor
+                    && tag.version.pre.is_empty()
             })
             .cloned()
             .collect::<Vec<_>>();
@@ -280,6 +286,11 @@ mod tests {
                 .output()
                 .expect(&format!("Failed to {description}"))
         }
+        
+        fn commit_and_assert(&self, expected_version: &str) {
+            self.commit(expected_version);
+            assert_version(&self, expected_version);
+        }
     }
 
     #[fixture]
@@ -338,11 +349,8 @@ mod tests {
 
     #[rstest]
     fn test_full_workflow(repo: TestRepo) {
-        repo.commit("0.1.0-rc.1");
-        assert_version_matches(&repo, "0.1.0-rc.1");
-        repo.commit("0.1.0-rc.2");
-        assert_version_matches(&repo, "0.1.0-rc.2");
-        // repo.branch("release/1.0.0");
+        repo.commit_and_assert("0.1.0-rc.1");
+        repo.commit_and_assert("0.1.0-rc.2");
         // assert_version_matches(&repo, "1.0.0-rc.0");
         // repo.checkout("trunk");
         // repo.commit("1.1.0-rc.1");
@@ -350,14 +358,15 @@ mod tests {
         // repo.commit("1.0.0-rc.1");
         // assert_version_matches(&repo, "1.0.0-rc.1");
         // repo.commit("1.0.0-rc.2");
-        repo.tag("v1.0.0-rc.2");
+        repo.tag("v1.0.0-rc.2"); // ignored
         repo.tag("v1.0.0");
-        assert_version_matches(&repo, "1.0.0");
-        repo.commit("1.1.0-rc.1");
-        assert_version_matches(&repo, "1.1.0-rc.1");
-        // repo.commit("1.0.1-rc.1");
-        // assert_version_matches(&repo, "1.0.1-rc.1");
-        // repo.commit("1.0.1-rc.2");
+        assert_version(&repo, "1.0.0");
+        repo.branch("release/1.0.0");
+        repo.checkout("trunk");
+        repo.commit_and_assert("1.1.0-rc.1");
+        repo.checkout("release/1.0.0");
+        repo.commit_and_assert("1.0.1-rc.1");
+        repo.commit_and_assert("1.0.1-rc.2");
         // assert_version_matches(&repo, "1.0.1-rc.2");
         // repo.tag("v1.0.1");
         // assert_version_matches(&repo, "1.0.1");
@@ -368,9 +377,9 @@ mod tests {
         // assert_version_matches(&repo, "1.1.0");
     }
 
-    fn assert_version_matches(repo: &TestRepo, expected: &str) {
+    fn assert_version(repo: &TestRepo, expected: &str) {
         let actual = GitVersioner::calculate_version(&repo.path).unwrap();
         let expected = Version::parse(expected).unwrap();
-        assert_eq!(actual, expected, "Expected version: {}, found: {}\n\n Git Graph:\n-------\n{}------", expected, actual, repo.graph());
+        assert_eq!(actual, expected, "Expected HEAD version: {}, found: {}\n\n Git Graph:\n-------\n{}------", expected, actual, repo.graph());
     }
 }
