@@ -350,6 +350,7 @@ mod tests {
         // repo.commit("1.0.0-rc.1");
         // assert_version_matches(&repo, "1.0.0-rc.1");
         // repo.commit("1.0.0-rc.2");
+        repo.tag("v1.0.0-rc.2");
         repo.tag("v1.0.0");
         assert_version_matches(&repo, "1.0.0");
         repo.commit("1.1.0-rc.1");
