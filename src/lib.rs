@@ -276,10 +276,7 @@ mod tests {
         }
 
         fn checkout_branch(&self, name: &str) {
-            self.execute(
-                &["switch", name],
-                format!("checkout branch {name}").as_str(),
-            );
+            self.execute(&["switch", name], format!("checkout branch {name}").as_str());
         }
 
         fn tag(&self, name: &str) {
