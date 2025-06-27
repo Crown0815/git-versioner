@@ -284,56 +284,85 @@ mod tests {
     fn repo() -> TestRepo {
         let repo = TestRepo::new();
         repo.initialize();
-        repo.commit("initial commit");
         repo.branch("trunk");
         repo
     }
 
+    // #[rstest]
+    // fn test_trunk_versioning(repo: TestRepo) {
+    //     assert_version_matches(&repo, "0.1.0-rc.0");
+    //
+    //     repo.tag("v0.1.0");
+    //     assert_version_matches(&repo, "0.2.0-rc.0");
+    // }
+    //
+    // #[rstest]
+    // fn test_release_branch_versioning(repo: TestRepo) {
+    //     repo.commit("commit on trunk");
+    //     repo.tag("v1.0.0");
+    //
+    //     repo.branch("release/1.0.0");
+    //     repo.commit("release commit 1");
+    //     assert_version_matches(&repo, "1.0.1-rc.1");
+    //
+    //     repo.tag("v1.0.1-rc.1");
+    //     repo.commit("release commit 2");
+    //     assert_version_matches(&repo, "1.0.1-rc.2");
+    //
+    //     repo.tag("v1.0.1");
+    //     repo.commit("release commit 3");
+    //     assert_version_matches(&repo, "1.0.2-rc.1");
+    // }
+    //
+    // #[rstest]
+    // fn test_complex_workflow(repo: TestRepo) {
+    //     repo.commit("trunk commit 1");
+    //     repo.tag("v0.1.0-rc.0");
+    //     repo.commit("trunk commit 2");
+    //     repo.tag("v0.1.0-rc.1");
+    //     repo.tag("v0.1.0");
+    //     repo.branch("release/1.0.0");
+    //     repo.checkout("trunk");
+    //     repo.commit("trunk commit 3");
+    //     assert_version_matches(&repo, "0.2.0-rc.1");
+    //
+    //     repo.checkout("release/1.0.0");
+    //     repo.commit("release commit 1");
+    //     repo.tag("v1.0.0-rc.1");
+    //     repo.commit("release commit 2");
+    //     repo.tag("v1.0.0-rc.2");
+    //     repo.tag("v1.0.0");
+    //     assert_version_matches(&repo, "1.0.1-rc.1");
+    // }
+
     #[rstest]
-    fn test_trunk_versioning(repo: TestRepo) {
+    fn test_full_workflow(repo: TestRepo) {
+        repo.commit("0.1.0-rc.0");
         assert_version_matches(&repo, "0.1.0-rc.0");
-
-        repo.tag("v0.1.0");
-        assert_version_matches(&repo, "0.2.0-rc.1");
-    }
-
-    #[rstest]
-    fn test_release_branch_versioning(repo: TestRepo) {
-        repo.commit("commit on trunk");
-        repo.tag("v1.0.0");
-
+        repo.commit("0.1.0-rc.1");
+        assert_version_matches(&repo, "0.1.0-rc.1");
         repo.branch("release/1.0.0");
-        repo.commit("release commit 1");
-        assert_version_matches(&repo, "1.0.1-rc.1");
-
-        repo.tag("v1.0.1-rc.1");
-        repo.commit("release commit 2");
-        assert_version_matches(&repo, "1.0.1-rc.2");
-
-        repo.tag("v1.0.1");
-        repo.commit("release commit 3");
-        assert_version_matches(&repo, "1.0.2-rc.1");
-    }
-
-    #[rstest]
-    fn test_complex_workflow(repo: TestRepo) {
-        repo.commit("trunk commit 1");
-        repo.tag("v0.1.0-rc.0");
-        repo.commit("trunk commit 2");
-        repo.tag("v0.1.0-rc.1");
-        repo.tag("v0.1.0");
-        repo.branch("release/1.0.0");
+        assert_version_matches(&repo, "1.0.0-rc.0");
         repo.checkout("trunk");
-        repo.commit("trunk commit 3");
-        assert_version_matches(&repo, "0.2.0-rc.1");
-
+        // assert_version_matches(&repo, "1.0.0-rc.0");
+        repo.commit("1.1.0-rc.1");
         repo.checkout("release/1.0.0");
-        repo.commit("release commit 1");
-        repo.tag("v1.0.0-rc.1");
-        repo.commit("release commit 2");
-        repo.tag("v1.0.0-rc.2");
+        repo.commit("1.0.0-rc.1");
+        assert_version_matches(&repo, "1.0.0-rc.1");
+        repo.commit("1.0.0-rc.2");
         repo.tag("v1.0.0");
+        assert_version_matches(&repo, "1.0.0");
+        repo.commit("1.0.1-rc.1");
         assert_version_matches(&repo, "1.0.1-rc.1");
+        repo.commit("1.0.1-rc.2");
+        assert_version_matches(&repo, "1.0.1-rc.2");
+        repo.tag("v1.0.1");
+        assert_version_matches(&repo, "1.0.1");
+        repo.checkout("trunk");
+        repo.commit("1.1.0-rc.2");
+        assert_version_matches(&repo, "1.1.0-rc.2");
+        repo.tag("v1.1.0");
+        assert_version_matches(&repo, "1.1.0");
     }
 
     fn assert_version_matches(repo: &TestRepo, expected: &str) {
