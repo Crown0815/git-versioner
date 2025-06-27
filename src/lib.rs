@@ -225,6 +225,7 @@ impl GitVersioner {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rstest::*;
     use std::path::PathBuf;
     use std::process::Output;
 
@@ -257,7 +258,7 @@ mod tests {
                 "configure user.email",
             );
             self.commit("initial commit");
-            self.create_branch("trunk");
+            self.branch("trunk");
         }
 
         fn commit(&self, message: &str) -> Oid {
@@ -271,17 +272,17 @@ mod tests {
             Oid::from_str(&commit_hash).unwrap()
         }
 
-        fn create_and_checkout_branch(&self, name: &str) {
-            self.create_branch(name);
-            self.checkout_branch(name);
+        fn create_and_checkout(&self, name: &str) {
+            self.branch(name);
+            self.checkout(name);
         }
 
-        fn create_branch(&self, name: &str) {
-            self.execute(&["branch", name], format!("create branch {name}").as_str());
+        fn branch(&self, name: &str) {
+            self.execute(&["branch", name], format!("branch {name}").as_str());
         }
 
-        fn checkout_branch(&self, name: &str) {
-            self.execute(&["switch", name], format!("checkout branch {name}").as_str());
+        fn checkout(&self, name: &str) {
+            self.execute(&["checkout", name], format!("checkout {name}").as_str());
         }
 
         fn tag(&self, name: &str) {
@@ -297,76 +298,62 @@ mod tests {
         }
     }
 
+    #[fixture]
+    fn repo() -> TestRepo {
+        let repo = TestRepo::new();
+        repo.checkout("trunk");
+        repo
+    }
+
     fn assert_version_matches(test_repo: &TestRepo, expected: &str) {
         let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
         let expected = Version::parse(expected).unwrap();
         assert_eq!(version, expected);
     }
 
-    #[test]
-    fn test_trunk_versioning() {
-        let test_repo = TestRepo::new();
+    #[rstest]
+    fn test_trunk_versioning(repo: TestRepo) {
+        assert_version_matches(&repo, "0.1.0-rc.0");
 
-        test_repo.checkout_branch("trunk");
-        assert_version_matches(&test_repo, "0.1.0-rc.0");
-
-        test_repo.tag("v0.1.0");
-        assert_version_matches(&test_repo, "0.2.0-rc.1");
+        repo.tag("v0.1.0");
+        assert_version_matches(&repo, "0.2.0-rc.1");
     }
 
-    #[test]
-    fn test_release_branch_versioning() {
-        let test_repo = TestRepo::new();
-        test_repo.checkout_branch("trunk");
+    #[rstest]
+    fn test_release_branch_versioning(repo: TestRepo) {
+        repo.commit("commit on trunk");
+        repo.tag("v1.0.0");
 
-        test_repo.commit("commit on trunk");
-        test_repo.tag("v1.0.0");
+        repo.create_and_checkout("release/1.0.0");
+        repo.commit("release commit 1");
+        assert_version_matches(&repo, "1.0.1-rc.1");
 
-        test_repo.create_and_checkout_branch("release/1.0.0");
-        test_repo.commit("release commit 1");
-        assert_version_matches(&test_repo, "1.0.1-rc.1");
+        repo.tag("v1.0.1-rc.1");
+        repo.commit("release commit 2");
+        assert_version_matches(&repo, "1.0.1-rc.2");
 
-        test_repo.tag("v1.0.1-rc.1");
-        test_repo.commit("release commit 2");
-        assert_version_matches(&test_repo, "1.0.1-rc.2");
-
-        test_repo.tag("v1.0.1");
-        test_repo.commit("release commit 3");
-        assert_version_matches(&test_repo, "1.0.2-rc.1");
+        repo.tag("v1.0.1");
+        repo.commit("release commit 3");
+        assert_version_matches(&repo, "1.0.2-rc.1");
     }
 
-    #[test]
-    fn test_complex_workflow() {
-        let test_repo = TestRepo::new();
+    #[rstest]
+    fn test_complex_workflow(repo: TestRepo) {
+        repo.commit("trunk commit 1");
+        repo.tag("v0.1.0-rc.0");
+        repo.commit("trunk commit 2");
+        repo.tag("v0.1.0-rc.1");
+        repo.tag("v0.1.0");
+        repo.branch("release/1.0.0");
+        repo.commit("trunk commit 3");
+        assert_version_matches(&repo, "0.2.0-rc.1");
 
-        // Use the trunk branch that was created in TestRepo::new
-        test_repo.checkout_branch("trunk");
-
-        // First commits on trunk
-        test_repo.commit("trunk commit 1");
-        test_repo.tag("v0.1.0-rc.0");
-        test_repo.commit("trunk commit 2");
-        test_repo.tag("v0.1.0-rc.1");
-
-        // Tag a final release to make the next version increment the minor version
-        test_repo.tag("v0.1.0");
-
-        // Create the first release branch
-        test_repo.create_branch("release/1.0.0");
-
-        // Continue on the trunk
-        test_repo.commit("trunk commit 3");
-        assert_version_matches(&test_repo, "0.2.0-rc.1");
-
-        // Switch to the release branch
-        test_repo.checkout_branch("release/1.0.0");
-
-        // Commit on the release branch
-        test_repo.commit("release commit 1");
-        test_repo.tag("v1.0.0-rc.1");
-        test_repo.commit("release commit 2");
-        test_repo.tag("v1.0.0-rc.2");
-        test_repo.tag("v1.0.0");
-        assert_version_matches(&test_repo, "1.0.1-rc.1");
+        repo.checkout("release/1.0.0");
+        repo.commit("release commit 1");
+        repo.tag("v1.0.0-rc.1");
+        repo.commit("release commit 2");
+        repo.tag("v1.0.0-rc.2");
+        repo.tag("v1.0.0");
+        assert_version_matches(&repo, "1.0.1-rc.1");
     }
 }
