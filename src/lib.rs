@@ -415,20 +415,41 @@ mod tests {
 
         repo.checkout("trunk");
         repo.commit_and_assert("1.1.0-rc.2");
-        // assert_version_matches(&repo, "1.0.1-rc.2");
-        // repo.tag("v1.0.1");
-        // assert_version_matches(&repo, "1.0.1");
-        // repo.checkout("trunk");
-        // repo.commit("1.1.0-rc.2");
-        // assert_version_matches(&repo, "1.1.0-rc.2");
         repo.branch("release/1.1.0");
         repo.checkout("trunk");
         repo.commit_and_assert("1.2.0-rc.1");
 
         repo.checkout("release/1.1.0");
         repo.commit_and_assert("1.1.0-rc.3");
-        // repo.tag("v1.1.0");
-        // assert_version_matches(&repo, "1.1.0");
+        repo.commit_and_assert("1.1.0-rc.4");
+        repo.tag("v1.1.0");
+        assert_version(&repo, "1.1.0");
+        repo.commit_and_assert("1.1.1-rc.1");
+        repo.commit_and_assert("1.1.1-rc.2");
+        repo.tag("v1.1.1");
+        assert_version(&repo, "1.1.1");
+        
+        repo.checkout("trunk");
+        repo.commit_and_assert("1.2.0-rc.2");
+        repo.branch("release/1.2.0");
+        repo.checkout("trunk");
+        repo.commit_and_assert("1.3.0-rc.1");
+        
+        repo.checkout("release/1.2.0");
+        repo.commit_and_assert("1.2.0-rc.3");
+        repo.commit_and_assert("1.2.0-rc.4");
+        repo.tag("v1.2.0");
+        assert_version(&repo, "1.2.0");
+        repo.commit_and_assert("1.2.1-rc.1");
+        repo.commit_and_assert("1.2.1-rc.2");
+        repo.tag("v1.2.1");
+        assert_version(&repo, "1.2.1");
+        
+        repo.checkout("trunk");
+        repo.commit_and_assert("1.3.0-rc.2");
+        repo.tag("v1.3.0");
+        assert_version(&repo, "1.3.0");
+        repo.commit_and_assert("1.4.0-rc.1");
     }
 
     fn assert_version(repo: &TestRepo, expected: &str) {
