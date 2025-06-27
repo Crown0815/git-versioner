@@ -271,6 +271,11 @@ mod tests {
             Oid::from_str(&commit_hash).unwrap()
         }
 
+        fn create_and_checkout_branch(&self, name: &str) {
+            self.create_branch(name);
+            self.checkout_branch(name);
+        }
+
         fn create_branch(&self, name: &str) {
             self.execute(&["branch", name], format!("create branch {name}").as_str());
         }
@@ -292,72 +297,42 @@ mod tests {
         }
     }
 
+    fn assert_version_matches(test_repo: &TestRepo, expected: &str) {
+        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
+        let expected = Version::parse(expected).unwrap();
+        assert_eq!(version, expected);
+    }
+
     #[test]
     fn test_trunk_versioning() {
         let test_repo = TestRepo::new();
 
         test_repo.checkout_branch("trunk");
+        assert_version_matches(&test_repo, "0.1.0-rc.0");
 
-        // Calculate version - should be 0.1.0-rc.0 as no tags exist
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let expected = Version::parse("0.1.0-rc.0").unwrap();
-        assert_eq!(version, expected);
-
-        // Add a tag and check version calculation
         test_repo.tag("v0.1.0");
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let mut expected = Version::new(0, 2, 0);
-        expected.pre = Prerelease::new("rc.1").unwrap();
-        assert_eq!(version, expected);
+        assert_version_matches(&test_repo, "0.2.0-rc.1");
     }
 
     #[test]
     fn test_release_branch_versioning() {
         let test_repo = TestRepo::new();
-
-        // Use the trunk branch that was created in TestRepo::new
         test_repo.checkout_branch("trunk");
 
-        // First commit on trunk
-        test_repo.commit("Initial trunk commit");
+        test_repo.commit("commit on trunk");
         test_repo.tag("v1.0.0");
 
-        // Create a release branch
-        test_repo.create_branch("release/1.0.0");
-        test_repo.checkout_branch("release/1.0.0");
+        test_repo.create_and_checkout_branch("release/1.0.0");
+        test_repo.commit("release commit 1");
+        assert_version_matches(&test_repo, "1.0.1-rc.1");
 
-        // First commit on release branch
-        test_repo.commit("First release commit");
-
-        // Calculate version - should be 1.0.1-rc.1
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let mut expected = Version::new(1, 0, 1);
-        expected.pre = Prerelease::new("rc.1").unwrap();
-        assert_eq!(version, expected);
-
-        // Tag as rc.1
         test_repo.tag("v1.0.1-rc.1");
+        test_repo.commit("release commit 2");
+        assert_version_matches(&test_repo, "1.0.1-rc.2");
 
-        // Another commit
-        test_repo.commit("Second release commit");
-
-        // Calculate version - should be 1.0.1-rc.2
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let mut expected = Version::new(1, 0, 1);
-        expected.pre = Prerelease::new("rc.2").unwrap();
-        assert_eq!(version, expected);
-
-        // Tag as final release
         test_repo.tag("v1.0.1");
-
-        // Another commit
-        test_repo.commit("Third release commit");
-
-        // Calculate version - should be 1.0.2-rc.1
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let mut expected = Version::new(1, 0, 2);
-        expected.pre = Prerelease::new("rc.1").unwrap();
-        assert_eq!(version, expected);
+        test_repo.commit("release commit 3");
+        assert_version_matches(&test_repo, "1.0.2-rc.1");
     }
 
     #[test]
@@ -368,9 +343,9 @@ mod tests {
         test_repo.checkout_branch("trunk");
 
         // First commits on trunk
-        test_repo.commit("Initial trunk commit");
+        test_repo.commit("trunk commit 1");
         test_repo.tag("v0.1.0-rc.0");
-        test_repo.commit("Second trunk commit");
+        test_repo.commit("trunk commit 2");
         test_repo.tag("v0.1.0-rc.1");
 
         // Tag a final release to make the next version increment the minor version
@@ -380,28 +355,18 @@ mod tests {
         test_repo.create_branch("release/1.0.0");
 
         // Continue on the trunk
-        test_repo.commit("Third trunk commit");
-
-        // Calculate version on trunk - should be 0.2.0-rc.1
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let mut expected = Version::new(0, 2, 0);
-        expected.pre = Prerelease::new("rc.1").unwrap();
-        assert_eq!(version, expected);
+        test_repo.commit("trunk commit 3");
+        assert_version_matches(&test_repo, "0.2.0-rc.1");
 
         // Switch to the release branch
         test_repo.checkout_branch("release/1.0.0");
 
         // Commit on the release branch
-        test_repo.commit("First release commit");
+        test_repo.commit("release commit 1");
         test_repo.tag("v1.0.0-rc.1");
-        test_repo.commit("Second release commit");
+        test_repo.commit("release commit 2");
         test_repo.tag("v1.0.0-rc.2");
-        test_repo.tag("v1.0.0"); // Final release
-
-        // Calculate version on the release branch - should be 1.0.1-rc.1
-        let version = GitVersioner::calculate_version(&test_repo.path).unwrap();
-        let mut expected = Version::new(1, 0, 1);
-        expected.pre = Prerelease::new("rc.1").unwrap();
-        assert_eq!(version, expected);
+        test_repo.tag("v1.0.0");
+        assert_version_matches(&test_repo, "1.0.1-rc.1");
     }
 }
