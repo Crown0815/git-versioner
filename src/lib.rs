@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Prerelease, Version};
