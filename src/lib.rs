@@ -191,7 +191,7 @@ impl GitVersioner {
 
             Ok(new_version)
         } else {
-            let tag = self.find_latest_tag_base_for_release_branch(release_version)?.unwrap();
+            let tag = self.find_latest_tag_base_for_release_branch()?.unwrap();
 
             let head_id = repo.head()?.peel_to_commit()?.id();
             if head_id == tag.commit_id {
@@ -250,7 +250,7 @@ impl GitVersioner {
     }
 
     /// Find the latest version tag on a specific release branch
-    fn find_latest_tag_base_for_release_branch(&self, release_version: &Version) -> Result<Option<VersionSource>> {
+    fn find_latest_tag_base_for_release_branch(&self) -> Result<Option<VersionSource>> {
         let mut matching_tags = self
             .version_tags
             .iter()
