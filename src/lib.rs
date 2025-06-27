@@ -110,10 +110,10 @@ impl GitVersioner {
 
     /// Calculate version for trunk branch
     fn calculate_trunk_version(&self) -> Result<Version> {
-        // Find the latest version tag on trunk
+        // Find the latest version tag on the trunk
         let latest_trunk_tag = self.find_latest_trunk_tag()?;
 
-        // If we have a tag, increment the minor version and add rc.1
+        // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
             let mut new_version = tag.version.clone();
             new_version.minor += 1;
@@ -132,7 +132,7 @@ impl GitVersioner {
         }
     }
 
-    /// Calculate the version for release branch
+    /// Calculate the version for the release branch
     fn calculate_release_version(&self, release_version: &Version) -> Result<Version> {
         // Find the latest tag on this release branch
         let latest_release_tag = self.find_latest_release_tag(release_version)?;
@@ -140,7 +140,7 @@ impl GitVersioner {
         if let Some(tag) = latest_release_tag {
             let mut new_version = tag.version.clone();
 
-            // If the tag has no pre-release component, it's a released version
+            // If the tag has no pre-release component, it's a released version.
             // So we increment the patch version for the next release candidate
             if new_version.pre.is_empty() {
                 new_version.patch += 1;
@@ -162,7 +162,7 @@ impl GitVersioner {
 
     /// Find the latest version tag on the trunk branch
     fn find_latest_trunk_tag(&self) -> Result<Option<VersionTag>> {
-        // Get all tags that are reachable from trunk but don't have pre-release components
+        // Get all tags that are reachable from the trunk but don't have pre-release components
         let mut released_tags = self.version_tags.iter()
             .filter(|tag| tag.version.pre.is_empty())
             .cloned()
@@ -206,7 +206,7 @@ impl GitVersioner {
                tag.version.minor == version.minor && 
                tag.version.patch == version.patch {
 
-                // Check if it's a rc tag
+                // Check if the tag is a release candidate
                 if let Some(captures) = rc_regex.captures(tag.version.pre.as_str()) {
                     if let Some(rc_str) = captures.get(1) {
                         if let Ok(rc_num) = rc_str.as_str().parse::<u64>() {
@@ -316,7 +316,7 @@ mod tests {
         test_repo.commit("Initial trunk commit");
         test_repo.tag("v1.0.0");
 
-        // Create release branch
+        // Create a release branch
         test_repo.create_branch("release/1.0.0");
         test_repo.checkout_branch("release/1.0.0");
 
@@ -373,10 +373,10 @@ mod tests {
         // Tag a final release to make the next version increment the minor version
         test_repo.tag("v0.1.0");
 
-        // Create first release branch
+        // Create the first release branch
         test_repo.create_branch("release/1.0.0");
 
-        // Continue on trunk
+        // Continue on the trunk
         test_repo.commit("Third trunk commit");
 
         // Calculate version on trunk - should be 0.2.0-rc.1
@@ -386,17 +386,17 @@ mod tests {
         expected.pre = Prerelease::new("rc.1").unwrap();
         assert_eq!(version, expected);
 
-        // Switch to release branch
+        // Switch to the release branch
         test_repo.checkout_branch("release/1.0.0");
 
-        // Commit on release branch
+        // Commit on the release branch
         test_repo.commit("First release commit");
         test_repo.tag("v1.0.0-rc.1");
         test_repo.commit("Second release commit");
         test_repo.tag("v1.0.0-rc.2");
         test_repo.tag("v1.0.0"); // Final release
 
-        // Calculate version on release branch - should be 1.0.1-rc.1
+        // Calculate version on the release branch - should be 1.0.1-rc.1
         let versioner = GitVersioner::new(&test_repo.path).unwrap();
         let version = versioner.calculate_version().unwrap();
         let mut expected = Version::new(1, 0, 1);
