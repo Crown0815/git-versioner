@@ -33,7 +33,7 @@ impl GitVersioner {
         };
 
         match &versioner.branch_type {
-            BranchType::Trunk => versioner.calculate_trunk_version(&repo),
+            BranchType::Trunk => versioner.calculate_version_for_trunk(&repo),
             BranchType::Release(release_version) => versioner.calculate_release_version(release_version),
             BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
@@ -100,14 +100,22 @@ impl GitVersioner {
         Ok(version_tags)
     }
 
-    /// Calculate version for trunk branch
-    fn calculate_trunk_version(&self, repo: &Repository) -> Result<Version> {
+    fn calculate_version_for_trunk(&self, repo: &Repository) -> Result<Version> {
         let latest_trunk_tag = self.find_latest_trunk_tag()?;
 
 
         // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
-            Ok(tag.version)
+            let head_id = repo.head()?.peel_to_commit()?.id();
+            if head_id == tag.commit_id {
+                return Ok(tag.version);           
+            }
+            
+            let mut version = tag.version.clone();
+            version.minor += 1;
+            version.patch = 0;
+            version.pre = Prerelease::new("rc.1")?;
+            Ok(version)
         } else {
             let mut revwalk = repo.revwalk()?;
             revwalk.push_head()?;
@@ -344,6 +352,8 @@ mod tests {
         // repo.commit("1.0.0-rc.2");
         repo.tag("v1.0.0");
         assert_version_matches(&repo, "1.0.0");
+        repo.commit("1.1.0-rc.1");
+        assert_version_matches(&repo, "1.1.0-rc.1");
         // repo.commit("1.0.1-rc.1");
         // assert_version_matches(&repo, "1.0.1-rc.1");
         // repo.commit("1.0.1-rc.2");
