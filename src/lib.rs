@@ -134,9 +134,6 @@ impl GitVersioner {
         let latest_release_tag = self.find_latest_release_tag(release_version)?;
 
         if let Some(tag) = latest_release_tag {
-            let mut new_version = tag.version.clone();
-
-            new_version.patch += 1;
 
             let mut revwalk = repo.revwalk()?;
             revwalk.push_head()?;
@@ -150,6 +147,12 @@ impl GitVersioner {
                 count += 1;
             }
             
+            if (count == 0) {
+                return Ok(tag.version);
+            }
+
+            let mut new_version = tag.version.clone();
+            new_version.patch += 1;
             new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
 
             Ok(new_version)
@@ -367,6 +370,8 @@ mod tests {
         repo.checkout("release/1.0.0");
         repo.commit_and_assert("1.0.1-rc.1");
         repo.commit_and_assert("1.0.1-rc.2");
+        repo.tag("v1.0.1");
+        assert_version(&repo, "1.0.1");
         // assert_version_matches(&repo, "1.0.1-rc.2");
         // repo.tag("v1.0.1");
         // assert_version_matches(&repo, "1.0.1");
