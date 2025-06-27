@@ -165,7 +165,7 @@ impl GitVersioner {
     /// Calculate the version for the release branch
     fn calculate_release_version(&self, repo: &Repository, release_version: &Version) -> Result<Version> {
         // Find the latest tag on this release branch
-        let latest_release_tag = self.find_latest_release_tag(release_version)?;
+        let latest_release_tag = self.find_latest_tag_for_release_branch(release_version)?;
 
         if let Some(tag) = latest_release_tag {
 
@@ -191,9 +191,30 @@ impl GitVersioner {
 
             Ok(new_version)
         } else {
+            let tag = self.find_latest_tag_base_for_release_branch(release_version)?.unwrap();
+
+            let head_id = repo.head()?.peel_to_commit()?.id();
+            if head_id == tag.commit_id {
+                return Ok(tag.version);
+            }
+
+            let merge_base_oid = repo.merge_base(head_id, tag.commit_id)?;
+
+            let mut revwalk = repo.revwalk()?;
+            revwalk.push_head()?;
+            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+            let mut count = 0;
+            for oid in revwalk {
+                let oid = oid?;
+                if oid == merge_base_oid {
+                    break; // Stop counting when the specific commit is reached
+                }
+                count += 1;
+            }
+
             // No tags on this release branch yet, so use the release version with rc.1
             let mut version = release_version.clone();
-            version.pre = Prerelease::new("rc.1")?;
+            version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
         }
     }
@@ -212,8 +233,7 @@ impl GitVersioner {
     }
 
     /// Find the latest version tag on a specific release branch
-    fn find_latest_release_tag(&self, release_version: &Version) -> Result<Option<VersionSource>> {
-        // Get all tags that match the major.minor of the release version
+    fn find_latest_tag_for_release_branch(&self, release_version: &Version) -> Result<Option<VersionSource>> {
         let mut matching_tags = self
             .version_tags
             .iter()
@@ -225,10 +245,22 @@ impl GitVersioner {
             .cloned()
             .collect::<Vec<_>>();
 
-        // Sort by version (highest last)
         matching_tags.sort_by(|a, b| a.version.cmp(&b.version));
+        Ok(matching_tags.last().cloned())
+    }
 
-        // Return the highest version
+    /// Find the latest version tag on a specific release branch
+    fn find_latest_tag_base_for_release_branch(&self, release_version: &Version) -> Result<Option<VersionSource>> {
+        let mut matching_tags = self
+            .version_tags
+            .iter()
+            .filter(|tag| {
+                    tag.version.pre.is_empty()
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+
+        matching_tags.sort_by(|a, b| a.version.cmp(&b.version));
         Ok(matching_tags.last().cloned())
     }
 }
@@ -393,6 +425,8 @@ mod tests {
         repo.checkout("trunk");
         repo.commit_and_assert("1.2.0-rc.1");
 
+        repo.checkout("release/1.1.0");
+        repo.commit_and_assert("1.1.0-rc.3");
         // repo.tag("v1.1.0");
         // assert_version_matches(&repo, "1.1.0");
     }
