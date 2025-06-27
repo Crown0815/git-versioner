@@ -215,34 +215,6 @@ impl GitVersioner {
         // Return the highest version
         Ok(matching_tags.last().cloned())
     }
-
-    /// Get the next release candidate number for a version
-    fn get_next_rc_number(&self, version: &Version) -> Result<u64> {
-        // Find all rc tags for this version
-        let rc_regex = Regex::new(r"^rc\.(\d+)$")?;
-
-        let mut max_rc = 0;
-
-        for tag in &self.version_tags {
-            // Check if the tag matches our version's major.minor.patch
-            if tag.version.major == version.major
-                && tag.version.minor == version.minor
-                && tag.version.patch == version.patch
-            {
-                // Check if the tag is a release candidate
-                if let Some(captures) = rc_regex.captures(tag.version.pre.as_str()) {
-                    if let Some(rc_str) = captures.get(1) {
-                        if let Ok(rc_num) = rc_str.as_str().parse::<u64>() {
-                            max_rc = max_rc.max(rc_num);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Return the next rc number
-        Ok(max_rc + 1)
-    }
 }
 
 #[cfg(test)]
