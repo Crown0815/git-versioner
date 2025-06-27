@@ -107,15 +107,7 @@ impl GitVersioner {
 
         // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
-            let mut new_version = tag.version.clone();
-            new_version.minor += 1;
-            new_version.patch = 0;
-
-            // Check if we already have rc tags for this version
-            let rc_number = self.get_next_rc_number(&new_version)?;
-            new_version.pre = Prerelease::new(&format!("rc.{}", rc_number))?;
-
-            Ok(new_version)
+            Ok(tag.version)
         } else {
             let mut revwalk = repo.revwalk()?;
             revwalk.push_head()?;
@@ -242,7 +234,7 @@ mod tests {
         }
 
         fn initialize(&self) {
-            self.execute(&["init"], "initialize repository");
+            self.execute(&["init", "--initial-branch=trunk"], "initialize repository");
             self.execute(&["config", "user.name", "tester"], "configure user.name");
             self.execute(&["config", "user.email", "tester@test.com"], "configure user.email");
         }
@@ -268,6 +260,11 @@ mod tests {
             self.execute(&["tag", name], &format!("create tag {name}"));
         }
 
+        fn graph(&self) -> String {
+            let output = self.execute(&["log", "--graph", "--oneline", "--decorate"], "get commit graph");
+            String::from_utf8_lossy(&output.stdout).to_string()
+        }
+
         fn execute(&self, command: &[&str], description: &str) -> Output {
             std::process::Command::new("git")
                 .args(command)
@@ -281,7 +278,6 @@ mod tests {
     fn repo() -> TestRepo {
         let repo = TestRepo::new();
         repo.initialize();
-        repo.branch("trunk");
         repo
     }
 
@@ -346,8 +342,8 @@ mod tests {
         // repo.commit("1.0.0-rc.1");
         // assert_version_matches(&repo, "1.0.0-rc.1");
         // repo.commit("1.0.0-rc.2");
-        // repo.tag("v1.0.0");
-        // assert_version_matches(&repo, "1.0.0");
+        repo.tag("v1.0.0");
+        assert_version_matches(&repo, "1.0.0");
         // repo.commit("1.0.1-rc.1");
         // assert_version_matches(&repo, "1.0.1-rc.1");
         // repo.commit("1.0.1-rc.2");
@@ -364,6 +360,6 @@ mod tests {
     fn assert_version_matches(repo: &TestRepo, expected: &str) {
         let actual = GitVersioner::calculate_version(&repo.path).unwrap();
         let expected = Version::parse(expected).unwrap();
-        assert_eq!(actual, expected);
+        assert_eq!(actual, expected, "Expected version: {}, found: {}\n\n Git Graph:\n-------\n{}------", expected, actual, repo.graph());
     }
 }
