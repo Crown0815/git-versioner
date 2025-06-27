@@ -108,20 +108,34 @@ impl GitVersioner {
         if let Some(tag) = latest_trunk_tag {
             let head_id = repo.head()?.peel_to_commit()?.id();
             if head_id == tag.commit_id {
-                return Ok(tag.version);           
+                return Ok(tag.version);
             }
-            
+
+            let merge_base_oid = repo.merge_base(head_id, tag.commit_id)?;
+
+            let mut revwalk = repo.revwalk()?;
+            revwalk.push_head()?;
+            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+            let mut count = 0;
+            for oid in revwalk {
+                let oid = oid?;
+                if oid == merge_base_oid {
+                    break; // Stop counting when the specific commit is reached
+                }
+                count += 1;
+            }
+
             let mut version = tag.version.clone();
             version.minor += 1;
             version.patch = 0;
-            version.pre = Prerelease::new("rc.1")?;
+            version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
         } else {
             let mut revwalk = repo.revwalk()?;
             revwalk.push_head()?;
             revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
             let count = revwalk.count();
-            
+
             let mut version = Version::new(0, 1, 0);
             version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
@@ -146,7 +160,7 @@ impl GitVersioner {
                 }
                 count += 1;
             }
-            
+
             if (count == 0) {
                 return Ok(tag.version);
             }
@@ -278,7 +292,7 @@ mod tests {
         }
 
         fn graph(&self) -> String {
-            let output = self.execute(&["log", "--graph", "--oneline", "--decorate"], "get commit graph");
+            let output = self.execute(&["log", "--graph", "--oneline", "--all", "--decorate"], "get commit graph");
             String::from_utf8_lossy(&output.stdout).to_string()
         }
 
@@ -289,7 +303,7 @@ mod tests {
                 .output()
                 .expect(&format!("Failed to {description}"))
         }
-        
+
         fn commit_and_assert(&self, expected_version: &str) {
             self.commit(expected_version);
             assert_version(&self, expected_version);
@@ -365,13 +379,22 @@ mod tests {
         repo.tag("v1.0.0");
         assert_version(&repo, "1.0.0");
         repo.branch("release/1.0.0");
+
         repo.checkout("trunk");
         repo.commit_and_assert("1.1.0-rc.1");
+
         repo.checkout("release/1.0.0");
         repo.commit_and_assert("1.0.1-rc.1");
         repo.commit_and_assert("1.0.1-rc.2");
         repo.tag("v1.0.1");
         assert_version(&repo, "1.0.1");
+        repo.commit_and_assert("1.0.2-rc.1");
+        repo.commit_and_assert("1.0.2-rc.2");
+        repo.tag("v1.0.2");
+        assert_version(&repo, "1.0.2");
+
+        repo.checkout("trunk");
+        repo.commit_and_assert("1.1.0-rc.2");
         // assert_version_matches(&repo, "1.0.1-rc.2");
         // repo.tag("v1.0.1");
         // assert_version_matches(&repo, "1.0.1");
