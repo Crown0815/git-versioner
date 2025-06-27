@@ -34,12 +34,8 @@ impl GitVersioner {
 
         match &versioner.branch_type {
             BranchType::Trunk => versioner.calculate_trunk_version(),
-            BranchType::Release(release_version) => {
-                versioner.calculate_release_version(&release_version)
-            }
-            BranchType::Other(_) => Err(anyhow!(
-                "Version calculation not supported for non-trunk/release branches"
-            )),
+            BranchType::Release(release_version) => versioner.calculate_release_version(&release_version),
+            BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
     }
 
