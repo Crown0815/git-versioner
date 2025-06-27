@@ -258,13 +258,9 @@ mod tests {
             Oid::from_str(&commit_hash).unwrap()
         }
 
-        fn create_and_checkout(&self, name: &str) {
-            self.branch(name);
-            self.checkout(name);
-        }
-
         fn branch(&self, name: &str) {
             self.execute(&["branch", name], format!("branch {name}").as_str());
+            self.checkout(name);
         }
 
         fn checkout(&self, name: &str) {
@@ -289,7 +285,7 @@ mod tests {
         let repo = TestRepo::new();
         repo.initialize();
         repo.commit("initial commit");
-        repo.create_and_checkout("trunk");
+        repo.branch("trunk");
         repo
     }
 
@@ -306,7 +302,7 @@ mod tests {
         repo.commit("commit on trunk");
         repo.tag("v1.0.0");
 
-        repo.create_and_checkout("release/1.0.0");
+        repo.branch("release/1.0.0");
         repo.commit("release commit 1");
         assert_version_matches(&repo, "1.0.1-rc.1");
 
@@ -326,7 +322,7 @@ mod tests {
         repo.commit("trunk commit 2");
         repo.tag("v0.1.0-rc.1");
         repo.tag("v0.1.0");
-        repo.create_and_checkout("release/1.0.0");
+        repo.branch("release/1.0.0");
         repo.checkout("trunk");
         repo.commit("trunk commit 3");
         assert_version_matches(&repo, "0.2.0-rc.1");
