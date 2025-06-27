@@ -12,24 +12,25 @@ pub enum BranchType {
 }
 
 #[derive(Debug, Clone)]
-pub struct VersionTag {
+pub struct VersionSource {
     pub version: Version,
     pub commit_id: Oid,
 }
 
 pub struct GitVersioner {
     branch_type: BranchType,
-    version_tags: Vec<VersionTag>,
+    version_tags: Vec<VersionSource>,
+    version_branches: Vec<VersionSource>,
 }
 
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P) -> Result<Version> {
         let repo = Repository::open(repo_path)?;
-        let branch_type = Self::determine_current_branch_type(&repo)?;
-        let version_tags = Self::collect_version_tags(&repo)?;
+
         let versioner = Self {
-            branch_type,
-            version_tags,
+            branch_type: Self::determine_current_branch_type(&repo)?,
+            version_tags: Self::collect_version_tags(&repo)?,
+            version_branches: Self::collect_sources_from_release_branches(&repo)?
         };
 
         match &versioner.branch_type {
@@ -70,8 +71,7 @@ impl GitVersioner {
         Ok(BranchType::Other(branch_name.to_string()))
     }
 
-    /// Collect all version tags from the repository
-    fn collect_version_tags(repo: &Repository) -> Result<Vec<VersionTag>> {
+    fn collect_version_tags(repo: &Repository) -> Result<Vec<VersionSource>> {
         let mut version_tags = Vec::new();
 
         // Collect all tags
@@ -89,15 +89,35 @@ impl GitVersioner {
                         tag_obj.id()
                     };
 
-                    version_tags.push(VersionTag { version, commit_id });
+                    version_tags.push(VersionSource { version, commit_id });
                 }
             }
         }
 
-        // Sort tags by version
-        version_tags.sort_by(|a, b| a.version.cmp(&b.version));
-
         Ok(version_tags)
+    }
+
+    fn collect_sources_from_release_branches(repo: &Repository) -> Result<Vec<VersionSource>> {
+        let release_regex = Regex::new(r"^release/(\d+\.\d+\.\d+)$")?;
+
+        let mut matching_branches = Vec::new();
+
+        // Iterate over local branches
+        let branches = repo.branches(Some(git2::BranchType::Local))?;
+        for branch in branches {
+            let (branch, _) = branch?;
+            if let Some(name) = branch.name()? {
+                if let Some(captures) = release_regex.captures(name) {
+                    if let Some(version_str) = captures.get(1) {
+                        if let Ok(version) = Version::parse(version_str.as_str()) {
+                            matching_branches.push(VersionSource {version, commit_id: branch.get().peel_to_commit()?.id()});
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(matching_branches)
     }
 
     fn calculate_version_for_trunk(&self, repo: &Repository) -> Result<Version> {
@@ -179,10 +199,8 @@ impl GitVersioner {
     }
 
     /// Find the latest version tag on the trunk branch
-    fn find_latest_trunk_tag(&self) -> Result<Option<VersionTag>> {
-        // Get all tags that are reachable from the trunk but don't have pre-release components
-        let mut released_tags = self
-            .version_tags
+    fn find_latest_trunk_tag(&self) -> Result<Option<VersionSource>> {
+        let mut released_tags = [&self.version_tags[..], &self.version_branches[..]].concat()
             .iter()
             .filter(|tag| tag.version.pre.is_empty())
             .cloned()
@@ -190,13 +208,11 @@ impl GitVersioner {
 
         // Sort by version (highest last)
         released_tags.sort_by(|a, b| a.version.cmp(&b.version));
-
-        // Return the highest version
         Ok(released_tags.last().cloned())
     }
 
     /// Find the latest version tag on a specific release branch
-    fn find_latest_release_tag(&self, release_version: &Version) -> Result<Option<VersionTag>> {
+    fn find_latest_release_tag(&self, release_version: &Version) -> Result<Option<VersionSource>> {
         // Get all tags that match the major.minor of the release version
         let mut matching_tags = self
             .version_tags
@@ -373,6 +389,10 @@ mod tests {
         // repo.checkout("trunk");
         // repo.commit("1.1.0-rc.2");
         // assert_version_matches(&repo, "1.1.0-rc.2");
+        repo.branch("release/1.1.0");
+        repo.checkout("trunk");
+        repo.commit_and_assert("1.2.0-rc.1");
+
         // repo.tag("v1.1.0");
         // assert_version_matches(&repo, "1.1.0");
     }
