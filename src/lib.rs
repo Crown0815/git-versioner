@@ -335,6 +335,11 @@ mod tests {
             self.commit(expected_version);
             assert_version(&self, expected_version);
         }
+
+        fn tag_and_assert(&self, prefix: &str, expected_version: &str) {
+            self.tag(&format!("{}{}", prefix, expected_version));
+            assert_version(&self, expected_version);
+        }
     }
 
     #[fixture]
@@ -349,8 +354,7 @@ mod tests {
         repo.commit_and_assert("0.1.0-rc.1");
         repo.commit_and_assert("0.1.0-rc.2");
         repo.tag("v1.0.0-rc.2"); // ignored
-        repo.tag("v1.0.0");
-        assert_version(&repo, "1.0.0");
+        repo.tag_and_assert("v", "1.0.0");
         repo.branch("release/1.0.0");
 
         repo.checkout("trunk");
@@ -359,12 +363,10 @@ mod tests {
         repo.checkout("release/1.0.0");
         repo.commit_and_assert("1.0.1-rc.1");
         repo.commit_and_assert("1.0.1-rc.2");
-        repo.tag("v1.0.1");
-        assert_version(&repo, "1.0.1");
+        repo.tag_and_assert("v", "1.0.1");
         repo.commit_and_assert("1.0.2-rc.1");
         repo.commit_and_assert("1.0.2-rc.2");
-        repo.tag("v1.0.2");
-        assert_version(&repo, "1.0.2");
+        repo.tag_and_assert("v", "1.0.2");
 
         repo.checkout("trunk");
         repo.commit_and_assert("1.1.0-rc.2");
@@ -375,12 +377,10 @@ mod tests {
         repo.checkout("release/1.1.0");
         repo.commit_and_assert("1.1.0-rc.3");
         repo.commit_and_assert("1.1.0-rc.4");
-        repo.tag("v1.1.0");
-        assert_version(&repo, "1.1.0");
+        repo.tag_and_assert("v", "1.1.0");
         repo.commit_and_assert("1.1.1-rc.1");
         repo.commit_and_assert("1.1.1-rc.2");
-        repo.tag("v1.1.1");
-        assert_version(&repo, "1.1.1");
+        repo.tag_and_assert("v", "1.1.1");
 
         repo.checkout("trunk");
         repo.commit_and_assert("1.2.0-rc.2");
@@ -391,17 +391,14 @@ mod tests {
         repo.checkout("release/1.2.0");
         repo.commit_and_assert("1.2.0-rc.3");
         repo.commit_and_assert("1.2.0-rc.4");
-        repo.tag("v1.2.0");
-        assert_version(&repo, "1.2.0");
+        repo.tag_and_assert("v", "1.2.0");
         repo.commit_and_assert("1.2.1-rc.1");
         repo.commit_and_assert("1.2.1-rc.2");
-        repo.tag("v1.2.1");
-        assert_version(&repo, "1.2.1");
+        repo.tag_and_assert("v", "1.2.1");
 
         repo.checkout("trunk");
         repo.commit_and_assert("1.3.0-rc.2");
-        repo.tag("v1.3.0");
-        assert_version(&repo, "1.3.0");
+        repo.tag_and_assert("v", "1.3.0");
         repo.commit_and_assert("1.4.0-rc.1");
     }
 
@@ -423,8 +420,7 @@ mod tests {
         #[values("v", "V", "")] prefix: &str,
     ) {
         repo.commit_and_assert("0.1.0-rc.1");
-        repo.tag(&format!("{}1.0.0",  prefix));
-        assert_version(&repo, "1.0.0");
+        repo.tag_and_assert(prefix, "1.0.0");
     }
 
     #[rstest]
