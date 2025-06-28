@@ -22,16 +22,21 @@ pub struct GitVersioner {
     version_branches: Vec<VersionSource>,
 }
 
+pub struct GitVersionConfig {
+    pub trunk_branch_pattern: Regex,
+}
+
 pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
         let repo = Repository::open(repo_path)?;
 
-        let trunk_branch_regex = Regex::new(trunk_branch_regex)?;
+        let trunk_branch_pattern = Regex::new(trunk_branch_regex)?;
+        let config = GitVersionConfig { trunk_branch_pattern };
 
         let branch_type = match repo.head() {
-            Ok(head) => Self::determine_branch_type_from_regex(head, &trunk_branch_regex)?,
+            Ok(head) => Self::determine_branch_type(head, &config.trunk_branch_pattern)?,
             Err(error) => return Err(anyhow!("Failed to get HEAD: {}", error)),
         };
 
@@ -47,7 +52,7 @@ impl GitVersioner {
         }
     }
 
-    fn determine_branch_type_from_regex(reference: Reference, trunk_regex: &Regex) -> Result<BranchType> {
+    fn determine_branch_type(reference: Reference, trunk_regex: &Regex) -> Result<BranchType> {
         if !reference.is_branch() {
             return Err(anyhow!("HEAD is not on a branch"));
         }
