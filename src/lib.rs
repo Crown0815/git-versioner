@@ -23,8 +23,8 @@ pub struct GitVersioner {
 }
 
 pub struct GitVersionConfig {
-
     pub trunk_branch_pattern: Regex,
+    pub version_tag_prefix: String,
     pub repo: Repository,
 }
 
@@ -32,9 +32,11 @@ pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
-        let repo = Repository::open(repo_path)?;
-        let trunk_branch_pattern = Regex::new(trunk_branch_regex)?;
-        let config = GitVersionConfig { trunk_branch_pattern, repo };
+        let config = GitVersionConfig {
+            trunk_branch_pattern: Regex::new(trunk_branch_regex)?,
+            version_tag_prefix: "[vV]?".to_string(),
+            repo: Repository::open(repo_path)?,
+        };
 
         let branch_type = match config.repo.head() {
             Ok(head) => Self::determine_branch_type(head, &config.trunk_branch_pattern)?,
@@ -42,7 +44,7 @@ impl GitVersioner {
         };
 
         let versioner = Self {
-            version_tags: Self::collect_version_tags(&config.repo)?,
+            version_tags: Self::collect_version_tags(&config)?,
             version_branches: Self::collect_sources_from_release_branches(&config.repo)?,
         };
 
@@ -78,18 +80,16 @@ impl GitVersioner {
         Ok(BranchType::Other(branch_name.to_string()))
     }
 
-    fn collect_version_tags(repo: &Repository) -> Result<Vec<VersionSource>> {
+    fn collect_version_tags(config: &GitVersionConfig) -> Result<Vec<VersionSource>> {
         let mut version_tags = Vec::new();
 
-        // Collect all tags
-        let tag_names = repo.tag_names(None)?;
+        let tag_names = config.repo.tag_names(None)?;
+        let regex = Regex::new(&format!("^{}", &config.version_tag_prefix))?;
 
         for tag_name in tag_names.iter().flatten() {
-            // Try to parse the tag as a version
-            let version_str = tag_name.trim_start_matches('v');
-            if let Ok(version) = Version::parse(version_str) {
-                // Get the tag object
-                if let Ok(tag_obj) = repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
+            let version_str = regex.replacen(tag_name, 1, "");
+            if let Ok(version) = Version::parse(&version_str) {
+                if let Ok(tag_obj) = config.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
                     let commit_id = if let Some(tag) = tag_obj.as_tag() {
                         tag.target_id()
                     } else {
@@ -415,6 +415,26 @@ mod tests {
         assert!(result.is_err(), "Expected error with default trunk regex, but got: {:?}", result);
 
         assert_version_with_custom_trunk(&repo, "0.1.0-rc.1", r"^custom-trunk$");
+    }
+
+    #[rstest]
+    fn test_tags_with_matching_version_tag_prefix_are_considered(
+        repo: TestRepo,
+        #[values("v", "V", "")] prefix: &str,
+    ) {
+        repo.commit_and_assert("0.1.0-rc.1");
+        repo.tag(&format!("{}1.0.0",  prefix));
+        assert_version(&repo, "1.0.0");
+    }
+
+    #[rstest]
+    fn test_tags_without_matching_version_tag_prefix_are_ignored(
+        repo: TestRepo,
+        #[values("a", "x", "p", "vv", "Vv")] prefix: &str,
+    ) {
+        repo.commit_and_assert("0.1.0-rc.1");
+        repo.tag(&format!("{}1.0.0",  prefix));
+        assert_version(&repo, "0.1.0-rc.1");
     }
 
     fn assert_version(repo: &TestRepo, expected: &str) {
