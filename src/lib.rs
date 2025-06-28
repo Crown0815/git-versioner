@@ -23,7 +23,9 @@ pub struct GitVersioner {
 }
 
 pub struct GitVersionConfig {
+
     pub trunk_branch_pattern: Regex,
+    pub repo: Repository,
 }
 
 pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
@@ -31,23 +33,22 @@ pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
         let repo = Repository::open(repo_path)?;
-
         let trunk_branch_pattern = Regex::new(trunk_branch_regex)?;
-        let config = GitVersionConfig { trunk_branch_pattern };
+        let config = GitVersionConfig { trunk_branch_pattern, repo };
 
-        let branch_type = match repo.head() {
+        let branch_type = match config.repo.head() {
             Ok(head) => Self::determine_branch_type(head, &config.trunk_branch_pattern)?,
             Err(error) => return Err(anyhow!("Failed to get HEAD: {}", error)),
         };
 
         let versioner = Self {
-            version_tags: Self::collect_version_tags(&repo)?,
-            version_branches: Self::collect_sources_from_release_branches(&repo)?,
+            version_tags: Self::collect_version_tags(&config.repo)?,
+            version_branches: Self::collect_sources_from_release_branches(&config.repo)?,
         };
 
         match branch_type {
-            BranchType::Trunk => versioner.calculate_version_for_trunk(&repo),
-            BranchType::Release(version) => versioner.calculate_release_version(&repo, &version),
+            BranchType::Trunk => versioner.calculate_version_for_trunk(&config.repo),
+            BranchType::Release(version) => versioner.calculate_release_version(&config.repo, &version),
             BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
     }
