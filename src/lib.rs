@@ -22,7 +22,7 @@ pub struct GitVersioner {
     version_branches: Vec<VersionSource>,
 }
 
-pub const TRUNK_BRANCH_REGEX: &'static str = r"^(trunk|main|master)$";
+pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
