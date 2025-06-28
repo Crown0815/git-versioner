@@ -12,9 +12,9 @@ pub enum BranchType {
 }
 
 #[derive(Debug, Clone)]
-pub struct VersionSource {
-    pub version: Version,
-    pub commit_id: Oid,
+struct VersionSource {
+    version: Version,
+    commit_id: Oid,
 }
 
 pub struct GitVersioner {
