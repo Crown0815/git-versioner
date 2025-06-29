@@ -67,25 +67,28 @@ impl GitVersioner {
         if !reference.is_branch() {
             return Err(anyhow!("HEAD is not on a branch"));
         }
+        
+        match reference.shorthand() {
+            None => Err(anyhow!("Name for branch could not be determined")),
+            Some(name) => Ok(self.determine_branch_type_by_name(name)),
+        }
+    }
 
-        let branch_name = reference.shorthand().unwrap_or("unknown");
-
-        // Use the provided trunk branch regex
-        if self.config.trunk_pattern.is_match(branch_name) {
-            return Ok(BranchType::Trunk);
+    fn determine_branch_type_by_name(&self, name: &str) -> BranchType {
+        if self.config.trunk_pattern.is_match(name) {
+            return BranchType::Trunk;
         }
 
-        // Check if it's a release branch
-        let release_regex = Regex::new(r"^release/(\d+\.\d+\.\d+)$")?;
-        if let Some(captures) = release_regex.captures(branch_name) {
+        let release_regex = Regex::new(r"^release/(\d+\.\d+\.\d+)$").unwrap();
+        if let Some(captures) = release_regex.captures(name) {
             if let Some(version_str) = captures.get(1) {
                 if let Ok(version) = Version::parse(version_str.as_str()) {
-                    return Ok(BranchType::Release(version));
+                    return BranchType::Release(version);
                 }
             }
         }
-
-        Ok(BranchType::Other(branch_name.to_string()))
+        
+        BranchType::Other(name.to_string())
     }
 
     fn collect_version_tags(config: &GitVersionConfig) -> Result<Vec<VersionSource>> {
