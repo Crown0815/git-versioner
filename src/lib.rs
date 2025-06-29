@@ -39,15 +39,15 @@ impl GitVersioner {
             repo: Repository::open(repo_path)?,
         };
 
-        let branch_type = match config.repo.head() {
-            Ok(head) => Self::determine_branch_type(head, &config.trunk_branch_pattern)?,
-            Err(error) => return Err(anyhow!("Failed to get HEAD: {}", error)),
-        };
-
         let versioner = Self {
             version_tags: Self::collect_version_tags(&config)?,
             version_branches: Self::collect_sources_from_release_branches(&config.repo)?,
             config,
+        };
+
+        let branch_type = match versioner.config.repo.head() {
+            Ok(head) => Self::determine_branch_type(head, &versioner.config.trunk_branch_pattern)?,
+            Err(error) => return Err(anyhow!("Failed to get HEAD: {}", error)),
         };
 
         match branch_type {
