@@ -24,7 +24,7 @@ pub struct GitVersioner {
 }
 
 pub struct GitVersionConfig {
-    pub trunk_branch_pattern: Regex,
+    pub trunk_pattern: Regex,
     pub version_tag_prefix: String,
     pub repo: Repository,
 }
@@ -34,7 +34,7 @@ pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
         let config = GitVersionConfig {
-            trunk_branch_pattern: Regex::new(trunk_branch_regex)?,
+            trunk_pattern: Regex::new(trunk_branch_regex)?,
             version_tag_prefix: "[vV]?".to_string(),
             repo: Repository::open(repo_path)?,
         };
@@ -45,19 +45,25 @@ impl GitVersioner {
             config,
         };
 
-        let branch_type = match versioner.config.repo.head() {
-            Ok(head) => Self::determine_branch_type(head, &versioner.config.trunk_branch_pattern)?,
-            Err(error) => return Err(anyhow!("Failed to get HEAD: {}", error)),
-        };
-
-        match branch_type {
+        match versioner.determine_branch_at_head()? {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
             BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
     }
 
-    fn determine_branch_type(reference: Reference, trunk_regex: &Regex) -> Result<BranchType> {
+    fn determine_branch_at_head(&self) -> Result<BranchType> {
+        match self.head() {
+            Ok(head) => self.determine_branch_at(head),
+            Err(error) => Err(anyhow!("Failed to get HEAD: {}", error)),
+        }
+    }
+
+    fn head(&self) -> Result<Reference, git2::Error> {
+        self.config.repo.head()
+    }
+
+    fn determine_branch_at(&self, reference: Reference) -> Result<BranchType> {
         if !reference.is_branch() {
             return Err(anyhow!("HEAD is not on a branch"));
         }
@@ -65,7 +71,7 @@ impl GitVersioner {
         let branch_name = reference.shorthand().unwrap_or("unknown");
 
         // Use the provided trunk branch regex
-        if trunk_regex.is_match(branch_name) {
+        if self.config.trunk_pattern.is_match(branch_name) {
             return Ok(BranchType::Trunk);
         }
 
