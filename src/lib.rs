@@ -20,6 +20,7 @@ struct VersionSource {
 pub struct GitVersioner {
     version_tags: Vec<VersionSource>,
     version_branches: Vec<VersionSource>,
+    config: GitVersionConfig,
 }
 
 pub struct GitVersionConfig {
@@ -46,11 +47,12 @@ impl GitVersioner {
         let versioner = Self {
             version_tags: Self::collect_version_tags(&config)?,
             version_branches: Self::collect_sources_from_release_branches(&config.repo)?,
+            config,
         };
 
         match branch_type {
-            BranchType::Trunk => versioner.calculate_version_for_trunk(&config.repo),
-            BranchType::Release(version) => versioner.calculate_release_version(&config.repo, &version),
+            BranchType::Trunk => versioner.calculate_version_for_trunk(),
+            BranchType::Release(version) => versioner.calculate_version_for_release(&version),
             BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
         }
     }
@@ -127,9 +129,9 @@ impl GitVersioner {
         Ok(matching_branches)
     }
 
-    fn calculate_version_for_trunk(&self, repo: &Repository) -> Result<Version> {
+    fn calculate_version_for_trunk(&self) -> Result<Version> {
         let latest_trunk_tag = self.find_latest_trunk_tag()?;
-
+        let repo = &self.config.repo;
 
         // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
@@ -169,11 +171,10 @@ impl GitVersioner {
         }
     }
 
-    /// Calculate the version for the release branch
-    fn calculate_release_version(&self, repo: &Repository, release_version: &Version) -> Result<Version> {
-        // Find the latest tag on this release branch
+    fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
         let latest_release_tag = self.find_latest_tag_for_release_branch(release_version)?;
-
+        let repo = &self.config.repo;
+        
         if let Some(tag) = latest_release_tag {
 
             let mut revwalk = repo.revwalk()?;
