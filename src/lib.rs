@@ -21,7 +21,8 @@ pub struct GitVersioner {
     version_tags: Vec<VersionSource>,
     version_branches: Vec<VersionSource>,
     config: GitVersionConfig,
-    pub trunk_pattern: Regex,
+    trunk_pattern: Regex,
+    release_pattern: Regex,
 }
 
 pub struct GitVersionConfig {
@@ -43,6 +44,7 @@ impl GitVersioner {
             version_branches: Self::collect_sources_from_release_branches(&config.repo)?,
             config,
             trunk_pattern: Regex::new(trunk_branch_regex)?,
+            release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
         };
 
         match versioner.determine_branch_at_head()? {
@@ -67,7 +69,7 @@ impl GitVersioner {
         if !reference.is_branch() {
             return Err(anyhow!("HEAD is not on a branch"));
         }
-        
+
         match reference.shorthand() {
             None => Err(anyhow!("Name for branch could not be determined")),
             Some(name) => Ok(self.determine_branch_type_by_name(name)),
@@ -79,15 +81,14 @@ impl GitVersioner {
             return BranchType::Trunk;
         }
 
-        let release_regex = Regex::new(r"^release/(\d+\.\d+\.\d+)$").unwrap();
-        if let Some(captures) = release_regex.captures(name) {
+        if let Some(captures) = self.release_pattern.captures(name) {
             if let Some(version_str) = captures.get(1) {
                 if let Ok(version) = Version::parse(version_str.as_str()) {
                     return BranchType::Release(version);
                 }
             }
         }
-        
+
         BranchType::Other(name.to_string())
     }
 
