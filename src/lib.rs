@@ -18,7 +18,6 @@ struct VersionSource {
 }
 
 pub struct GitVersioner {
-    version_tags: Vec<VersionSource>,
     config: GitVersionConfig,
     trunk_pattern: Regex,
     release_pattern: Regex,
@@ -39,7 +38,6 @@ impl GitVersioner {
         };
 
         let versioner = Self {
-            version_tags: Self::collect_version_tags(&config)?,
             config,
             trunk_pattern: Regex::new(trunk_branch_regex)?,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
@@ -90,16 +88,16 @@ impl GitVersioner {
         BranchType::Other(name.to_string())
     }
 
-    fn collect_version_tags(config: &GitVersionConfig) -> Result<Vec<VersionSource>> {
+    fn collect_version_tags(&self) -> Result<Vec<VersionSource>> {
         let mut version_tags = Vec::new();
 
-        let tag_names = config.repo.tag_names(None)?;
-        let regex = Regex::new(&format!("^{}", &config.version_tag_prefix))?;
+        let tag_names = self.config.repo.tag_names(None)?;
+        let regex = Regex::new(&format!("^{}", &self.config.version_tag_prefix))?;
 
         for tag_name in tag_names.iter().flatten() {
             let version_str = regex.replacen(tag_name, 1, "");
             if let Ok(version) = Version::parse(&version_str) {
-                if let Ok(tag_obj) = config.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
+                if let Ok(tag_obj) = self.config.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
                     let commit_id = if let Some(tag) = tag_obj.as_tag() {
                         tag.target_id()
                     } else {
@@ -235,7 +233,7 @@ impl GitVersioner {
 
     /// Find the latest version tag on the trunk branch
     fn find_latest_trunk_tag(&self) -> Result<Option<VersionSource>> {
-        let mut released_tags = [&self.version_tags[..], &self.collect_sources_from_release_branches()?[..]].concat()
+        let mut released_tags = [&self.collect_version_tags()?[..], &self.collect_sources_from_release_branches()?[..]].concat()
             .iter()
             .filter(|tag| tag.version.pre.is_empty())
             .cloned()
@@ -249,7 +247,7 @@ impl GitVersioner {
     /// Find the latest version tag on a specific release branch
     fn find_latest_tag_for_release_branch(&self, release_version: &Version) -> Result<Option<VersionSource>> {
         let mut matching_tags = self
-            .version_tags
+            .collect_version_tags()?
             .iter()
             .filter(|tag| {
                 tag.version.major == release_version.major
@@ -266,7 +264,7 @@ impl GitVersioner {
     /// Find the latest version tag on a specific release branch
     fn find_latest_tag_base_for_release_branch(&self) -> Result<Option<VersionSource>> {
         let mut matching_tags = self
-            .version_tags
+            .collect_version_tags()?
             .iter()
             .filter(|tag| {
                     tag.version.pre.is_empty()
