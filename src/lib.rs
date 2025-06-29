@@ -19,7 +19,6 @@ struct VersionSource {
 
 pub struct GitVersioner {
     version_tags: Vec<VersionSource>,
-    version_branches: Vec<VersionSource>,
     config: GitVersionConfig,
     trunk_pattern: Regex,
     release_pattern: Regex,
@@ -41,7 +40,6 @@ impl GitVersioner {
 
         let versioner = Self {
             version_tags: Self::collect_version_tags(&config)?,
-            version_branches: Self::collect_sources_from_release_branches(&config.repo)?,
             config,
             trunk_pattern: Regex::new(trunk_branch_regex)?,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
@@ -116,17 +114,15 @@ impl GitVersioner {
         Ok(version_tags)
     }
 
-    fn collect_sources_from_release_branches(repo: &Repository) -> Result<Vec<VersionSource>> {
-        let release_regex = Regex::new(r"^release/(\d+\.\d+\.\d+)$")?;
-
+    fn collect_sources_from_release_branches(&self) -> Result<Vec<VersionSource>> {
         let mut matching_branches = Vec::new();
 
         // Iterate over local branches
-        let branches = repo.branches(Some(git2::BranchType::Local))?;
+        let branches = self.config.repo.branches(Some(git2::BranchType::Local))?;
         for branch in branches {
             let (branch, _) = branch?;
             if let Some(name) = branch.name()? {
-                if let Some(captures) = release_regex.captures(name) {
+                if let Some(captures) = self.release_pattern.captures(name) {
                     if let Some(version_str) = captures.get(1) {
                         if let Ok(version) = Version::parse(version_str.as_str()) {
                             matching_branches.push(VersionSource {version, commit_id: branch.get().peel_to_commit()?.id()});
@@ -239,7 +235,7 @@ impl GitVersioner {
 
     /// Find the latest version tag on the trunk branch
     fn find_latest_trunk_tag(&self) -> Result<Option<VersionSource>> {
-        let mut released_tags = [&self.version_tags[..], &self.version_branches[..]].concat()
+        let mut released_tags = [&self.version_tags[..], &self.collect_sources_from_release_branches()?[..]].concat()
             .iter()
             .filter(|tag| tag.version.pre.is_empty())
             .cloned()
