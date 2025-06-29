@@ -21,12 +21,12 @@ pub struct GitVersioner {
     version_tags: Vec<VersionSource>,
     version_branches: Vec<VersionSource>,
     config: GitVersionConfig,
+    pub trunk_pattern: Regex,
 }
 
 pub struct GitVersionConfig {
-    pub trunk_pattern: Regex,
-    pub version_tag_prefix: String,
     pub repo: Repository,
+    pub version_tag_prefix: String,
 }
 
 pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
@@ -34,15 +34,15 @@ pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
         let config = GitVersionConfig {
-            trunk_pattern: Regex::new(trunk_branch_regex)?,
-            version_tag_prefix: "[vV]?".to_string(),
             repo: Repository::open(repo_path)?,
+            version_tag_prefix: "[vV]?".to_string(),
         };
 
         let versioner = Self {
             version_tags: Self::collect_version_tags(&config)?,
             version_branches: Self::collect_sources_from_release_branches(&config.repo)?,
             config,
+            trunk_pattern: Regex::new(trunk_branch_regex)?,
         };
 
         match versioner.determine_branch_at_head()? {
@@ -75,7 +75,7 @@ impl GitVersioner {
     }
 
     fn determine_branch_type_by_name(&self, name: &str) -> BranchType {
-        if self.config.trunk_pattern.is_match(name) {
+        if self.trunk_pattern.is_match(name) {
             return BranchType::Trunk;
         }
 
