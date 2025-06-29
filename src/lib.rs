@@ -18,29 +18,21 @@ struct VersionSource {
 }
 
 pub struct GitVersioner {
-    config: GitVersionConfig,
+    repo: Repository,
     trunk_pattern: Regex,
     release_pattern: Regex,
-}
-
-pub struct GitVersionConfig {
-    pub repo: Repository,
-    pub version_tag_prefix: String,
+    version_tag_pattern: Regex,
 }
 
 pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
-        let config = GitVersionConfig {
-            repo: Repository::open(repo_path)?,
-            version_tag_prefix: "[vV]?".to_string(),
-        };
-
         let versioner = Self {
-            config,
+            repo: Repository::open(repo_path)?,
             trunk_pattern: Regex::new(trunk_branch_regex)?,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
+            version_tag_pattern: Regex::new("^[vV]?")?,
         };
 
         match versioner.determine_branch_at_head()? {
@@ -58,7 +50,7 @@ impl GitVersioner {
     }
 
     fn head(&self) -> Result<Reference, git2::Error> {
-        self.config.repo.head()
+        self.repo.head()
     }
 
     fn determine_branch_at(&self, reference: Reference) -> Result<BranchType> {
@@ -91,13 +83,12 @@ impl GitVersioner {
     fn collect_version_tags(&self) -> Result<Vec<VersionSource>> {
         let mut version_tags = Vec::new();
 
-        let tag_names = self.config.repo.tag_names(None)?;
-        let regex = Regex::new(&format!("^{}", &self.config.version_tag_prefix))?;
+        let tag_names = self.repo.tag_names(None)?;
 
         for tag_name in tag_names.iter().flatten() {
-            let version_str = regex.replacen(tag_name, 1, "");
+            let version_str = self.version_tag_pattern.replacen(tag_name, 1, "");
             if let Ok(version) = Version::parse(&version_str) {
-                if let Ok(tag_obj) = self.config.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
+                if let Ok(tag_obj) = self.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
                     let commit_id = if let Some(tag) = tag_obj.as_tag() {
                         tag.target_id()
                     } else {
@@ -116,7 +107,7 @@ impl GitVersioner {
         let mut matching_branches = Vec::new();
 
         // Iterate over local branches
-        let branches = self.config.repo.branches(Some(git2::BranchType::Local))?;
+        let branches = self.repo.branches(Some(git2::BranchType::Local))?;
         for branch in branches {
             let (branch, _) = branch?;
             if let Some(name) = branch.name()? {
@@ -135,7 +126,7 @@ impl GitVersioner {
 
     fn calculate_version_for_trunk(&self) -> Result<Version> {
         let latest_trunk_tag = self.find_latest_trunk_tag()?;
-        let repo = &self.config.repo;
+        let repo = &self.repo;
 
         // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
@@ -177,7 +168,7 @@ impl GitVersioner {
 
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
         let latest_release_tag = self.find_latest_tag_for_release_branch(release_version)?;
-        let repo = &self.config.repo;
+        let repo = &self.repo;
         
         if let Some(tag) = latest_release_tag {
 
