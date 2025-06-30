@@ -138,6 +138,48 @@ fn test_full_workflow(repo: TestRepo) {
 }
 
 #[rstest]
+fn test_full_workflow_with_feature_branches(repo: TestRepo) {
+    repo.commit("0.1.0-rc.1");
+    repo.branch("feature/feature1");
+    repo.commit_and_assert("0.1.0-feature1.1");
+
+    repo.checkout("trunk");
+    repo.merge_and_assert("feature/feature1", "0.1.0-rc.3");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.branch("release/1.0.0");
+
+    repo.checkout("trunk");
+    repo.branch("feature/feature2");
+    repo.commit_and_assert("1.1.0-feature2.1");
+    repo.commit_and_assert("1.1.0-feature2.2");
+
+    repo.checkout("trunk");
+    repo.merge_and_assert("feature/feature2", "1.1.0-rc.3");
+
+    repo.checkout("release/1.0.0");
+    repo.commit_and_assert("1.0.1-rc.1");
+    repo.branch("feature/fix1");
+    repo.commit_and_assert("1.0.1-fix1.1");
+    repo.commit_and_assert("1.0.1-fix1.2");
+    repo.checkout("release/1.0.0");
+    repo.merge_and_assert("feature/fix1", "1.0.1-rc.4");
+
+    repo.checkout("trunk");
+    repo.branch("feature/feature3-1");
+    repo.commit_and_assert("1.1.0-feature3-1.1");
+    repo.checkout("trunk");
+    repo.branch("feature/feature3-2");
+    repo.commit_and_assert("1.1.0-feature3-2.1");
+    repo.commit_and_assert("1.1.0-feature3-2.2");
+    repo.checkout("feature/feature3-1");
+    repo.commit_and_assert("1.1.0-feature3-1.2");
+
+    repo.checkout("trunk");
+    repo.merge_and_assert("feature/feature3-2", "1.1.0-rc.6");
+    repo.merge_and_assert("feature/feature3-1", "1.1.0-rc.9");
+}
+
+#[rstest]
 fn test_support_of_custom_trunk_pattern(repo: TestRepo) {
     repo.commit("Initial commit");
     repo.branch("custom-trunk");
@@ -164,26 +206,6 @@ fn test_tags_without_matching_version_tag_prefix_are_ignored(
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag(&format!("{}1.0.0",  prefix));
     assert_version(&repo, "0.1.0-rc.1");
-}
-
-#[rstest]
-fn test_version_of_feature_branches(repo: TestRepo) {
-    repo.commit("0.1.0-rc.1");
-    repo.branch("feature/feature1");
-    repo.commit_and_assert("0.1.0-feature1.1");
-
-    repo.checkout("trunk");
-    repo.merge_and_assert("feature/feature1", "0.1.0-rc.3");
-    repo.tag_and_assert("v", "1.0.0");
-    repo.branch("release/1.0.0");
-
-    repo.checkout("trunk");
-    repo.branch("feature/feature2");
-    repo.commit_and_assert("1.1.0-feature2.1");
-    repo.commit_and_assert("1.1.0-feature2.2");
-    
-    repo.checkout("trunk");
-    repo.merge_and_assert("feature/feature2", "1.1.0-rc.3");
 }
 
 fn assert_version(repo: &TestRepo, expected: &str) {
