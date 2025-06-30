@@ -85,7 +85,6 @@ impl GitVersioner {
         let mut version_tags = Vec::new();
 
         let tag_names = self.repo.tag_names(None)?;
-
         for tag_name in tag_names.iter().flatten() {
             let version_str = self.version_tag_pattern.replacen(tag_name, 1, "");
             if let Ok(version) = Version::parse(&version_str) {
@@ -107,7 +106,6 @@ impl GitVersioner {
     fn collect_sources_from_release_branches(&self) -> Result<Vec<VersionSource>> {
         let mut version_branches = Vec::new();
 
-        // Iterate over local branches
         let branches = self.repo.branches(Some(git2::BranchType::Local))?;
         for branch in branches {
             let (branch, _) = branch?;
