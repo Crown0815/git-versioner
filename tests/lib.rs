@@ -59,8 +59,11 @@ impl TestRepo {
             .current_dir(&self.path)
             .output()
             .expect(&format!("Failed to {description}"));
-        let error = String::from_utf8_lossy(&output.stderr);
-        assert!(output.status.success(), "Failed to {description}, because: {error}");
+        
+        if !output.status.success(){
+            let error = String::from_utf8_lossy(&output.stderr);
+            panic!("Failed to {description}, because: {error}")
+        }
         output
     }
 
