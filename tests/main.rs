@@ -1,6 +1,7 @@
 mod common;
 
 use common::TestRepo;
+use indoc::indoc;
 use rstest::{fixture, rstest};
 use std::path::Path;
 
@@ -28,14 +29,26 @@ fn test_custom_main_branch(#[with("custom-main")] repo: TestRepo) {
 
 #[rstest]
 fn test_repository_not_in_working_directory(repo: TestRepo) {
-    assert_version(".", &["--repo-path", repo.path.to_str().unwrap()], "0.1.0-rc.1")
+    assert_version("/", &["--repo-path", repo.path.to_str().unwrap()], "0.1.0-rc.1")
+}
+
+#[rstest]
+fn test_help_text() {
+    assert_version(".", &["--help"], indoc! {r"
+        Usage: git-versioner [OPTIONS]
+
+        Options:
+          -r, --repo-path <REPO_PATH>
+          -m, --main-branch <MAIN_BRANCH>
+          -v, --verbose
+          -h, --help                       Print help
+          -V, --version                    Print version"})
 }
 
 fn assert_version<P: AsRef<Path>>(cd: P, args: &[&str], expected: &str) {
-    let mut cmd = Command::cargo_bin(env!("CARGO_PKG_NAME"))
-        .expect("CLI binary not found");
-
-    cmd.args(args)
+    Command::cargo_bin(env!("CARGO_PKG_NAME"))
+        .expect("CLI binary not found")
+        .args(args)
         .current_dir(cd)
         .assert()
         .success()
