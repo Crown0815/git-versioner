@@ -81,12 +81,23 @@ impl GitVersioner {
         }
 
         if let Some(captures) = self.feature_pattern.captures(name) {
-            if let Some(name) = captures.name(BRANCH_NAME_ID) {
-                return BranchType::Other(name.as_str().to_string());
+            if let Some(branch_name) = captures.name(BRANCH_NAME_ID) {
+                return BranchType::Other(Self::escaped(branch_name.as_str()));
             }
         }
 
         BranchType::Other(name.to_string())
+    }
+
+    fn escaped(name: &str) -> String {
+        const ESCAPE_CHARACTER: char = '-';
+        name.chars().map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' {
+                c
+            } else {
+                ESCAPE_CHARACTER
+            }
+        }).collect()
     }
 
     fn collect_version_tags(&self) -> Result<Vec<VersionSource>> {

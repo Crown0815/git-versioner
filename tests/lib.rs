@@ -54,11 +54,14 @@ impl TestRepo {
     }
 
     fn execute(&self, command: &[&str], description: &str) -> Output {
-        std::process::Command::new("git")
+        let output = std::process::Command::new("git")
             .args(command)
             .current_dir(&self.path)
             .output()
-            .expect(&format!("Failed to {description}"))
+            .expect(&format!("Failed to {description}"));
+        let error = String::from_utf8_lossy(&output.stderr);
+        assert!(output.status.success(), "Failed to {description}, because: {error}");
+        output
     }
 
     fn commit_and_assert(&self, expected_version: &str) {
@@ -206,6 +209,19 @@ fn test_tags_without_matching_version_tag_prefix_are_ignored(
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag(&format!("{}1.0.0",  prefix));
     assert_version(&repo, "0.1.0-rc.1");
+}
+
+#[rstest]
+// These symbols were not tested because they are invalid in branch names:
+// '\', '^', '~', ' ', ':', '?', '*', '['
+// see https://git-scm.com/docs/git-check-ref-format
+fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_replaces_with_dash(
+    repo: TestRepo,
+    #[values('_', '/', ',', '!', '`', ']', '{', '}', '😁')] incompatible_symbol: char,
+) {
+    repo.commit("irrelevant");
+    repo.branch(&format!("feature/a{}a",  incompatible_symbol));
+    repo.commit_and_assert("0.1.0-a-a.1");
 }
 
 fn assert_version(repo: &TestRepo, expected: &str) {
