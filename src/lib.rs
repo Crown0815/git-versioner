@@ -25,14 +25,13 @@ pub struct GitVersioner {
     version_tag_pattern: Regex,
 }
 
-pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
 const BRANCH_NAME_ID: &'static str = "BranchName";
 
 impl GitVersioner {
-    pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
+    pub fn calculate_version<P: AsRef<Path>>(repo_path: P, main_branch: Regex) -> Result<Version> {
         let versioner = Self {
             repo: Repository::open(repo_path)?,
-            trunk_pattern: Regex::new(trunk_branch_regex)?,
+            trunk_pattern: main_branch,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
             feature_pattern: Regex::new(r"^features?[\\/-](?<BranchName>.+)$")?,
             version_tag_pattern: Regex::new("^[vV]?")?,

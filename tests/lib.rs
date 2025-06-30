@@ -1,29 +1,30 @@
 use git2::Oid;
 use git_versioner::*;
+use regex::Regex;
 use rstest::{fixture, rstest};
 use semver::Version;
 use std::path::PathBuf;
 use std::process::Output;
 
-struct TestRepo {
-    path: PathBuf,
+pub struct TestRepo {
+    pub path: PathBuf,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
 
 impl TestRepo {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let temp_dir = tempfile::tempdir().unwrap();
         let path = temp_dir.path().to_path_buf();
         Self { path, _temp_dir: temp_dir }
     }
 
-    fn initialize(&self) {
-        self.execute(&["init", "--initial-branch=trunk"], "initialize repository");
+    pub fn initialize(&self, main_branch: &str) {
+        self.execute(&["init", &format!("--initial-branch={main_branch}")], "initialize repository");
         self.execute(&["config", "user.name", "tester"], "configure user.name");
         self.execute(&["config", "user.email", "tester@tests.com"], "configure user.email");
     }
 
-    fn commit(&self, message: &str) -> Oid {
+    pub fn commit(&self, message: &str) -> Oid {
         self.execute(&["commit", "--allow-empty", "-m", message], &format!("commit {message}"));
         let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
 
@@ -31,20 +32,20 @@ impl TestRepo {
         Oid::from_str(&commit_hash).unwrap()
     }
 
-    fn branch(&self, name: &str) {
+    pub fn branch(&self, name: &str) {
         self.execute(&["branch", name], &format!("branch {name}"));
         self.checkout(name);
     }
 
-    fn checkout(&self, name: &str) {
+    pub fn checkout(&self, name: &str) {
         self.execute(&["checkout", name], &format!("checkout {name}"));
     }
 
-    fn merge(&self, name: &str) {
+    pub fn merge(&self, name: &str) {
         self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
     }
 
-    fn tag(&self, name: &str) {
+    pub fn tag(&self, name: &str) {
         self.execute(&["tag", name], &format!("create tag {name}"));
     }
 
@@ -59,7 +60,7 @@ impl TestRepo {
             .current_dir(&self.path)
             .output()
             .expect(&format!("Failed to {description}"));
-        
+
         if !output.status.success(){
             let error = String::from_utf8_lossy(&output.stderr);
             panic!("Failed to {description}, because: {error}")
@@ -84,9 +85,9 @@ impl TestRepo {
 }
 
 #[fixture]
-fn repo() -> TestRepo {
+fn repo(#[default("trunk")] main_branch: &str) -> TestRepo {
     let repo = TestRepo::new();
-    repo.initialize();
+    repo.initialize(main_branch);
     repo
 }
 
@@ -186,10 +187,8 @@ fn test_full_workflow_with_feature_branches(repo: TestRepo) {
 }
 
 #[rstest]
-fn test_support_of_custom_trunk_pattern(repo: TestRepo) {
+fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] repo: TestRepo) {
     repo.commit("Initial commit");
-    repo.branch("custom-trunk");
-    repo.execute(&["branch", "-D", "trunk"], "delete trunk branch");
 
     assert_version(&repo, "0.1.0-custom-trunk.1");
     assert_version_with_custom_trunk(&repo, "0.1.0-rc.1", r"^custom-trunk$");
@@ -228,11 +227,11 @@ fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_rep
 }
 
 fn assert_version(repo: &TestRepo, expected: &str) {
-    assert_version_with_custom_trunk(repo, expected, TRUNK_BRANCH_REGEX);
+    assert_version_with_custom_trunk(repo, expected, "^trunk$");
 }
 
-fn assert_version_with_custom_trunk(repo: &TestRepo, expected: &str, trunk_branch_regex: &str) {
-    let actual = GitVersioner::calculate_version(&repo.path, trunk_branch_regex).unwrap();
+fn assert_version_with_custom_trunk(repo: &TestRepo, expected: &str, main_branch: &str) {
+    let actual = GitVersioner::calculate_version(&repo.path, Regex::new(main_branch).unwrap()).unwrap();
     let expected = Version::parse(expected).unwrap();
     assert_eq!(
         actual,
