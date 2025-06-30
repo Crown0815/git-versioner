@@ -105,7 +105,7 @@ impl GitVersioner {
     }
 
     fn collect_sources_from_release_branches(&self) -> Result<Vec<VersionSource>> {
-        let mut matching_branches = Vec::new();
+        let mut version_branches = Vec::new();
 
         // Iterate over local branches
         let branches = self.repo.branches(Some(git2::BranchType::Local))?;
@@ -113,12 +113,12 @@ impl GitVersioner {
             let (branch, _) = branch?;
             if let Some(name) = branch.name()? {
                 if let BranchType::Release(version) = self.determine_branch_type_by_name(name) {
-                    matching_branches.push(VersionSource {version, commit_id: branch.get().peel_to_commit()?.id()});
+                    version_branches.push(VersionSource {version, commit_id: branch.get().peel_to_commit()?.id()});
                 }
             }
         }
 
-        Ok(matching_branches)
+        Ok(version_branches)
     }
 
     fn calculate_version_for_trunk(&self) -> Result<Version> {
