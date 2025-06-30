@@ -175,11 +175,13 @@ fn test_version_of_feature_branches(repo: TestRepo) {
     repo.checkout("trunk");
     repo.merge_and_assert("feature/feature1", "0.1.0-rc.3");
     repo.tag_and_assert("v", "1.0.0");
+    repo.branch("release/1.0.0");
 
     repo.checkout("trunk");
     repo.branch("feature/feature2");
     repo.commit_and_assert("1.1.0-feature2.1");
     repo.commit_and_assert("1.1.0-feature2.2");
+    
     repo.checkout("trunk");
     repo.merge_and_assert("feature/feature2", "1.1.0-rc.3");
 }

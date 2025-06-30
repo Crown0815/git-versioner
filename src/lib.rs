@@ -4,7 +4,7 @@ use regex::Regex;
 use semver::{Prerelease, Version};
 use std::path::Path;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BranchType {
     Trunk,            // Main development branch (trunk)
     Release(Version), // Release branch (e.g., release/1.0.0)
@@ -267,7 +267,8 @@ impl GitVersioner {
             }
         }
 
-        found_branches.sort_by(|a, b| a.distance.cmp(&b.distance));
+        found_branches.sort_by(|a, b| 
+            a.distance.cmp(&b.distance).then_with(|| a.branch_type.cmp(&b.branch_type)));
         let closest_branch = &found_branches.into_iter()
             .find(|item| matches!(item.branch_type, BranchType::Trunk | BranchType::Release(_)));
         let mut base_version = match closest_branch {
