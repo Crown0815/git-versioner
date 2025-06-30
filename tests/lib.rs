@@ -129,7 +129,7 @@ fn test_full_workflow(repo: TestRepo) {
 }
 
 #[rstest]
-fn test_custom_trunk_feature(repo: TestRepo) {
+fn test_support_of_custom_trunk_pattern(repo: TestRepo) {
     repo.commit("Initial commit");
     repo.branch("custom-trunk");
     repo.execute(&["branch", "-D", "trunk"], "delete trunk branch");
