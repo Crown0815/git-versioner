@@ -40,6 +40,10 @@ impl TestRepo {
         self.execute(&["checkout", name], &format!("checkout {name}"));
     }
 
+    fn merge(&self, name: &str) {
+        self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
+    }
+
     fn tag(&self, name: &str) {
         self.execute(&["tag", name], &format!("create tag {name}"));
     }
@@ -64,6 +68,11 @@ impl TestRepo {
 
     fn tag_and_assert(&self, prefix: &str, expected_version: &str) {
         self.tag(&format!("{}{}", prefix, expected_version));
+        assert_version(&self, expected_version);
+    }
+
+    fn merge_and_assert(&self, branch_name: &str, expected_version: &str) {
+        self.merge(branch_name);
         assert_version(&self, expected_version);
     }
 }
@@ -134,9 +143,7 @@ fn test_support_of_custom_trunk_pattern(repo: TestRepo) {
     repo.branch("custom-trunk");
     repo.execute(&["branch", "-D", "trunk"], "delete trunk branch");
 
-    let result = GitVersioner::calculate_version(&repo.path, TRUNK_BRANCH_REGEX);
-    assert!(result.is_err(), "Expected error with default trunk regex, but got: {:?}", result);
-
+    assert_version(&repo, "0.1.0-custom-trunk.1");
     assert_version_with_custom_trunk(&repo, "0.1.0-rc.1", r"^custom-trunk$");
 }
 
@@ -157,6 +164,24 @@ fn test_tags_without_matching_version_tag_prefix_are_ignored(
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag(&format!("{}1.0.0",  prefix));
     assert_version(&repo, "0.1.0-rc.1");
+}
+
+#[rstest]
+fn test_version_of_feature_branches(repo: TestRepo) {
+    repo.commit("0.1.0-rc.1");
+    repo.branch("feature/feature1");
+    repo.commit_and_assert("0.1.0-feature1.1");
+
+    repo.checkout("trunk");
+    repo.merge_and_assert("feature/feature1", "0.1.0-rc.3");
+    repo.tag_and_assert("v", "1.0.0");
+
+    repo.checkout("trunk");
+    repo.branch("feature/feature2");
+    repo.commit_and_assert("1.1.0-feature2.1");
+    repo.commit_and_assert("1.1.0-feature2.2");
+    repo.checkout("trunk");
+    repo.merge_and_assert("feature/feature2", "1.1.0-rc.3");
 }
 
 fn assert_version(repo: &TestRepo, expected: &str) {

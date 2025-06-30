@@ -21,6 +21,7 @@ pub struct GitVersioner {
     repo: Repository,
     trunk_pattern: Regex,
     release_pattern: Regex,
+    feature_pattern: Regex,
     version_tag_pattern: Regex,
 }
 
@@ -33,13 +34,14 @@ impl GitVersioner {
             repo: Repository::open(repo_path)?,
             trunk_pattern: Regex::new(trunk_branch_regex)?,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
+            feature_pattern: Regex::new(r"^features?[\\/-](?<BranchName>.+)$")?,
             version_tag_pattern: Regex::new("^[vV]?")?,
         };
 
         match versioner.determine_branch_at_head()? {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
-            BranchType::Other(_) => Err(anyhow!("Version calculation not supported for non-trunk/release branches")),
+            BranchType::Other(name) => versioner.calculate_version_for_feature(&name),
         }
     }
 
@@ -75,6 +77,12 @@ impl GitVersioner {
                 if let Ok(version) = Version::parse(version_str.as_str()) {
                     return BranchType::Release(version);
                 }
+            }
+        }
+
+        if let Some(captures) = self.feature_pattern.captures(name) {
+            if let Some(name) = captures.name(BRANCH_NAME_ID) {
+                return BranchType::Other(name.as_str().to_string());
             }
         }
 
@@ -215,6 +223,73 @@ impl GitVersioner {
             version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
         }
+    }
+
+    fn calculate_version_for_feature(&self, name: &str) -> Result<Version> {
+        struct FoundBranch {
+            branch_type: BranchType,
+            distance: usize,
+        }
+
+        let mut found_branches = Vec::new();
+        let head_id = self.repo.head()?.peel_to_commit()?.id();
+
+        let branches = self.repo.branches(Some(git2::BranchType::Local))?;
+        for branch in branches {
+            let (branch, _) = branch?;
+            if let Some(name) = branch.name()? {
+                let branch_type = self.determine_branch_type_by_name(name);
+                if let BranchType::Other(ref branch_name) = branch_type {
+                    if branch_name == name {
+                        continue;
+                    }
+                }
+                let branch_id = branch.get().peel_to_commit()?.id();
+
+                let merge_base = self.repo.merge_base(head_id, branch_id)?;
+
+                let distance = self.repo
+                    .graph_descendant_of(head_id, merge_base)?
+                    .then(|| {
+                        self.repo.revwalk()
+                            .and_then(|mut walk| {
+                                walk.push(head_id)?;
+                                walk.hide(merge_base)?;
+                                Ok(walk.count())
+                            })
+                    })
+                    .unwrap_or(Ok(usize::MAX))?;
+
+                found_branches.push(FoundBranch {
+                    branch_type,
+                    distance,
+                });
+            }
+        }
+
+        found_branches.sort_by(|a, b| a.distance.cmp(&b.distance));
+        let closest_branch = &found_branches.into_iter()
+            .find(|item| matches!(item.branch_type, BranchType::Trunk | BranchType::Release(_)));
+        let mut base_version = match closest_branch {
+            None => Ok(Version::new(0,1,0)),
+            Some(found_branch) => match &found_branch.branch_type {
+                BranchType::Trunk => self.calculate_version_for_trunk(),
+                BranchType::Release(version) => self.calculate_version_for_release(&version),
+                BranchType::Other(name) => panic!("Unexpected branch type: {}", name),
+            }
+        }.unwrap_or(Version::new(0,1,0));
+
+        base_version.pre = match closest_branch {
+            None => {
+                let mut revwalk = self.repo.revwalk()?;
+                revwalk.push_head()?;
+                revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+                let count = revwalk.count();
+                Prerelease::new(&format!("{}.{}", name, count))?
+            },
+            Some(branch) => Prerelease::new(&format!("{}.{}", name, branch.distance))?,
+        };
+        Ok(base_version)
     }
 
     /// Find the latest version tag on the trunk branch
