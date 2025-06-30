@@ -25,6 +25,7 @@ pub struct GitVersioner {
 }
 
 pub const TRUNK_BRANCH_REGEX: &str = r"^(trunk|main|master)$";
+const BRANCH_NAME_ID: &'static str = "BranchName";
 
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, trunk_branch_regex: &str) -> Result<Version> {
@@ -70,7 +71,7 @@ impl GitVersioner {
         }
 
         if let Some(captures) = self.release_pattern.captures(name) {
-            if let Some(version_str) = captures.get(1) {
+            if let Some(version_str) = captures.name(BRANCH_NAME_ID) {
                 if let Ok(version) = Version::parse(version_str.as_str()) {
                     return BranchType::Release(version);
                 }
@@ -111,12 +112,8 @@ impl GitVersioner {
         for branch in branches {
             let (branch, _) = branch?;
             if let Some(name) = branch.name()? {
-                if let Some(captures) = self.release_pattern.captures(name) {
-                    if let Some(version_str) = captures.get(1) {
-                        if let Ok(version) = Version::parse(version_str.as_str()) {
-                            matching_branches.push(VersionSource {version, commit_id: branch.get().peel_to_commit()?.id()});
-                        }
-                    }
+                if let BranchType::Release(version) = self.determine_branch_type_by_name(name) {
+                    matching_branches.push(VersionSource {version, commit_id: branch.get().peel_to_commit()?.id()});
                 }
             }
         }
