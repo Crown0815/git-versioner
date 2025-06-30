@@ -1,6 +1,6 @@
-mod lib;
+mod common;
 
-use lib::TestRepo;
+use common::TestRepo;
 use rstest::{fixture, rstest};
 use std::path::Path;
 
