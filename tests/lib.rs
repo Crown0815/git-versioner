@@ -6,6 +6,8 @@ use regex::Regex;
 use rstest::{fixture, rstest};
 use semver::Version;
 
+const MAIN_BRANCH: &str = "trunk";
+
 impl TestRepo {
     fn commit_and_assert(&self, expected_version: &str) {
         self.commit(expected_version);
@@ -29,7 +31,7 @@ impl TestRepo {
 }
 
 #[fixture]
-fn repo(#[default("trunk")] main_branch: &str) -> TestRepo {
+fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {
     let repo = TestRepo::new();
     repo.initialize(main_branch);
     repo
@@ -43,7 +45,7 @@ fn test_full_workflow(repo: TestRepo) {
     repo.tag_and_assert("v", "1.0.0");
     repo.branch("release/1.0.0");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.1.0-rc.1");
 
     repo.checkout("release/1.0.0");
@@ -54,10 +56,10 @@ fn test_full_workflow(repo: TestRepo) {
     repo.commit_and_assert("1.0.2-rc.2");
     repo.tag_and_assert("v", "1.0.2");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.1.0-rc.2");
     repo.branch("release/1.1.0");
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.2.0-rc.1");
 
     repo.checkout("release/1.1.0");
@@ -68,10 +70,10 @@ fn test_full_workflow(repo: TestRepo) {
     repo.commit_and_assert("1.1.1-rc.2");
     repo.tag_and_assert("v", "1.1.1");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.2.0-rc.2");
     repo.branch("release/1.2.0");
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.3.0-rc.1");
 
     repo.checkout("release/1.2.0");
@@ -82,7 +84,7 @@ fn test_full_workflow(repo: TestRepo) {
     repo.commit_and_assert("1.2.1-rc.2");
     repo.tag_and_assert("v", "1.2.1");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.3.0-rc.2");
     repo.tag_annotated_and_assert("v", "1.3.0");
     repo.commit_and_assert("1.4.0-rc.1");
@@ -94,17 +96,17 @@ fn test_full_workflow_with_feature_branches(repo: TestRepo) {
     repo.branch("feature/feature1");
     repo.commit_and_assert("0.1.0-feature1.1");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.merge_and_assert("feature/feature1", "0.1.0-rc.3");
     repo.tag_and_assert("v", "1.0.0");
     repo.branch("release/1.0.0");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.branch("feature/feature2");
     repo.commit_and_assert("1.1.0-feature2.1");
     repo.commit_and_assert("1.1.0-feature2.2");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.merge_and_assert("feature/feature2", "1.1.0-rc.3");
 
     repo.checkout("release/1.0.0");
@@ -115,17 +117,17 @@ fn test_full_workflow_with_feature_branches(repo: TestRepo) {
     repo.checkout("release/1.0.0");
     repo.merge_and_assert("feature/fix1", "1.0.1-rc.4");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.branch("feature/feature3-1");
     repo.commit_and_assert("1.1.0-feature3-1.1");
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.branch("feature/feature3-2");
     repo.commit_and_assert("1.1.0-feature3-2.1");
     repo.commit_and_assert("1.1.0-feature3-2.2");
     repo.checkout("feature/feature3-1");
     repo.commit_and_assert("1.1.0-feature3-1.2");
 
-    repo.checkout("trunk");
+    repo.checkout(MAIN_BRANCH);
     repo.merge_and_assert("feature/feature3-2", "1.1.0-rc.6");
     repo.merge_and_assert("feature/feature3-1", "1.1.0-rc.9");
 }
@@ -145,6 +147,17 @@ fn test_tags_with_matching_version_tag_prefix_are_considered(
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert(prefix, "1.0.0");
+}
+
+#[rstest]
+fn test_release_branches_with_matching_version_tag_prefix_are_considered(
+    repo: TestRepo,
+    #[values("v", "V", "")] prefix: &str,
+) {
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.branch(&format!("release/{}1.0.0", prefix));
+    repo.checkout(MAIN_BRANCH);
+    repo.commit_and_assert("1.1.0-rc.1");
 }
 
 #[rstest]

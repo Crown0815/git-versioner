@@ -74,7 +74,7 @@ impl GitVersioner {
 
         if let Some(captures) = self.release_pattern.captures(name) {
             if let Some(branch_name) = captures.name(BRANCH_NAME_ID) {
-                if let Ok(version) = Version::parse(branch_name.as_str()) {
+                if let Some(version) = self.version_in(branch_name.as_str()) {
                     return BranchType::Release(version);
                 }
             }
