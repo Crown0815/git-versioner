@@ -1,7 +1,13 @@
 ---
 source: tests/main.rs
-expression: help_output
+info:
+  program: git-versioner
+  args:
+    - "--help"
 ---
+success: true
+exit_code: 0
+----- stdout -----
 Usage: git-versioner [OPTIONS]
 
 Options:
@@ -10,3 +16,5 @@ Options:
   -v, --verbose                    
   -h, --help                       Print help
   -V, --version                    Print version
+
+----- stderr -----

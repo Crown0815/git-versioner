@@ -1,13 +1,21 @@
 mod common;
 
-use assert_cmd::assert::Assert;
-use assert_cmd::Command;
 use common::TestRepo;
-use insta::assert_snapshot;
+use insta::with_settings;
+use insta_cmd::{assert_cmd_snapshot, get_cargo_bin};
 use rstest::{fixture, rstest};
-use std::path::Path;
+use std::process::Command;
 
 const TRUNK: &str = "trunk";
+
+macro_rules! assert_repo_cmd_snapshot {
+    ($repo:expr, $cmd:expr) => {
+        with_settings!(
+            { description => $repo.graph() },
+            { assert_cmd_snapshot!($cmd); }
+        );
+    };
+}
 
 #[fixture]
 fn repo(#[default(TRUNK)] main: &str) -> TestRepo {
@@ -17,39 +25,36 @@ fn repo(#[default(TRUNK)] main: &str) -> TestRepo {
     repo
 }
 
-#[rstest]
-fn test_default_main_branch_name(repo: TestRepo) {
-    assert_version(&repo.path, &[], "0.1.0-rc.1")
+#[fixture]
+fn cli() -> Command {
+    Command::new(get_cargo_bin(env!("CARGO_PKG_NAME")))
 }
 
 #[rstest]
-fn test_custom_main_branch(#[with("custom-main")] repo: TestRepo) {
-    assert_version(&repo.path, &["--main-branch", "custom-main"], "0.1.0-rc.1")
+fn test_release_candidate_on_main_branch(repo: TestRepo, mut cli: Command) {
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(&repo.path));
 }
 
 #[rstest]
-fn test_repository_not_in_working_directory(repo: TestRepo) {
-    assert_version("/", &["--repo-path", repo.path.to_str().unwrap()], "0.1.0-rc.1")
+fn test_release_on_main_branch(repo: TestRepo, mut cli: Command) {
+    repo.tag("0.1.0");
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(&repo.path));
 }
 
 #[rstest]
-fn test_help_text() {
-    let assert = assert_success(".", &["--help"]);
-    let help_output = String::from_utf8_lossy(&assert.get_output().stdout);
-
-    assert_snapshot!(help_output)
+fn test_option_custom_main_branch(
+    #[with("custom-main")] repo: TestRepo,
+    mut cli: Command
+) {
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(&repo.path).args(&["--main-branch", "custom-main"]));
 }
 
-fn assert_version<P: AsRef<Path>>(cd: P, args: &[&str], expected: &str) {
-    assert_success(cd, args)
-        .stdout(format!("{expected}\n"));
+#[rstest]
+fn test_option_custom_repository_path(repo: TestRepo, mut cli: Command) {
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(".").args(&["--repo-path", repo.path.to_str().unwrap()]));
 }
 
-fn assert_success<P: AsRef<Path>>(cd: P, args: &[&str]) -> Assert {
-    Command::cargo_bin(env!("CARGO_PKG_NAME"))
-        .expect("CLI binary not found")
-        .args(args)
-        .current_dir(cd)
-        .assert()
-        .success()
+#[rstest]
+fn test_help_text(mut cli: Command) {
+    assert_cmd_snapshot!(cli.current_dir(".").args(&["--help"]));
 }

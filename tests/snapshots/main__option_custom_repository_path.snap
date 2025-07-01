@@ -1,0 +1,30 @@
+---
+source: tests/main.rs
+description: "* 3750095 (HEAD -> trunk) 0.1.0-rc.1\n"
+info:
+  program: git-versioner
+  args:
+    - "--repo-path"
+    - /var/folders/h6/6c04dcj9667bcpbvgl_79p7w0000gn/T/.tmpd9trGp
+---
+success: true
+exit_code: 0
+----- stdout -----
+{
+  "Major": 0,
+  "Minor": 1,
+  "Patch": 0,
+  "MajorMinorPatch": "0.1.0",
+  "PreReleaseTag": "rc.1",
+  "PreReleaseTagWithDash": "-rc.1",
+  "PreReleaseLabel": "rc",
+  "PreReleaseLabelWithDash": "-rc",
+  "PreReleaseNumber": "1",
+  "BuildMetadata": "",
+  "SemVer": "0.1.0-rc.1",
+  "AssemblySemVer": "0.1.0",
+  "FullSemVer": "0.1.0-rc.1",
+  "InformationalVersion": "0.1.0-rc.1"
+}
+
+----- stderr -----
