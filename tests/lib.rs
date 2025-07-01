@@ -10,22 +10,31 @@ const MAIN_BRANCH: &str = "trunk";
 impl TestRepo {
     fn commit_and_assert(&self, expected_version: &str) {
         self.commit(expected_version);
-        assert_version(&self, expected_version);
+        self.assert_version(expected_version);
     }
 
     fn tag_and_assert(&self, prefix: &str, expected_version: &str) {
         self.tag(&format!("{}{}", prefix, expected_version));
-        assert_version(&self, expected_version);
+        self.assert_version(expected_version);
     }
 
     fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) {
         self.tag_annotated(&format!("{}{}", prefix, expected_version));
-        assert_version(&self, expected_version);
+        self.assert_version(expected_version);
     }
 
     fn merge_and_assert(&self, branch_name: &str, expected_version: &str) {
         self.merge(branch_name);
-        assert_version(&self, expected_version);
+        self.assert_version(expected_version);
+    }
+
+    fn assert_version(&self, expected: &str) {
+        let actual = GitVersioner::calculate_version(&self.config).unwrap();
+        let expected = Version::parse(expected).unwrap();
+        let graph = self.graph();
+        assert_eq!(actual, expected,
+            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
+            graph);
     }
 }
 
@@ -134,9 +143,9 @@ fn test_full_workflow_with_feature_branches(repo: TestRepo) {
 #[rstest]
 fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] mut repo: TestRepo) {
     repo.config.main_branch = r"^custom-trunk$".to_string();
-    repo.commit("Initial commit");
 
-    assert_version_with_custom_trunk(&repo, "0.1.0-rc.1");
+    repo.commit("Initial commit");
+    repo.assert_version("0.1.0-rc.1");
 }
 
 #[rstest]
@@ -166,12 +175,13 @@ fn test_tags_without_matching_version_tag_prefix_are_ignored(
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag(&format!("{}1.0.0",  prefix));
-    assert_version(&repo, "0.1.0-rc.1");
+    repo.assert_version("0.1.0-rc.1");
 }
 
 #[rstest]
 fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: TestRepo) {
     repo.config.version_pattern = "my/v(?<Version>.+)".to_string();
+
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("my/v", "1.0.0");
 }
@@ -187,20 +197,4 @@ fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_rep
     repo.commit("irrelevant");
     repo.branch(&format!("feature/a{}a",  incompatible_symbol));
     repo.commit_and_assert("0.1.0-a-a.1");
-}
-
-fn assert_version(repo: &TestRepo, expected: &str) {
-    assert_version_with_custom_trunk(repo, expected);
-}
-
-fn assert_version_with_custom_trunk(repo: &TestRepo, expected: &str) {
-    let actual = GitVersioner::calculate_version(&repo.config).unwrap();
-    let expected = Version::parse(expected).unwrap();
-    assert_eq!(
-        actual,
-        expected,
-        "Expected HEAD version: {}, found: {}\n\n Git Graph:\n-------\n{}------",
-        expected,
-        actual,
-        repo.graph());
 }
