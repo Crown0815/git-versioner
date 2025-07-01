@@ -139,27 +139,14 @@ impl GitVersioner {
 
     fn calculate_version_for_trunk(&self) -> Result<Version> {
         let latest_trunk_tag = self.find_latest_trunk_tag()?;
-        let repo = &self.repo;
+        let head_id = self.repo.head()?.peel_to_commit()?.id();
 
         // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
-            let head_id = repo.head()?.peel_to_commit()?.id();
-            if head_id == tag.commit_id {
+            let merge_base_oid = self.repo.merge_base(head_id, tag.commit_id)?;
+            let count = self.count_commits_between(head_id, merge_base_oid)?;
+            if count == 0 {
                 return Ok(tag.version);
-            }
-
-            let merge_base_oid = repo.merge_base(head_id, tag.commit_id)?;
-
-            let mut revwalk = repo.revwalk()?;
-            revwalk.push_head()?;
-            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
-            let mut count = 0;
-            for oid in revwalk {
-                let oid = oid?;
-                if oid == merge_base_oid {
-                    break; // Stop counting when the specific commit is reached
-                }
-                count += 1;
             }
 
             let mut version = tag.version.clone();
@@ -168,15 +155,28 @@ impl GitVersioner {
             version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
         } else {
-            let mut revwalk = repo.revwalk()?;
-            revwalk.push_head()?;
-            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
-            let count = revwalk.count();
+            let count = self.count_commits_between(head_id, Oid::zero())?;
 
             let mut version = Version::new(0, 1, 0);
             version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
         }
+    }
+
+    fn count_commits_between(&self, from: Oid, to: Oid) -> Result<i64> {
+
+        let mut revwalk = self.repo.revwalk()?;
+        revwalk.push(from)?;
+        revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+        let mut count = 0;
+        for oid in revwalk {
+            let oid = oid?;
+            if oid == to {
+                break; // Stop counting when the specific commit is reached
+            }
+            count += 1;
+        }
+        Ok(count)
     }
 
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
