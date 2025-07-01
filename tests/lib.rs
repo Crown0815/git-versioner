@@ -2,7 +2,6 @@ mod common;
 
 use common::*;
 use git_versioner::*;
-use regex::Regex;
 use rstest::{fixture, rstest};
 use semver::Version;
 
@@ -141,15 +140,6 @@ fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] repo: TestRepo) 
 }
 
 #[rstest]
-fn test_tags_with_matching_version_tag_prefix_are_considered(
-    repo: TestRepo,
-    #[values("v", "V", "")] prefix: &str,
-) {
-    repo.commit_and_assert("0.1.0-rc.1");
-    repo.tag_and_assert(prefix, "1.0.0");
-}
-
-#[rstest]
 fn test_release_branches_with_matching_version_tag_prefix_are_considered(
     repo: TestRepo,
     #[values("v", "V", "")] prefix: &str,
@@ -158,6 +148,15 @@ fn test_release_branches_with_matching_version_tag_prefix_are_considered(
     repo.branch(&format!("release/{}1.0.0", prefix));
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.1.0-rc.1");
+}
+
+#[rstest]
+fn test_tags_with_matching_version_tag_prefix_are_considered(
+    repo: TestRepo,
+    #[values("v", "V", "")] prefix: &str,
+) {
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.tag_and_assert(prefix, "1.0.0");
 }
 
 #[rstest]
@@ -188,7 +187,15 @@ fn assert_version(repo: &TestRepo, expected: &str) {
 }
 
 fn assert_version_with_custom_trunk(repo: &TestRepo, expected: &str, main_branch: &str) {
-    let actual = GitVersioner::calculate_version(&repo.path, Regex::new(main_branch).unwrap()).unwrap();
+    let config = Configuration {
+        repo_path: repo.path.clone(),
+        trunk_pattern: main_branch.to_string(),
+        release_pattern: "".to_string(),
+        feature_pattern: "".to_string(),
+        version_pattern: "".to_string(),
+    };
+
+    let actual = GitVersioner::calculate_version(&config).unwrap();
     let expected = Version::parse(expected).unwrap();
     assert_eq!(
         actual,

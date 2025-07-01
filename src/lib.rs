@@ -17,6 +17,14 @@ struct VersionSource {
     commit_id: Oid,
 }
 
+pub struct Configuration<P: AsRef<Path>>{
+    pub repo_path: P,
+    pub trunk_pattern: String,
+    pub release_pattern: String,
+    pub feature_pattern: String,
+    pub version_pattern: String,
+}
+
 pub struct GitVersioner {
     repo: Repository,
     trunk_pattern: Regex,
@@ -29,10 +37,10 @@ const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
 
 impl GitVersioner {
-    pub fn calculate_version<P: AsRef<Path>>(repo_path: P, main_branch: Regex) -> Result<Version> {
+    pub fn calculate_version<P: AsRef<Path>>(config: &Configuration<P>) -> Result<Version> {
         let versioner = Self {
-            repo: Repository::open(repo_path)?,
-            trunk_pattern: main_branch,
+            repo: Repository::open(&config.repo_path)?,
+            trunk_pattern: Regex::new(&config.trunk_pattern)?,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
             feature_pattern: Regex::new(r"^features?[\\/-](?<BranchName>.+)$")?,
             version_pattern: Regex::new(r"^[vV]?(?<Version>\d+\.\d+\.\d+)")?,

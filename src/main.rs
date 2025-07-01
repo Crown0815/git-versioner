@@ -1,7 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use git_versioner::GitVersioner;
-use regex::Regex;
+use git_versioner::{Configuration, GitVersioner};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
@@ -14,7 +13,7 @@ struct Args {
     repo_path: Option<PathBuf>,
 
     #[clap(short, long, value_parser)]
-    main_branch: Option<Regex>,
+    main_branch: Option<String>,
 
     #[clap(short, long)]
     verbose: bool,
@@ -42,12 +41,18 @@ struct Output {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let repo_path = args.repo_path.unwrap_or_else(|| std::env::current_dir().unwrap());
-    let main_branch = args.main_branch.unwrap_or_else(|| Regex::new(MAIN_BRANCH).unwrap());
-    let version = GitVersioner::calculate_version(&repo_path, main_branch)?;
+    let config = Configuration {
+        repo_path: args.repo_path.unwrap_or_else(|| std::env::current_dir().unwrap()),
+        trunk_pattern: args.main_branch.unwrap_or_else(|| MAIN_BRANCH.to_string()),
+        release_pattern: "".to_string(),
+        feature_pattern: "".to_string(),
+        version_pattern: "".to_string(),
+    };
+
+    let version = GitVersioner::calculate_version(&config)?;
 
     if args.verbose {
-        println!("Repository path: {}", repo_path.display());
+        println!("Repository path: {}", config.repo_path.display());
     }
 
     let output = Output {
