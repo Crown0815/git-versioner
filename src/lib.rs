@@ -138,7 +138,7 @@ impl GitVersioner {
     }
 
     fn calculate_version_for_trunk(&self) -> Result<Version> {
-        let latest_trunk_tag = self.find_latest_trunk_tag()?;
+        let latest_trunk_tag = self.find_latest_trunk_version()?;
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
         // If we have a tag, increase the minor version and add rc.1
@@ -181,22 +181,10 @@ impl GitVersioner {
 
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
         let latest_release_tag = self.find_latest_tag_for_release_branch(release_version)?;
-        let repo = &self.repo;
-        
+        let head_id = self.repo.head()?.peel_to_commit()?.id();
+
         if let Some(tag) = latest_release_tag {
-
-            let mut revwalk = repo.revwalk()?;
-            revwalk.push_head()?;
-            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
-            let mut count = 0;
-            for oid in revwalk {
-                let oid = oid?;
-                if oid == tag.commit_id {
-                    break; // Stop counting when the specific commit is reached
-                }
-                count += 1;
-            }
-
+            let count = self.count_commits_between(head_id, tag.commit_id)?;
             if count == 0 {
                 return Ok(tag.version);
             }
@@ -208,27 +196,12 @@ impl GitVersioner {
             Ok(new_version)
         } else {
             let tag = self.find_latest_tag_base_for_release_branch()?.unwrap();
-
-            let head_id = repo.head()?.peel_to_commit()?.id();
-            if head_id == tag.commit_id {
+            let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
+            let count = self.count_commits_between(head_id, merge_base_oid)?;
+            if count == 0 {
                 return Ok(tag.version);
             }
 
-            let merge_base_oid = repo.merge_base(head_id, tag.commit_id)?;
-
-            let mut revwalk = repo.revwalk()?;
-            revwalk.push_head()?;
-            revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
-            let mut count = 0;
-            for oid in revwalk {
-                let oid = oid?;
-                if oid == merge_base_oid {
-                    break; // Stop counting when the specific commit is reached
-                }
-                count += 1;
-            }
-
-            // No tags on this release branch yet, so use the release version with rc.1
             let mut version = release_version.clone();
             version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
@@ -304,7 +277,7 @@ impl GitVersioner {
     }
 
     /// Find the latest version tag on the trunk branch
-    fn find_latest_trunk_tag(&self) -> Result<Option<VersionSource>> {
+    fn find_latest_trunk_version(&self) -> Result<Option<VersionSource>> {
         let mut released_tags = [&self.collect_version_tags()?[..], &self.collect_sources_from_release_branches()?[..]].concat()
             .iter()
             .filter(|tag| tag.version.pre.is_empty())
