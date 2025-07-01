@@ -45,6 +45,10 @@ impl TestRepo {
         self.execute(&["tag", name], &format!("create tag {name}"));
     }
 
+    pub fn tag_annotated(&self, name: &str) {
+        self.execute(&["tag", "-a", name, "-m", name], &format!("create tag {name}"));
+    }
+
     pub fn graph(&self) -> String {
         let output = self.execute(&["log", "--graph", "--oneline", "--all", "--decorate"], "get commit graph");
         String::from_utf8_lossy(&output.stdout).to_string()

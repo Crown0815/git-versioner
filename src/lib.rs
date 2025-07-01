@@ -35,7 +35,7 @@ impl GitVersioner {
             trunk_pattern: main_branch,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
             feature_pattern: Regex::new(r"^features?[\\/-](?<BranchName>.+)$")?,
-            version_pattern: Regex::new("^[vV]?(?<Version>.+)$")?,
+            version_pattern: Regex::new(r"^[vV]?(?<Version>\d+\.\d+\.\d+)")?,
         };
 
         match versioner.determine_branch_at_head()? {
@@ -73,8 +73,8 @@ impl GitVersioner {
         }
 
         if let Some(captures) = self.release_pattern.captures(name) {
-            if let Some(version_str) = captures.name(BRANCH_NAME_ID) {
-                if let Ok(version) = Version::parse(version_str.as_str()) {
+            if let Some(branch_name) = captures.name(BRANCH_NAME_ID) {
+                if let Ok(version) = Version::parse(branch_name.as_str()) {
                     return BranchType::Release(version);
                 }
             }
@@ -107,14 +107,8 @@ impl GitVersioner {
         for tag_name in tag_names.iter().flatten() {
             if let Some(captures) = self.version_pattern.captures(tag_name){
                 if let Some(version_str) = captures.name(VERSION_ID) {
-                    if let Ok(version) = Version::parse(version_str.as_str()) {
-                        if let Ok(tag_obj) = self.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
-                            let commit_id = if let Some(tag) = tag_obj.as_tag() {
-                                tag.target_id()
-                            } else {
-                                tag_obj.id()
-                            };
-
+                    if let Ok(version) = Version::parse(version_str.as_str()){
+                        if let Some(commit_id) = self.tag_id_for(tag_name) {
                             version_tags.push(VersionSource { version, commit_id });
                         }
                     }
@@ -123,6 +117,17 @@ impl GitVersioner {
         }
 
         Ok(version_tags)
+    }
+
+    fn tag_id_for(&self, name: &str) -> Option<Oid> {
+        match self.repo.revparse_single(&format!("refs/tags/{}", name)) {
+            Ok(tag_obj) => if let Some(tag) = tag_obj.as_tag() {
+                Some(tag.target_id())
+            } else {
+                Some(tag_obj.id())
+            }
+            Err(_) => None
+        }
     }
 
     fn collect_sources_from_release_branches(&self) -> Result<Vec<VersionSource>> {

@@ -17,6 +17,11 @@ impl TestRepo {
         assert_version(&self, expected_version);
     }
 
+    fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) {
+        self.tag_annotated(&format!("{}{}", prefix, expected_version));
+        assert_version(&self, expected_version);
+    }
+
     fn merge_and_assert(&self, branch_name: &str, expected_version: &str) {
         self.merge(branch_name);
         assert_version(&self, expected_version);
@@ -58,7 +63,7 @@ fn test_full_workflow(repo: TestRepo) {
     repo.checkout("release/1.1.0");
     repo.commit_and_assert("1.1.0-rc.3");
     repo.commit_and_assert("1.1.0-rc.4");
-    repo.tag_and_assert("v", "1.1.0");
+    repo.tag_annotated_and_assert("v", "1.1.0");
     repo.commit_and_assert("1.1.1-rc.1");
     repo.commit_and_assert("1.1.1-rc.2");
     repo.tag_and_assert("v", "1.1.1");
@@ -79,7 +84,7 @@ fn test_full_workflow(repo: TestRepo) {
 
     repo.checkout("trunk");
     repo.commit_and_assert("1.3.0-rc.2");
-    repo.tag_and_assert("v", "1.3.0");
+    repo.tag_annotated_and_assert("v", "1.3.0");
     repo.commit_and_assert("1.4.0-rc.1");
 }
 
