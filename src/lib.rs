@@ -58,8 +58,8 @@ impl GitVersioner {
         let versioner = Self {
             repo: Repository::open(&config.repo_path)?,
             trunk_pattern: Regex::new(&config.main_branch)?,
-            release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
-            feature_pattern: Regex::new(r"^features?[\\/-](?<BranchName>.+)$")?,
+            release_pattern: Regex::new(&config.release_branch)?,
+            feature_pattern: Regex::new(&config.feature_branch)?,
             version_pattern: Regex::new(&config.version_pattern)?,
         };
 

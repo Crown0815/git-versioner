@@ -149,12 +149,22 @@ fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] mut repo: TestRe
 }
 
 #[rstest]
-fn test_release_branches_with_matching_version_tag_prefix_are_considered(
+fn test_release_branches_with_matching_version_tag_prefix_affect_main_branch(
     repo: TestRepo,
     #[values("v", "V", "")] prefix: &str,
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.branch(&format!("release/{}1.0.0", prefix));
+    repo.checkout(MAIN_BRANCH);
+    repo.commit_and_assert("1.1.0-rc.1");
+}
+
+#[rstest]
+fn test_release_branches_matching_custom_pattern_affect_main_branch(mut repo: TestRepo) {
+    repo.config.release_branch = r"^stabilize/my/(?<BranchName>.+)$".to_string();
+
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.branch("stabilize/my/1.0.0");
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.1.0-rc.1");
 }
@@ -184,6 +194,24 @@ fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: Te
 
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("my/v", "1.0.0");
+}
+
+#[rstest]
+fn test_feature_branches_from_main_branch_inherit_main_branch_base_version(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.branch("feature/feature");
+    repo.commit_and_assert("1.1.0-feature.1");
+}
+
+#[rstest]
+fn test_feature_branches_matching_custom_pattern_inherit_source_branch_base_version(mut repo: TestRepo) {
+    repo.config.feature_branch = r"^feat(ure)?/(?<BranchName>.+)$".to_string();
+    
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.branch("feat/feature");
+    repo.commit_and_assert("1.1.0-feature.1");
 }
 
 #[rstest]
