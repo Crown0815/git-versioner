@@ -105,18 +105,25 @@ impl GitVersioner {
 
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(captures) = self.version_pattern.captures(tag_name){
-                if let Some(version_str) = captures.name(VERSION_ID) {
-                    if let Ok(version) = Version::parse(version_str.as_str()){
-                        if let Some(commit_id) = self.tag_id_for(tag_name) {
-                            version_tags.push(VersionSource { version, commit_id });
-                        }
-                    }
+            if let Some(version) = self.version_in(tag_name){
+                if let Some(commit_id) = self.tag_id_for(tag_name) {
+                    version_tags.push(VersionSource { version, commit_id });
                 }
             }
         }
 
         Ok(version_tags)
+    }
+
+    fn version_in(&self, name: &str) -> Option<Version> {
+        if let Some(captures) = self.version_pattern.captures(name){
+            if let Some(version_str) = captures.name(VERSION_ID) {
+                if let Ok(version) = Version::parse(version_str.as_str()) {
+                    return Some(version)
+                }
+            }
+        }
+        None
     }
 
     fn tag_id_for(&self, name: &str) -> Option<Oid> {
