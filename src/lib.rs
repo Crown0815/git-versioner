@@ -22,10 +22,11 @@ pub struct GitVersioner {
     trunk_pattern: Regex,
     release_pattern: Regex,
     feature_pattern: Regex,
-    version_tag_pattern: Regex,
+    version_pattern: Regex,
 }
 
 const BRANCH_NAME_ID: &'static str = "BranchName";
+const VERSION_ID: &'static str = "Version";
 
 impl GitVersioner {
     pub fn calculate_version<P: AsRef<Path>>(repo_path: P, main_branch: Regex) -> Result<Version> {
@@ -34,7 +35,7 @@ impl GitVersioner {
             trunk_pattern: main_branch,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
             feature_pattern: Regex::new(r"^features?[\\/-](?<BranchName>.+)$")?,
-            version_tag_pattern: Regex::new("^[vV]?")?,
+            version_pattern: Regex::new("^[vV]?(?<Version>.+)$")?,
         };
 
         match versioner.determine_branch_at_head()? {
@@ -104,16 +105,19 @@ impl GitVersioner {
 
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            let version_str = self.version_tag_pattern.replacen(tag_name, 1, "");
-            if let Ok(version) = Version::parse(&version_str) {
-                if let Ok(tag_obj) = self.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
-                    let commit_id = if let Some(tag) = tag_obj.as_tag() {
-                        tag.target_id()
-                    } else {
-                        tag_obj.id()
-                    };
+            if let Some(captures) = self.version_pattern.captures(tag_name){
+                if let Some(version_str) = captures.name(VERSION_ID) {
+                    if let Ok(version) = Version::parse(version_str.as_str()) {
+                        if let Ok(tag_obj) = self.repo.revparse_single(&format!("refs/tags/{}", tag_name)) {
+                            let commit_id = if let Some(tag) = tag_obj.as_tag() {
+                                tag.target_id()
+                            } else {
+                                tag_obj.id()
+                            };
 
-                    version_tags.push(VersionSource { version, commit_id });
+                            version_tags.push(VersionSource { version, commit_id });
+                        }
+                    }
                 }
             }
         }
@@ -172,7 +176,7 @@ impl GitVersioner {
             if oid? == to { break; } // Stop counting when the specific commit is reached
             count += 1;
         }
-        
+
         Ok(count)
     }
 
@@ -238,7 +242,7 @@ impl GitVersioner {
             |a, b| a.distance.cmp(&b.distance)
                 .then_with(|| a.branch_type.cmp(&b.branch_type)));
         let closest_branch = found_branches.first();
-        
+
         let mut base_version = match closest_branch {
             None => Ok(Version::new(0,1,0)),
             Some(found_branch) => match &found_branch.branch_type {
@@ -247,7 +251,7 @@ impl GitVersioner {
                 BranchType::Other(name) => panic!("Unexpected branch type: {}", name),
             }
         }.unwrap_or(Version::new(0,1,0));
-        
+
         let distance = match closest_branch {
             None => self.count_commits_between(head_id, Oid::zero())?,
             Some(branch) => branch.distance,
