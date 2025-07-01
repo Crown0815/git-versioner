@@ -42,6 +42,12 @@ fn test_release_on_main_branch(repo: TestRepo, mut cli: Command) {
 }
 
 #[rstest]
+fn test_release_on_main_branch_with_custom_version_pattern(repo: TestRepo, mut cli: Command) {
+    repo.tag("my/v0.1.0");
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(&repo.path).args(&["--version-pattern", "my/v(?<Version>.*)"]));
+}
+
+#[rstest]
 fn test_option_custom_main_branch(
     #[with("custom-main")] repo: TestRepo,
     mut cli: Command

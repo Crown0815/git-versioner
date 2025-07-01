@@ -1,0 +1,30 @@
+---
+source: tests/main.rs
+description: "* c351b72 (HEAD -> trunk, tag: my/v0.1.0) 0.1.0-rc.1\n"
+info:
+  program: git-versioner
+  args:
+    - "--version-pattern"
+    - my/v(?<Version>.*)
+---
+success: true
+exit_code: 0
+----- stdout -----
+{
+  "Major": 0,
+  "Minor": 1,
+  "Patch": 0,
+  "MajorMinorPatch": "0.1.0",
+  "PreReleaseTag": "",
+  "PreReleaseTagWithDash": "",
+  "PreReleaseLabel": "",
+  "PreReleaseLabelWithDash": "",
+  "PreReleaseNumber": "",
+  "BuildMetadata": "",
+  "SemVer": "0.1.0",
+  "AssemblySemVer": "0.1.0",
+  "FullSemVer": "0.1.0",
+  "InformationalVersion": "0.1.0"
+}
+
+----- stderr -----
