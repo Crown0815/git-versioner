@@ -222,11 +222,10 @@ impl GitVersioner {
             let (branch, _) = branch?;
             if let Some(name) = branch.name()? {
                 let branch_type = self.determine_branch_type_by_name(name);
-                if let BranchType::Other(ref branch_name) = branch_type {
-                    if branch_name == name {
-                        continue;
-                    }
+                if let BranchType::Other(_) = branch_type {
+                    continue;
                 }
+
                 let branch_id = branch.get().peel_to_commit()?.id();
 
                 let merge_base = self.repo.merge_base(head_id, branch_id)?;
