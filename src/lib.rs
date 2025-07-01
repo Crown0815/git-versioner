@@ -211,7 +211,7 @@ impl GitVersioner {
     fn calculate_version_for_feature(&self, name: &str) -> Result<Version> {
         struct FoundBranch {
             branch_type: BranchType,
-            distance: usize,
+            distance: i64,
         }
 
         let mut found_branches = Vec::new();
@@ -230,17 +230,7 @@ impl GitVersioner {
 
                 let merge_base = self.repo.merge_base(head_id, branch_id)?;
 
-                let distance = self.repo
-                    .graph_descendant_of(head_id, merge_base)?
-                    .then(|| {
-                        self.repo.revwalk()
-                            .and_then(|mut walk| {
-                                walk.push(head_id)?;
-                                walk.hide(merge_base)?;
-                                Ok(walk.count())
-                            })
-                    })
-                    .unwrap_or(Ok(usize::MAX))?;
+                let distance = self.count_commits_between(head_id, merge_base)?;
 
                 found_branches.push(FoundBranch {
                     branch_type,
