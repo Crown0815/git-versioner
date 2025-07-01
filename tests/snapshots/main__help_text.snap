@@ -1,0 +1,12 @@
+---
+source: tests/main.rs
+expression: help_output
+---
+Usage: git-versioner [OPTIONS]
+
+Options:
+  -r, --repo-path <REPO_PATH>      
+  -m, --main-branch <MAIN_BRANCH>  
+  -v, --verbose                    
+  -h, --help                       Print help
+  -V, --version                    Print version

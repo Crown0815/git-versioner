@@ -1,11 +1,11 @@
 mod common;
 
+use assert_cmd::assert::Assert;
+use assert_cmd::Command;
 use common::TestRepo;
-use indoc::indoc;
+use insta::assert_snapshot;
 use rstest::{fixture, rstest};
 use std::path::Path;
-
-use assert_cmd::Command;
 
 const TRUNK: &str = "trunk";
 
@@ -34,23 +34,22 @@ fn test_repository_not_in_working_directory(repo: TestRepo) {
 
 #[rstest]
 fn test_help_text() {
-    assert_version(".", &["--help"], indoc! {r"
-        Usage: git-versioner [OPTIONS]
+    let assert = assert_success(".", &["--help"]);
+    let help_output = String::from_utf8_lossy(&assert.get_output().stdout);
 
-        Options:
-          -r, --repo-path <REPO_PATH>
-          -m, --main-branch <MAIN_BRANCH>
-          -v, --verbose
-          -h, --help                       Print help
-          -V, --version                    Print version"})
+    assert_snapshot!(help_output)
 }
 
 fn assert_version<P: AsRef<Path>>(cd: P, args: &[&str], expected: &str) {
+    assert_success(cd, args)
+        .stdout(format!("{expected}\n"));
+}
+
+fn assert_success<P: AsRef<Path>>(cd: P, args: &[&str]) -> Assert {
     Command::cargo_bin(env!("CARGO_PKG_NAME"))
         .expect("CLI binary not found")
         .args(args)
         .current_dir(cd)
         .assert()
         .success()
-        .stdout(format!("{expected}\n"));
 }
