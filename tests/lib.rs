@@ -85,7 +85,7 @@ fn test_full_workflow(repo: TestRepo) {
 
 #[rstest]
 fn test_full_workflow_with_feature_branches(repo: TestRepo) {
-    repo.commit("0.1.0-rc.1");
+    repo.commit_and_assert("0.1.0-rc.1");
     repo.branch("feature/feature1");
     repo.commit_and_assert("0.1.0-feature1.1");
 
