@@ -141,7 +141,6 @@ impl GitVersioner {
         let latest_trunk_tag = self.find_latest_trunk_version()?;
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
-        // If we have a tag, increase the minor version and add rc.1
         if let Some(tag) = latest_trunk_tag {
             let merge_base_oid = self.repo.merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
@@ -165,17 +164,15 @@ impl GitVersioner {
 
     fn count_commits_between(&self, from: Oid, to: Oid) -> Result<i64> {
 
-        let mut revwalk = self.repo.revwalk()?;
-        revwalk.push(from)?;
-        revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+        let mut revision_walk = self.repo.revwalk()?;
+        revision_walk.push(from)?;
+        revision_walk.set_sorting(git2::Sort::TOPOLOGICAL)?;
         let mut count = 0;
-        for oid in revwalk {
-            let oid = oid?;
-            if oid == to {
-                break; // Stop counting when the specific commit is reached
-            }
+        for oid in revision_walk {
+            if oid? == to { break; } // Stop counting when the specific commit is reached
             count += 1;
         }
+        
         Ok(count)
     }
 
@@ -227,9 +224,7 @@ impl GitVersioner {
                 }
 
                 let branch_id = branch.get().peel_to_commit()?.id();
-
                 let merge_base = self.repo.merge_base(head_id, branch_id)?;
-
                 let distance = self.count_commits_between(head_id, merge_base)?;
 
                 found_branches.push(FoundBranch {
@@ -239,10 +234,11 @@ impl GitVersioner {
             }
         }
 
-        found_branches.sort_by(|a, b| 
-            a.distance.cmp(&b.distance).then_with(|| a.branch_type.cmp(&b.branch_type)));
-        let closest_branch = &found_branches.into_iter()
-            .find(|item| matches!(item.branch_type, BranchType::Trunk | BranchType::Release(_)));
+        found_branches.sort_by(
+            |a, b| a.distance.cmp(&b.distance)
+                .then_with(|| a.branch_type.cmp(&b.branch_type)));
+        let closest_branch = found_branches.first();
+        
         let mut base_version = match closest_branch {
             None => Ok(Version::new(0,1,0)),
             Some(found_branch) => match &found_branch.branch_type {
@@ -251,17 +247,13 @@ impl GitVersioner {
                 BranchType::Other(name) => panic!("Unexpected branch type: {}", name),
             }
         }.unwrap_or(Version::new(0,1,0));
-
-        base_version.pre = match closest_branch {
-            None => {
-                let mut revwalk = self.repo.revwalk()?;
-                revwalk.push_head()?;
-                revwalk.set_sorting(git2::Sort::TOPOLOGICAL)?;
-                let count = revwalk.count();
-                Prerelease::new(&format!("{}.{}", name, count))?
-            },
-            Some(branch) => Prerelease::new(&format!("{}.{}", name, branch.distance))?,
+        
+        let distance = match closest_branch {
+            None => self.count_commits_between(head_id, Oid::zero())?,
+            Some(branch) => branch.distance,
         };
+
+        base_version.pre = Prerelease::new(&format!("{}.{}", name, distance))?;
         Ok(base_version)
     }
 
