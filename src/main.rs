@@ -1,21 +1,28 @@
 use anyhow::Result;
 use clap::Parser;
-use git_versioner::{Configuration, GitVersioner};
+use git_versioner::*;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
-
-pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
-    #[clap(short, long, value_parser)]
-    repo_path: Option<PathBuf>,
+    #[arg(short, long, value_parser)]
+    path: Option<PathBuf>,
 
-    #[clap(short, long, value_parser)]
-    main_branch: Option<String>,
+    #[arg(long, value_parser, default_value = MAIN_BRANCH)]
+    main_branch: String,
 
-    #[clap(short, long)]
+    #[arg(long, value_parser, default_value = RELEASE_BRANCH)]
+    release_branch: String,
+
+    #[arg(long, value_parser, default_value = FEATURE_BRANCH)]
+    feature_branch: String,
+
+    #[arg(long, value_parser, default_value = VERSION_PATTERN)]
+    version_pattern: String,
+
+    #[arg(short, long)]
     verbose: bool,
 }
 
@@ -42,11 +49,11 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     let config = Configuration {
-        repo_path: args.repo_path.unwrap_or_else(|| std::env::current_dir().unwrap()),
-        trunk_pattern: args.main_branch.unwrap_or_else(|| MAIN_BRANCH.to_string()),
-        release_pattern: "".to_string(),
-        feature_pattern: "".to_string(),
-        version_pattern: "".to_string(),
+        repo_path: args.path.unwrap_or_else(|| std::env::current_dir().unwrap()),
+        main_branch: args.main_branch,
+        release_branch: args.release_branch,
+        feature_branch: args.feature_branch,
+        version_pattern: args.version_pattern,
     };
 
     let version = GitVersioner::calculate_version(&config)?;

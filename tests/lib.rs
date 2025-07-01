@@ -132,11 +132,11 @@ fn test_full_workflow_with_feature_branches(repo: TestRepo) {
 }
 
 #[rstest]
-fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] repo: TestRepo) {
+fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] mut repo: TestRepo) {
+    repo.config.main_branch = r"^custom-trunk$".to_string();
     repo.commit("Initial commit");
 
-    assert_version(&repo, "0.1.0-custom-trunk.1");
-    assert_version_with_custom_trunk(&repo, "0.1.0-rc.1", r"^custom-trunk$");
+    assert_version_with_custom_trunk(&repo, "0.1.0-rc.1");
 }
 
 #[rstest]
@@ -170,6 +170,13 @@ fn test_tags_without_matching_version_tag_prefix_are_ignored(
 }
 
 #[rstest]
+fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: TestRepo) {
+    repo.config.version_pattern = "my/v(?<Version>.+)".to_string();
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.tag_and_assert("my/v", "1.0.0");
+}
+
+#[rstest]
 // These symbols were not tested because they are invalid in branch names:
 // '\', '^', '~', ' ', ':', '?', '*', '['
 // see https://git-scm.com/docs/git-check-ref-format
@@ -183,19 +190,11 @@ fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_rep
 }
 
 fn assert_version(repo: &TestRepo, expected: &str) {
-    assert_version_with_custom_trunk(repo, expected, "^trunk$");
+    assert_version_with_custom_trunk(repo, expected);
 }
 
-fn assert_version_with_custom_trunk(repo: &TestRepo, expected: &str, main_branch: &str) {
-    let config = Configuration {
-        repo_path: repo.path.clone(),
-        trunk_pattern: main_branch.to_string(),
-        release_pattern: "".to_string(),
-        feature_pattern: "".to_string(),
-        version_pattern: "".to_string(),
-    };
-
-    let actual = GitVersioner::calculate_version(&config).unwrap();
+fn assert_version_with_custom_trunk(repo: &TestRepo, expected: &str) {
+    let actual = GitVersioner::calculate_version(&repo.config).unwrap();
     let expected = Version::parse(expected).unwrap();
     assert_eq!(
         actual,

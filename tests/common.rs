@@ -1,17 +1,21 @@
 use git2::Oid;
+use git_versioner::Configuration;
 use std::path::PathBuf;
 use std::process::Output;
 
 pub struct TestRepo {
     pub path: PathBuf,
+    pub config: Configuration,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
 
 impl TestRepo {
     pub fn new() -> Self {
-        let temp_dir = tempfile::tempdir().unwrap();
-        let path = temp_dir.path().to_path_buf();
-        Self { path, _temp_dir: temp_dir }
+        let _temp_dir = tempfile::tempdir().unwrap();
+        let path = _temp_dir.path().to_path_buf();
+        let mut config = Configuration::default();
+        config.repo_path = path.clone();
+        Self { path, config, _temp_dir }
     }
 
     pub fn initialize(&self, main_branch: &str) {

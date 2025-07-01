@@ -2,7 +2,12 @@ use anyhow::{anyhow, Result};
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Prerelease, Version};
-use std::path::Path;
+use std::path::PathBuf;
+
+pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
+pub const RELEASE_BRANCH: &str = r"^releases?[\\/-](?<BranchName>.+)$";
+pub const FEATURE_BRANCH: &str = r"^features?[\\/-](?<BranchName>.+)$";
+pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>\d+\.\d+\.\d+)";
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BranchType {
@@ -17,12 +22,24 @@ struct VersionSource {
     commit_id: Oid,
 }
 
-pub struct Configuration<P: AsRef<Path>>{
-    pub repo_path: P,
-    pub trunk_pattern: String,
-    pub release_pattern: String,
-    pub feature_pattern: String,
+pub struct Configuration{
+    pub repo_path: PathBuf,
+    pub main_branch: String,
+    pub release_branch: String,
+    pub feature_branch: String,
     pub version_pattern: String,
+}
+
+impl Default for Configuration {
+    fn default() -> Self {
+        Self {
+            repo_path: ".".into(),
+            main_branch: MAIN_BRANCH.to_string(),
+            release_branch: RELEASE_BRANCH.to_string(),
+            feature_branch: FEATURE_BRANCH.to_string(),
+            version_pattern: VERSION_PATTERN.to_string(),
+        }
+    }
 }
 
 pub struct GitVersioner {
@@ -37,13 +54,13 @@ const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
 
 impl GitVersioner {
-    pub fn calculate_version<P: AsRef<Path>>(config: &Configuration<P>) -> Result<Version> {
+    pub fn calculate_version(config: &Configuration) -> Result<Version> {
         let versioner = Self {
             repo: Repository::open(&config.repo_path)?,
-            trunk_pattern: Regex::new(&config.trunk_pattern)?,
+            trunk_pattern: Regex::new(&config.main_branch)?,
             release_pattern: Regex::new(r"^releases?[\\/-](?<BranchName>.+)$")?,
             feature_pattern: Regex::new(r"^features?[\\/-](?<BranchName>.+)$")?,
-            version_pattern: Regex::new(r"^[vV]?(?<Version>\d+\.\d+\.\d+)")?,
+            version_pattern: Regex::new(&config.version_pattern)?,
         };
 
         match versioner.determine_branch_at_head()? {

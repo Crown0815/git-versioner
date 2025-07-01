@@ -6,7 +6,7 @@ use insta_cmd::{assert_cmd_snapshot, get_cargo_bin};
 use rstest::{fixture, rstest};
 use std::process::Command;
 
-const TRUNK: &str = "trunk";
+const MAIN_BRANCH: &str = "trunk";
 
 macro_rules! assert_repo_cmd_snapshot {
     ($repo:expr, $cmd:expr) => {
@@ -18,7 +18,7 @@ macro_rules! assert_repo_cmd_snapshot {
 }
 
 #[fixture]
-fn repo(#[default(TRUNK)] main: &str) -> TestRepo {
+fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
     let repo = TestRepo::new();
     repo.initialize(main);
     repo.commit("0.1.0-rc.1");
@@ -51,7 +51,7 @@ fn test_option_custom_main_branch(
 
 #[rstest]
 fn test_option_custom_repository_path(repo: TestRepo, mut cli: Command) {
-    assert_repo_cmd_snapshot!(repo, cli.current_dir(".").args(&["--repo-path", repo.path.to_str().unwrap()]));
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(".").args(&["--path", repo.path.to_str().unwrap()]));
 }
 
 #[rstest]
