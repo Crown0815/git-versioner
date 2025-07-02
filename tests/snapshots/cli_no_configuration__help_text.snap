@@ -17,6 +17,7 @@ Options:
       --feature-branch <FEATURE_BRANCH>    [default: ^features?[/-](?<BranchName>.+)$]
       --version-pattern <VERSION_PATTERN>  [default: ^[vV]?(?<Version>\d+\.\d+\.\d+)]
   -v, --verbose                            
+  -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
   -h, --help                               Print help
   -V, --version                            Print version
 

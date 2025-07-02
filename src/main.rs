@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use clap::Parser;
 use git_versioner::*;
 use serde::{Deserialize, Serialize};
@@ -24,6 +24,10 @@ struct Args {
 
     #[arg(short, long)]
     verbose: bool,
+
+    /// Path to a configuration file (TOML or YAML)
+    #[arg(short = 'c', long = "config")]
+    config_file: Option<PathBuf>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -48,13 +52,53 @@ struct Output {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let config = Configuration {
-        repo_path: args.path.unwrap_or_else(|| std::env::current_dir().unwrap()),
-        main_branch: args.main_branch,
-        release_branch: args.release_branch,
-        feature_branch: args.feature_branch,
-        version_pattern: args.version_pattern,
+    // Try to load configuration from a file if specified
+    let mut config = if let Some(config_path) = &args.config_file {
+        match Configuration::from_file(config_path) {
+            Ok(config) => {
+                if args.verbose {
+                    println!("Loaded configuration from {}", config_path.display());
+                }
+                config
+            },
+            Err(err) => {
+                return Err(anyhow!("Failed to load configuration from {}: {}", config_path.display(), err));
+            }
+        }
+    } else {
+        // Try to load from default configuration files
+        match Configuration::from_default_files() {
+            Ok(config) => {
+                if args.verbose {
+                    println!("Loaded configuration from default file");
+                }
+                config
+            },
+            Err(_) => {
+                // Fall back to CLI arguments
+                Configuration::default()
+            }
+        }
     };
+
+    // Override with CLI arguments if provided
+    if let Some(path) = args.path {
+        config.repo_path = path;
+    }
+
+    // Only override pattern values if they're different from the defaults
+    if args.main_branch != MAIN_BRANCH {
+        config.main_branch = args.main_branch;
+    }
+    if args.release_branch != RELEASE_BRANCH {
+        config.release_branch = args.release_branch;
+    }
+    if args.feature_branch != FEATURE_BRANCH {
+        config.feature_branch = args.feature_branch;
+    }
+    if args.version_pattern != VERSION_PATTERN {
+        config.version_pattern = args.version_pattern;
+    }
 
     let version = GitVersioner::calculate_version(&config)?;
 

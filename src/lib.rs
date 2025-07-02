@@ -1,8 +1,10 @@
+pub mod config;
+
 use anyhow::{anyhow, Result};
+pub use config::Configuration;
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Prerelease, Version};
-use std::path::PathBuf;
 
 pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
@@ -20,26 +22,6 @@ pub enum BranchType {
 struct VersionSource {
     version: Version,
     commit_id: Oid,
-}
-
-pub struct Configuration{
-    pub repo_path: PathBuf,
-    pub main_branch: String,
-    pub release_branch: String,
-    pub feature_branch: String,
-    pub version_pattern: String,
-}
-
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            repo_path: ".".into(),
-            main_branch: MAIN_BRANCH.to_string(),
-            release_branch: RELEASE_BRANCH.to_string(),
-            feature_branch: FEATURE_BRANCH.to_string(),
-            version_pattern: VERSION_PATTERN.to_string(),
-        }
-    }
 }
 
 pub struct GitVersioner {
