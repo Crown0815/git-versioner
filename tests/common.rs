@@ -9,6 +9,16 @@ pub struct TestRepo {
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
 
+#[macro_export]
+macro_rules! assert_repo_cmd_snapshot {
+    ($repo:expr, $cmd:expr) => {
+        with_settings!(
+            { description => $repo.graph() },
+            { assert_cmd_snapshot!($cmd); }
+        );
+    };
+}
+
 impl TestRepo {
     pub fn new() -> Self {
         let _temp_dir = tempfile::tempdir().unwrap();

@@ -8,15 +8,6 @@ use std::process::Command;
 
 const MAIN_BRANCH: &str = "trunk";
 
-macro_rules! assert_repo_cmd_snapshot {
-    ($repo:expr, $cmd:expr) => {
-        with_settings!(
-            { description => $repo.graph() },
-            { assert_cmd_snapshot!($cmd); }
-        );
-    };
-}
-
 #[fixture]
 fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
     let repo = TestRepo::new();
