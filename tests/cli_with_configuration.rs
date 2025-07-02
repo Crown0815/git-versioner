@@ -1,7 +1,6 @@
 mod common;
 
 use common::{cli, repo, TestRepo};
-use indoc::formatdoc;
 use insta::with_settings;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::rstest;
@@ -15,15 +14,11 @@ macro_rules! assert_configured_repo_cmd_snapshot {
     ($repo:expr, $config:expr, $cmd:expr) => {
         with_settings!(
             { description =>
-                formatdoc!(
-                    "
-                    Git Graph:
-                        {graph}
-                    Configuration ({path}):
-                        {config}",
-                    graph = $repo.graph(),
-                    path = $config.file_name().unwrap().to_string_lossy(),
-                    config = fs::read_to_string(&$config).unwrap()
+                format!(
+                    "Git Graph:\n    {}\nConfiguration ({}):\n    {}",
+                    $repo.graph(),
+                    $config.file_name().unwrap().to_string_lossy(),
+                    fs::read_to_string(&$config).unwrap()
                 )
             },
             { assert_cmd_snapshot!($cmd); }
