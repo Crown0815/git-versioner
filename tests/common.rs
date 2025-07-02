@@ -2,6 +2,7 @@ use git2::Oid;
 use git_versioner::config::ConfigurationFile;
 use git_versioner::DefaultConfig;
 use insta_cmd::get_cargo_bin;
+use regex::Regex;
 use rstest::fixture;
 use std::fs;
 use std::path::PathBuf;
@@ -87,7 +88,10 @@ impl TestRepo {
 
     pub fn graph(&self) -> String {
         let output = self.execute(&["log", "--graph", "--oneline", "--all", "--decorate"], "get commit graph");
-        String::from_utf8_lossy(&output.stdout).to_string()
+        let raw = String::from_utf8_lossy(&output.stdout).to_string();
+
+        let re = Regex::new(r"\b[[:xdigit:]]{7}\b").unwrap();
+        re.replace_all(&raw, "##SHA##").to_string()
     }
 
     fn execute(&self, command: &[&str], description: &str) -> Output {

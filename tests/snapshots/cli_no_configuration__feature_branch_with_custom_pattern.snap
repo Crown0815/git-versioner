@@ -1,6 +1,6 @@
 ---
 source: tests/cli_no_configuration.rs
-description: "* bc2863d (HEAD -> my-feature/feature) 0.1.0-feature.1\n* e97c0bd (trunk) 0.1.0-rc.1\n* 3a60aa0 0.1.0-rc.1\n"
+description: "* ##SHA## (HEAD -> my-feature/feature) 0.1.0-feature.1\n* ##SHA## (trunk) 0.1.0-rc.1\n* ##SHA## 0.1.0-rc.1\n"
 info:
   program: git-versioner
   args:

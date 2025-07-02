@@ -1,6 +1,6 @@
 ---
 source: tests/cli_no_configuration.rs
-description: "* 3a60aa0 (HEAD -> custom-main) 0.1.0-rc.1\n"
+description: "* ##SHA## (HEAD -> custom-main) 0.1.0-rc.1\n"
 info:
   program: git-versioner
   args:

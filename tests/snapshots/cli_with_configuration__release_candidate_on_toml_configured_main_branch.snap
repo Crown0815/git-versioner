@@ -1,6 +1,6 @@
 ---
 source: tests/cli_with_configuration.rs
-description: "Git Graph:\n    * 9d651ec (HEAD -> stem) 0.1.0-rc.1\n\nConfiguration (.git-versioner.toml):\n    main_branch = \"^stem$\"\n"
+description: "Git Graph:\n    * ##SHA## (HEAD -> stem) 0.1.0-rc.1\n\nConfiguration (.git-versioner.toml):\n    MainBranch = \"^stem$\"\n"
 info:
   program: git-versioner
   args: []

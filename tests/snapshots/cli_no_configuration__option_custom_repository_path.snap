@@ -1,11 +1,11 @@
 ---
 source: tests/cli_no_configuration.rs
-description: "* 3a60aa0 (HEAD -> trunk) 0.1.0-rc.1\n"
+description: "* ##SHA## (HEAD -> trunk) 0.1.0-rc.1\n"
 info:
   program: git-versioner
   args:
     - "--path"
-    - /var/folders/h6/6c04dcj9667bcpbvgl_79p7w0000gn/T/.tmpam7pLm
+    - /var/folders/h6/6c04dcj9667bcpbvgl_79p7w0000gn/T/.tmplBWe0W
 ---
 success: true
 exit_code: 0
