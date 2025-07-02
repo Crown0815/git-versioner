@@ -30,6 +30,7 @@ pub struct DefaultConfig {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct ConfigurationFile {
     pub main_branch: Option<String>,
     pub release_branch: Option<String>,
@@ -43,16 +44,16 @@ pub struct Args {
     #[arg(short, long, value_parser)]
     path: Option<PathBuf>,
 
-    #[arg(long, value_parser, default_value = MAIN_BRANCH)]
+    #[arg(long, value_parser)]
     main_branch: Option<String>,
 
-    #[arg(long, value_parser, default_value = RELEASE_BRANCH)]
+    #[arg(long, value_parser)]
     release_branch: Option<String>,
 
-    #[arg(long, value_parser, default_value = FEATURE_BRANCH)]
+    #[arg(long, value_parser)]
     feature_branch: Option<String>,
 
-    #[arg(long, value_parser, default_value = VERSION_PATTERN)]
+    #[arg(long, value_parser)]
     version_pattern: Option<String>,
 
     #[arg(short, long)]
@@ -61,6 +62,13 @@ pub struct Args {
     /// Path to a configuration file (TOML or YAML)
     #[arg(short = 'c', long = "config")]
     config_file: Option<PathBuf>,
+}
+
+#[derive(Debug)]
+pub struct ConfigurationLayers {
+    args: Args,
+    file: ConfigurationFile,
+    config: DefaultConfig,
 }
 
 impl Default for DefaultConfig {
@@ -142,21 +150,14 @@ impl ConfigurationFile {
     }
 }
 
-pub struct ConfigurationLayers {
-    args: Args,
-    file: ConfigurationFile,
-    config: DefaultConfig,
-}
-
-impl ConfigurationLayers {
-    pub fn new(args: Args) -> anyhow::Result<Self> {
-        let config = DefaultConfig::default();
-        let file = match &args.config_file {
-            None => ConfigurationFile::from_default_files(),
-            Some(path) => ConfigurationFile::from_file(path),
-        }.unwrap_or_default();
-        Ok(Self { args, file, config })
-    }
+pub fn load_configuration() -> anyhow::Result<ConfigurationLayers> {
+    let args = Args::parse();
+    let config = DefaultConfig::default();
+    let file = match &args.config_file {
+        None => ConfigurationFile::from_default_files(),
+        Some(path) => ConfigurationFile::from_file(path),
+    }.unwrap_or_default();
+    Ok(ConfigurationLayers { args, file, config })
 }
 
 impl Configuration for ConfigurationLayers {
@@ -169,6 +170,8 @@ impl Configuration for ConfigurationLayers {
     }
     fn main_branch(&self) -> &str {
         if let Some(main_branch) = &self.args.main_branch {
+            main_branch
+        } else if let Some(main_branch) = &self.file.main_branch {
             main_branch
         } else {
             &self.config.main_branch

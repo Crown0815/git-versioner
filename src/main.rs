@@ -1,6 +1,5 @@
-use crate::config::{Args, Configuration, ConfigurationLayers};
 use anyhow::Result;
-use clap::Parser;
+use git_versioner::config::load_configuration;
 use git_versioner::*;
 use serde::{Deserialize, Serialize};
 
@@ -24,14 +23,8 @@ struct Output {
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
-    let config = ConfigurationLayers::new(args)?;
-
+    let config = load_configuration()?;
     let version = GitVersioner::calculate_version(&config)?;
-
-    if config.verbose() {
-        println!("Repository path: {}", config.repository_path().display());
-    }
 
     let output = Output {
         major: version.major,

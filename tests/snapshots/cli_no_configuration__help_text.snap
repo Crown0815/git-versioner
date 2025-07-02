@@ -12,10 +12,10 @@ Usage: git-versioner [OPTIONS]
 
 Options:
   -p, --path <PATH>                        
-      --main-branch <MAIN_BRANCH>          [default: ^(trunk|main|master)$]
-      --release-branch <RELEASE_BRANCH>    [default: ^releases?[/-](?<BranchName>.+)$]
-      --feature-branch <FEATURE_BRANCH>    [default: ^features?[/-](?<BranchName>.+)$]
-      --version-pattern <VERSION_PATTERN>  [default: ^[vV]?(?<Version>\d+\.\d+\.\d+)]
+      --main-branch <MAIN_BRANCH>          
+      --release-branch <RELEASE_BRANCH>    
+      --feature-branch <FEATURE_BRANCH>    
+      --version-pattern <VERSION_PATTERN>  
   -v, --verbose                            
   -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
   -h, --help                               Print help

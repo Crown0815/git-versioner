@@ -41,11 +41,25 @@ impl GitVersioner {
             version_pattern: Regex::new(&config.version_pattern())?,
         };
 
+        if config.verbose() {
+            versioner.print_effective_configuration();
+        }
+
         match versioner.determine_branch_at_head()? {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
             BranchType::Other(name) => versioner.calculate_version_for_feature(&name),
         }
+    }
+
+    fn print_effective_configuration(&self) {
+        println!("Using configuration:");
+        println!("  Repository path: {}", self.repo.path().display());
+        println!("  Trunk pattern: {}", self.trunk_pattern);
+        println!("  Release pattern: {}", self.release_pattern);
+        println!("  Feature pattern: {}", self.feature_pattern);
+        println!("  Version pattern: {}", self.version_pattern);
+        println!();
     }
 
     fn determine_branch_at_head(&self) -> Result<BranchType> {
