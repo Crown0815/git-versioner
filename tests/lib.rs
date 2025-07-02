@@ -40,9 +40,7 @@ impl TestRepo {
 
 #[fixture]
 fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {
-    let repo = TestRepo::new();
-    repo.initialize(main_branch);
-    repo
+    TestRepo::initialize(main_branch)
 }
 
 #[rstest]

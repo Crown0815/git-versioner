@@ -1,5 +1,6 @@
 use git2::Oid;
 use git_versioner::Configuration;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Output;
 
@@ -20,7 +21,7 @@ macro_rules! assert_repo_cmd_snapshot {
 }
 
 impl TestRepo {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let _temp_dir = tempfile::tempdir().unwrap();
         let path = _temp_dir.path().to_path_buf();
         let mut config = Configuration::default();
@@ -28,10 +29,12 @@ impl TestRepo {
         Self { path, config, _temp_dir }
     }
 
-    pub fn initialize(&self, main_branch: &str) {
-        self.execute(&["init", &format!("--initial-branch={main_branch}")], "initialize repository");
-        self.execute(&["config", "user.name", "tester"], "configure user.name");
-        self.execute(&["config", "user.email", "tester@tests.com"], "configure user.email");
+    pub fn initialize(main_branch: &str) -> Self {
+        let repo = TestRepo::new();
+        repo.execute(&["init", &format!("--initial-branch={main_branch}")], "initialize repository");
+        repo.execute(&["config", "user.name", "tester"], "configure user.name");
+        repo.execute(&["config", "user.email", "tester@tests.com"], "configure user.email");
+        repo
     }
 
     pub fn commit(&self, message: &str) -> Oid {
@@ -80,5 +83,29 @@ impl TestRepo {
             panic!("Failed to {description}, because: {error}")
         }
         output
+    }
+
+    pub fn create_default_toml_config(&self) -> PathBuf {
+        self.create_toml_config(".git-versioner.toml")
+    }
+
+    pub fn create_toml_config(&self, filename: &str) -> PathBuf {
+        let content = toml::to_string(&self.config).expect("Failed to serialize config to TOML");
+        self.write_config(filename, content)
+    }
+
+    pub fn create_default_yaml_config(&self) -> PathBuf {
+        self.create_yaml_config(".git-versioner.yaml")
+    }
+
+    pub fn create_yaml_config(&self, filename: &str) -> PathBuf {
+        let content = serde_yaml::to_string(&self.config).expect("Failed to serialize config to YAML");
+        self.write_config(filename, content)
+    }
+
+    fn write_config(&self, filename: &str, toml_content: String) -> PathBuf {
+        let config_path = self.path.join(filename);
+        fs::write(&config_path, toml_content).expect("Failed to write TOML config file");
+        config_path
     }
 }

@@ -10,8 +10,7 @@ const MAIN_BRANCH: &str = "trunk";
 
 #[fixture]
 fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
-    let repo = TestRepo::new();
-    repo.initialize(main);
+    let repo = TestRepo::initialize(main);
     repo.commit("0.1.0-rc.1");
     repo
 }
