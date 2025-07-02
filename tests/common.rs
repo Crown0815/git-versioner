@@ -1,4 +1,5 @@
 use git2::Oid;
+use git_versioner::config::ConfigurationFile;
 use git_versioner::DefaultConfig;
 use insta_cmd::get_cargo_bin;
 use rstest::fixture;
@@ -33,6 +34,7 @@ macro_rules! assert_repo_cmd_snapshot {
 pub struct TestRepo {
     pub path: PathBuf,
     pub config: DefaultConfig,
+    pub cli_config: ConfigurationFile,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
 
@@ -41,8 +43,9 @@ impl TestRepo {
         let _temp_dir = tempfile::tempdir().unwrap();
         let path = _temp_dir.path().to_path_buf();
         let mut config = DefaultConfig::default();
-        config.repo_path = path.clone();
-        Self { path, config, _temp_dir }
+        config.path = path.clone();
+        let cli_config = ConfigurationFile::default();
+        Self { path, config, cli_config, _temp_dir }
     }
 
     pub fn initialize(main_branch: &str) -> Self {
@@ -106,7 +109,7 @@ impl TestRepo {
     }
 
     pub fn create_toml_config(&self, filename: &str) -> PathBuf {
-        let content = toml::to_string(&self.config).expect("Failed to serialize config to TOML");
+        let content = toml::to_string(&self.cli_config).expect("Failed to serialize config to TOML");
         self.write_config(filename, content)
     }
 
@@ -115,7 +118,7 @@ impl TestRepo {
     }
 
     pub fn create_yaml_config(&self, filename: &str) -> PathBuf {
-        let content = serde_yaml::to_string(&self.config).expect("Failed to serialize config to YAML");
+        let content = serde_yaml::to_string(&self.cli_config).expect("Failed to serialize config to YAML");
         self.write_config(filename, content)
     }
 
