@@ -1,5 +1,5 @@
 use git2::Oid;
-use git_versioner::Configuration;
+use git_versioner::DefaultConfig;
 use insta_cmd::get_cargo_bin;
 use rstest::fixture;
 use std::fs;
@@ -32,7 +32,7 @@ macro_rules! assert_repo_cmd_snapshot {
 
 pub struct TestRepo {
     pub path: PathBuf,
-    pub config: Configuration,
+    pub config: DefaultConfig,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
 
@@ -40,7 +40,7 @@ impl TestRepo {
     fn new() -> Self {
         let _temp_dir = tempfile::tempdir().unwrap();
         let path = _temp_dir.path().to_path_buf();
-        let mut config = Configuration::default();
+        let mut config = DefaultConfig::default();
         config.repo_path = path.clone();
         Self { path, config, _temp_dir }
     }

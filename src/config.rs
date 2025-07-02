@@ -1,11 +1,23 @@
-use crate::{FEATURE_BRANCH, MAIN_BRANCH, RELEASE_BRANCH, VERSION_PATTERN};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
+pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
+pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
+pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>\d+\.\d+\.\d+)";
+
+pub trait Configuration2{
+    fn repository_path(&self) -> PathBuf;
+    fn main_branch(&self) -> String;
+    fn release_branch(&self) -> String;
+    fn feature_branch(&self) -> String;
+    fn version_pattern(&self) -> String;
+}
+
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Configuration{
+pub struct DefaultConfig {
     pub repo_path: PathBuf,
     pub main_branch: String,
     pub release_branch: String,
@@ -13,7 +25,7 @@ pub struct Configuration{
     pub version_pattern: String,
 }
 
-impl Default for Configuration {
+impl Default for DefaultConfig {
     fn default() -> Self {
         Self {
             repo_path: ".".into(),
@@ -32,7 +44,7 @@ pub struct ConfigurationFile {
     pub version_pattern: Option<String>,
 }
 
-impl Configuration {
+impl DefaultConfig {
     /// Attempts to load configuration from a file with the given path.
     /// The file format is determined by the file extension.
     pub fn from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {

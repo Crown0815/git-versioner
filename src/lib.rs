@@ -1,15 +1,10 @@
 pub mod config;
 
 use anyhow::{anyhow, Result};
-pub use config::Configuration;
+pub use config::DefaultConfig;
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Prerelease, Version};
-
-pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
-pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
-pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
-pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>\d+\.\d+\.\d+)";
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BranchType {
@@ -36,7 +31,7 @@ const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
 
 impl GitVersioner {
-    pub fn calculate_version(config: &Configuration) -> Result<Version> {
+    pub fn calculate_version(config: &DefaultConfig) -> Result<Version> {
         let versioner = Self {
             repo: Repository::open(&config.repo_path)?,
             trunk_pattern: Regex::new(&config.main_branch)?,

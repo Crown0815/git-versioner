@@ -1,3 +1,4 @@
+use crate::config::{DefaultConfig, FEATURE_BRANCH, MAIN_BRANCH, RELEASE_BRANCH, VERSION_PATTERN};
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use git_versioner::*;
@@ -54,7 +55,7 @@ fn main() -> Result<()> {
 
     // Try to load configuration from a file if specified
     let mut config = if let Some(config_path) = &args.config_file {
-        match Configuration::from_file(config_path) {
+        match DefaultConfig::from_file(config_path) {
             Ok(config) => {
                 if args.verbose {
                     println!("Loaded configuration from {}", config_path.display());
@@ -67,7 +68,7 @@ fn main() -> Result<()> {
         }
     } else {
         // Try to load from default configuration files
-        match Configuration::from_default_files() {
+        match DefaultConfig::from_default_files() {
             Ok(config) => {
                 if args.verbose {
                     println!("Loaded configuration from default file");
@@ -76,7 +77,7 @@ fn main() -> Result<()> {
             },
             Err(_) => {
                 // Fall back to CLI arguments
-                Configuration::default()
+                DefaultConfig::default()
             }
         }
     };
