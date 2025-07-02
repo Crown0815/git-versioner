@@ -1,5 +1,6 @@
 pub mod config;
 
+use crate::config::Configuration;
 use anyhow::{anyhow, Result};
 pub use config::DefaultConfig;
 use git2::{Oid, Reference, Repository};
@@ -31,13 +32,13 @@ const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
 
 impl GitVersioner {
-    pub fn calculate_version(config: &DefaultConfig) -> Result<Version> {
+    pub fn calculate_version<T: Configuration>(config: &T) -> Result<Version> {
         let versioner = Self {
-            repo: Repository::open(&config.repo_path)?,
-            trunk_pattern: Regex::new(&config.main_branch)?,
-            release_pattern: Regex::new(&config.release_branch)?,
-            feature_pattern: Regex::new(&config.feature_branch)?,
-            version_pattern: Regex::new(&config.version_pattern)?,
+            repo: Repository::open(config.repository_path())?,
+            trunk_pattern: Regex::new(&config.main_branch())?,
+            release_pattern: Regex::new(&config.release_branch())?,
+            feature_pattern: Regex::new(&config.feature_branch())?,
+            version_pattern: Regex::new(&config.version_pattern())?,
         };
 
         match versioner.determine_branch_at_head()? {

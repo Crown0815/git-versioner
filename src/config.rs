@@ -8,12 +8,12 @@ pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
 pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>\d+\.\d+\.\d+)";
 
-pub trait Configuration2{
-    fn repository_path(&self) -> PathBuf;
-    fn main_branch(&self) -> String;
-    fn release_branch(&self) -> String;
-    fn feature_branch(&self) -> String;
-    fn version_pattern(&self) -> String;
+pub trait Configuration {
+    fn repository_path(&self) -> &PathBuf;
+    fn main_branch(&self) -> &str;
+    fn release_branch(&self) -> &str;
+    fn feature_branch(&self) -> &str;
+    fn version_pattern(&self) -> &str;
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -35,6 +35,24 @@ impl Default for DefaultConfig {
             version_pattern: VERSION_PATTERN.to_string(),
         }
     }
+}
+
+impl Configuration for DefaultConfig {
+    fn repository_path(&self) -> &PathBuf {
+        &self.repo_path
+    }    
+    fn main_branch(&self) -> &str {
+        &self.main_branch
+    }    
+    fn release_branch(&self) -> &str {
+        &self.release_branch
+    }    
+    fn feature_branch(&self) -> &str {
+        &self.feature_branch
+    }    
+    fn version_pattern(&self) -> &str {
+        &self.version_pattern
+    }    
 }
 
 pub struct ConfigurationFile {
