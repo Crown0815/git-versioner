@@ -5,8 +5,8 @@ use semver::{Prerelease, Version};
 use std::path::PathBuf;
 
 pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
-pub const RELEASE_BRANCH: &str = r"^releases?[\\/-](?<BranchName>.+)$";
-pub const FEATURE_BRANCH: &str = r"^features?[\\/-](?<BranchName>.+)$";
+pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
+pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
 pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>\d+\.\d+\.\d+)";
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -111,7 +111,7 @@ impl GitVersioner {
             }
         }
 
-        BranchType::Other(name.to_string())
+        BranchType::Other(Self::escaped(name))
     }
 
     fn escaped(name: &str) -> String {

@@ -13,8 +13,8 @@ Usage: git-versioner [OPTIONS]
 Options:
   -p, --path <PATH>                        
       --main-branch <MAIN_BRANCH>          [default: ^(trunk|main|master)$]
-      --release-branch <RELEASE_BRANCH>    [default: ^releases?[\\/-](?<BranchName>.+)$]
-      --feature-branch <FEATURE_BRANCH>    [default: ^features?[\\/-](?<BranchName>.+)$]
+      --release-branch <RELEASE_BRANCH>    [default: ^releases?[/-](?<BranchName>.+)$]
+      --feature-branch <FEATURE_BRANCH>    [default: ^features?[/-](?<BranchName>.+)$]
       --version-pattern <VERSION_PATTERN>  [default: ^[vV]?(?<Version>\d+\.\d+\.\d+)]
   -v, --verbose                            
   -h, --help                               Print help

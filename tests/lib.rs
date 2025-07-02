@@ -151,10 +151,12 @@ fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] mut repo: TestRe
 #[rstest]
 fn test_release_branches_with_matching_version_tag_prefix_affect_main_branch(
     repo: TestRepo,
+    #[values("", "s")] casing: &str,
+    #[values("/", "-")] separator: &str,
     #[values("v", "V", "")] prefix: &str,
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
-    repo.branch(&format!("release/{}1.0.0", prefix));
+    repo.branch(&format!("release{}{}{}1.0.0", casing, separator, prefix));
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.1.0-rc.1");
 }
@@ -197,10 +199,13 @@ fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: Te
 }
 
 #[rstest]
-fn test_feature_branches_from_main_branch_inherit_main_branch_base_version(repo: TestRepo) {
+fn test_feature_branches_inherits_main_branch_base_version(
+    repo: TestRepo,
+    #[values("/", "-", "s/", "s-")] case: &str,
+) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("v", "1.0.0");
-    repo.branch("feature/feature");
+    repo.branch(&format!("feature{}feature", case));
     repo.commit_and_assert("1.1.0-feature.1");
 }
 
@@ -225,4 +230,12 @@ fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_rep
     repo.commit("irrelevant");
     repo.branch(&format!("feature/a{}a",  incompatible_symbol));
     repo.commit_and_assert("0.1.0-a-a.1");
+}
+
+#[rstest]
+fn test_non_matching_branches_are_treated_as_feature_branches(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.branch("refactor/abc");
+    repo.commit_and_assert("1.1.0-refactor-abc.1");
 }
