@@ -48,6 +48,23 @@ fn test_release_on_main_branch_with_custom_version_pattern(repo: TestRepo, mut c
 }
 
 #[rstest]
+fn test_release_branch_with_custom_pattern(repo: TestRepo, mut cli: Command) {
+    repo.commit("0.1.0-rc.1");
+    repo.tag("v1.0.0");
+    repo.branch("custom-release/1.0.0");
+    repo.commit("1.0.1-rc.1");
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(&repo.path).args(&["--release-branch", "custom-release/(?<BranchName>.*)"]));
+}
+
+#[rstest]
+fn test_feature_branch_with_custom_pattern(repo: TestRepo, mut cli: Command) {
+    repo.commit("0.1.0-rc.1");
+    repo.branch("my-feature/feature");
+    repo.commit("0.1.0-feature.1");
+    assert_repo_cmd_snapshot!(repo, cli.current_dir(&repo.path).args(&["--feature-branch", "my-feature/(?<BranchName>.*)"]));
+}
+
+#[rstest]
 fn test_option_custom_main_branch(
     #[with("custom-main")] repo: TestRepo,
     mut cli: Command

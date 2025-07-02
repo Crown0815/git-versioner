@@ -1,0 +1,30 @@
+---
+source: tests/main.rs
+description: "* 2cdcfc7 (HEAD -> custom-release/1.0.0) 1.0.1-rc.1\n* e15f413 (tag: v1.0.0, trunk) 0.1.0-rc.1\n* 8e7ea21 0.1.0-rc.1\n"
+info:
+  program: git-versioner
+  args:
+    - "--release-branch"
+    - custom-release/(?<BranchName>.*)
+---
+success: true
+exit_code: 0
+----- stdout -----
+{
+  "Major": 1,
+  "Minor": 0,
+  "Patch": 1,
+  "MajorMinorPatch": "1.0.1",
+  "PreReleaseTag": "rc.1",
+  "PreReleaseTagWithDash": "-rc.1",
+  "PreReleaseLabel": "rc",
+  "PreReleaseLabelWithDash": "-rc",
+  "PreReleaseNumber": "1",
+  "BuildMetadata": "",
+  "SemVer": "1.0.1-rc.1",
+  "AssemblySemVer": "1.0.1",
+  "FullSemVer": "1.0.1-rc.1",
+  "InformationalVersion": "1.0.1-rc.1"
+}
+
+----- stderr -----

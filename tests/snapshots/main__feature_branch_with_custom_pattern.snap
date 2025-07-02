@@ -1,0 +1,30 @@
+---
+source: tests/main.rs
+description: "* 6c29c77 (HEAD -> my-feature/feature) 0.1.0-feature.1\n* 98394cb (trunk) 0.1.0-rc.1\n* 5f3dace 0.1.0-rc.1\n"
+info:
+  program: git-versioner
+  args:
+    - "--feature-branch"
+    - my-feature/(?<BranchName>.*)
+---
+success: true
+exit_code: 0
+----- stdout -----
+{
+  "Major": 0,
+  "Minor": 1,
+  "Patch": 0,
+  "MajorMinorPatch": "0.1.0",
+  "PreReleaseTag": "feature.1",
+  "PreReleaseTagWithDash": "-feature.1",
+  "PreReleaseLabel": "feature",
+  "PreReleaseLabelWithDash": "-feature",
+  "PreReleaseNumber": "1",
+  "BuildMetadata": "",
+  "SemVer": "0.1.0-feature.1",
+  "AssemblySemVer": "0.1.0",
+  "FullSemVer": "0.1.0-feature.1",
+  "InformationalVersion": "0.1.0-feature.1"
+}
+
+----- stderr -----
