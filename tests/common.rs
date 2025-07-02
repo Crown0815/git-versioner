@@ -86,6 +86,9 @@ impl TestRepo {
         self.execute(&["tag", "-a", name, "-m", name], &format!("create tag {name}"));
     }
 
+    //noinspection RegExpDuplicateCharacterInClass
+    //noinspection RegExpRedundantNestedCharacterClass
+    //noinspection RegExpSimplifiable
     pub fn graph(&self) -> String {
         let output = self.execute(&["log", "--graph", "--oneline", "--all", "--decorate"], "get commit graph");
         let raw = String::from_utf8_lossy(&output.stdout).to_string();
