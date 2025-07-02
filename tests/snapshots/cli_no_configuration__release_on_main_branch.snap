@@ -1,11 +1,9 @@
 ---
-source: tests/main.rs
-description: "* c351b72 (HEAD -> trunk, tag: my/v0.1.0) 0.1.0-rc.1\n"
+source: tests/cli_no_configuration.rs
+description: "* 3a60aa0 (HEAD -> trunk, tag: 0.1.0) 0.1.0-rc.1\n"
 info:
   program: git-versioner
-  args:
-    - "--version-pattern"
-    - my/v(?<Version>.*)
+  args: []
 ---
 success: true
 exit_code: 0

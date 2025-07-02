@@ -1,9 +1,11 @@
 ---
-source: tests/main.rs
-description: "* 3750095 (HEAD -> trunk) 0.1.0-rc.1\n"
+source: tests/cli_no_configuration.rs
+description: "* 3a60aa0 (HEAD -> trunk) 0.1.0-rc.1\n"
 info:
   program: git-versioner
-  args: []
+  args:
+    - "--path"
+    - /var/folders/h6/6c04dcj9667bcpbvgl_79p7w0000gn/T/.tmpam7pLm
 ---
 success: true
 exit_code: 0

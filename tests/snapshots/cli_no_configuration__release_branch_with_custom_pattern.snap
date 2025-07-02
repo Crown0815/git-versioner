@@ -1,6 +1,6 @@
 ---
-source: tests/main.rs
-description: "* 2cdcfc7 (HEAD -> custom-release/1.0.0) 1.0.1-rc.1\n* e15f413 (tag: v1.0.0, trunk) 0.1.0-rc.1\n* 8e7ea21 0.1.0-rc.1\n"
+source: tests/cli_no_configuration.rs
+description: "* 2b6a71c (HEAD -> custom-release/1.0.0) 1.0.1-rc.1\n* e97c0bd (tag: v1.0.0, trunk) 0.1.0-rc.1\n* 3a60aa0 0.1.0-rc.1\n"
 info:
   program: git-versioner
   args:
