@@ -117,11 +117,8 @@ impl GitVersioner {
     fn escaped(name: &str) -> String {
         const ESCAPE_CHARACTER: char = '-';
         name.chars().map(|c| {
-            if c.is_ascii_alphanumeric() || c == '-' {
-                c
-            } else {
-                ESCAPE_CHARACTER
-            }
+            if c.is_ascii_alphanumeric() { c } 
+            else { ESCAPE_CHARACTER }
         }).collect()
     }
 
