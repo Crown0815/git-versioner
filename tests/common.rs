@@ -1,13 +1,23 @@
 use git2::Oid;
 use git_versioner::Configuration;
+use insta_cmd::get_cargo_bin;
+use rstest::fixture;
 use std::fs;
 use std::path::PathBuf;
-use std::process::Output;
+use std::process::{Command, Output};
 
-pub struct TestRepo {
-    pub path: PathBuf,
-    pub config: Configuration,
-    _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
+pub const MAIN_BRANCH: &str = "trunk";
+
+#[fixture]
+pub fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
+    let repo = TestRepo::initialize(main);
+    repo.commit("0.1.0-rc.1");
+    repo
+}
+
+#[fixture]
+pub fn cli() -> Command {
+    Command::new(get_cargo_bin(env!("CARGO_PKG_NAME")))
 }
 
 #[macro_export]
@@ -18,6 +28,12 @@ macro_rules! assert_repo_cmd_snapshot {
             { assert_cmd_snapshot!($cmd); }
         );
     };
+}
+
+pub struct TestRepo {
+    pub path: PathBuf,
+    pub config: Configuration,
+    _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
 
 impl TestRepo {

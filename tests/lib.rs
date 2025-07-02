@@ -1,11 +1,9 @@
 mod common;
 
-use common::*;
-use git_versioner::*;
+use common::{TestRepo, MAIN_BRANCH};
+use git_versioner::GitVersioner;
 use rstest::{fixture, rstest};
 use semver::Version;
-
-const MAIN_BRANCH: &str = "trunk";
 
 impl TestRepo {
     fn commit_and_assert(&self, expected_version: &str) {
