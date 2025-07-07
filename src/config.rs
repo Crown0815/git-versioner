@@ -190,6 +190,8 @@ impl Configuration for ConfigurationLayers {
     fn feature_branch(&self) -> &str {
         if let Some(branch) = &self.args.feature_branch {
             branch
+        } else if let Some(branch) = &self.file.feature_branch {
+            branch
         } else {
             &self.config.feature_branch
         }

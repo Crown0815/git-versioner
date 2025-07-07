@@ -69,3 +69,23 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(mut 
     repo.commit("1.0.1-rc.1");
     assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path).args(&["--release-branch", "custom-release/(?<BranchName>.*)"]));
 }
+
+#[rstest]
+fn test_that_toml_config_file_overrides_default_feature_branch_pattern(mut repo: TestRepo, mut cli: Command) {
+    repo.cli_config.feature_branch = Some("my-feature/(?<BranchName>.*)".to_string());
+    let config_file = repo.create_default_toml_config();
+    repo.commit("0.1.0-rc.1");
+    repo.branch("my-feature/feature");
+    repo.commit("0.1.0-feature.1");
+    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path));
+}
+
+#[rstest]
+fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(mut repo: TestRepo, mut cli: Command) {
+    repo.cli_config.feature_branch = Some("whatever-feature/(?<BranchName>.*)".to_string());
+    let config_file = repo.create_default_toml_config();
+    repo.commit("0.1.0-rc.1");
+    repo.branch("my-feature/feature");
+    repo.commit("0.1.0-feature.1");
+    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path).args(&["--feature-branch", "my-feature/(?<BranchName>.*)"]));
+}
