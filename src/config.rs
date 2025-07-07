@@ -169,33 +169,35 @@ impl Configuration for ConfigurationLayers {
         }
     }
     fn main_branch(&self) -> &str {
-        if let Some(main_branch) = &self.args.main_branch {
-            main_branch
-        } else if let Some(main_branch) = &self.file.main_branch {
-            main_branch
+        if let Some(branch) = &self.args.main_branch {
+            branch
+        } else if let Some(branch) = &self.file.main_branch {
+            branch
         } else {
             &self.config.main_branch
         }
     }
     fn release_branch(&self) -> &str {
-        if let Some(main_branch) = &self.args.release_branch {
-            main_branch
+        if let Some(branch) = &self.args.release_branch {
+            branch
+        } else if let Some(branch) = &self.file.release_branch {
+            branch
         } else {
             &self.config.release_branch
         }
     }
 
     fn feature_branch(&self) -> &str {
-        if let Some(main_branch) = &self.args.feature_branch {
-            main_branch
+        if let Some(branch) = &self.args.feature_branch {
+            branch
         } else {
             &self.config.feature_branch
         }
     }
 
     fn version_pattern(&self) -> &str {
-        if let Some(main_branch) = &self.args.version_pattern {
-            main_branch
+        if let Some(branch) = &self.args.version_pattern {
+            branch
         } else {
             &self.config.version_pattern
         }

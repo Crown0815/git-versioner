@@ -16,9 +16,9 @@ macro_rules! assert_configured_repo_cmd_snapshot {
             { description =>
                 format!(
                     "Git Graph:\n    {}\nConfiguration ({}):\n    {}",
-                    $repo.graph(),
+                    $repo.graph().replace("\n", &format!("\n{}", "    ")).trim_end_matches(' '),
                     $config.file_name().unwrap().to_string_lossy(),
-                    fs::read_to_string(&$config).unwrap()
+                    fs::read_to_string(&$config).unwrap().replace("\n", &format!("\n{}", "    ")).trim_end_matches(' ')
                 )
             },
             { assert_cmd_snapshot!($cmd); }
@@ -27,7 +27,7 @@ macro_rules! assert_configured_repo_cmd_snapshot {
 }
 
 #[rstest]
-fn test_release_candidate_on_toml_configured_main_branch(
+fn test_that_toml_config_file_overrides_default_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: TestRepo,
     mut cli: Command
 ) {
@@ -38,7 +38,7 @@ fn test_release_candidate_on_toml_configured_main_branch(
 }
 
 #[rstest]
-fn test_release_candidate_on_toml_configured_and_cli_overridden_main_branch(
+fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: TestRepo,
     mut cli: Command
 ) {
@@ -46,4 +46,26 @@ fn test_release_candidate_on_toml_configured_and_cli_overridden_main_branch(
     let config_file = repo.create_default_toml_config();
 
     assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path).args(&["--main-branch", CUSTOM_MAIN_BRANCH]));
+}
+
+#[rstest]
+fn test_that_toml_config_file_overrides_default_release_branch_pattern(mut repo: TestRepo, mut cli: Command) {
+    repo.cli_config.release_branch = Some("custom-release/(?<BranchName>.*)".to_string());
+    let config_file = repo.create_default_toml_config();
+    repo.commit("0.1.0-rc.1");
+    repo.tag("v1.0.0");
+    repo.branch("custom-release/1.0.0");
+    repo.commit("1.0.1-rc.1");
+    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path));
+}
+
+#[rstest]
+fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(mut repo: TestRepo, mut cli: Command) {
+    repo.cli_config.release_branch = Some("whatever-release/(?<BranchName>.*)".to_string());
+    let config_file = repo.create_default_toml_config();
+    repo.commit("0.1.0-rc.1");
+    repo.tag("v1.0.0");
+    repo.branch("custom-release/1.0.0");
+    repo.commit("1.0.1-rc.1");
+    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path).args(&["--release-branch", "custom-release/(?<BranchName>.*)"]));
 }
