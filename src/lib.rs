@@ -133,7 +133,9 @@ impl GitVersioner {
         if let Some(captures) = self.version_pattern.captures(name){
             if let Some(version_str) = captures.name(VERSION_ID) {
                 if let Ok(version) = Version::parse(version_str.as_str()) {
-                    return Some(version)
+                    if version.pre.is_empty() {
+                        return Some(version);   
+                    }
                 }
             }
         }

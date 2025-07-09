@@ -7,7 +7,7 @@ use std::path::{Path, PathBuf};
 pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
-pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>\d+\.\d+\.\d+)";
+pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>.+)";
 
 pub trait Configuration {
     fn repository_path(&self) -> &PathBuf;

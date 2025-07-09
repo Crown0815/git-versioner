@@ -168,7 +168,7 @@ fn test_release_branches_matching_custom_pattern_affect_main_branch(mut repo: Te
 }
 
 #[rstest]
-fn test_tags_with_matching_version_tag_prefix_are_considered(
+fn test_release_tags_with_matching_version_tag_prefix_are_considered(
     repo: TestRepo,
     #[values("v", "V", "")] prefix: &str,
 ) {
@@ -177,7 +177,14 @@ fn test_tags_with_matching_version_tag_prefix_are_considered(
 }
 
 #[rstest]
-fn test_tags_without_matching_version_tag_prefix_are_ignored(
+fn test_prerelease_tags_with_matching_version_tag_prefix_are_ignored(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-rc.1");
+    repo.tag("v1.0.0-rc.1");
+    repo.assert_version("0.1.0-rc.1");
+}
+
+#[rstest]
+fn test_release_tags_without_matching_version_tag_prefix_are_ignored(
     repo: TestRepo,
     #[values("a", "x", "p", "vv", "Vv")] prefix: &str,
 ) {
