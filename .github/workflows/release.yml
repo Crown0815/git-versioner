@@ -38,6 +38,18 @@ jobs:
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: sudo apt-get update && sudo apt-get install -y musl-tools
 
+      - name: Install OpenSSL (for macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install openssl@3
+          echo "OPENSSL_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig" >> $GITHUB_ENV
+          # For x86_64 cross-compilation on ARM64
+          if [ "${{ matrix.target }}" = "x86_64-apple-darwin" ]; then
+            echo "CC=clang -target x86_64-apple-darwin" >> $GITHUB_ENV
+            echo "CXX=clang++ -target x86_64-apple-darwin" >> $GITHUB_ENV
+          fi
+
       - name: Build binary
         run: cargo build --release --target ${{ matrix.target }}
 
