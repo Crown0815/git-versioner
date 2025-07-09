@@ -19,8 +19,8 @@ jobs:
       with:
         fetch-depth: 0
     - name: Build
-      run: cargo build --verbose
+      run: cargo build
+    - name: Run tests
+      run: cargo test
     - name: Determine version
       run: cargo run
-    - name: Run tests
-      run: cargo test --verbose
