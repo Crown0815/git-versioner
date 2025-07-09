@@ -200,6 +200,8 @@ impl Configuration for ConfigurationLayers {
     fn version_pattern(&self) -> &str {
         if let Some(branch) = &self.args.version_pattern {
             branch
+        } else if let Some(branch) = &self.file.version_pattern {
+            branch
         } else {
             &self.config.version_pattern
         }

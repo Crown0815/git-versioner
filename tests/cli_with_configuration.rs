@@ -106,3 +106,29 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
         .current_dir(&repo.path)
         .args(&["--feature-branch", "my-feature/(?<BranchName>.*)"]));
 }
+
+#[rstest]
+fn test_that_toml_config_file_overrides_default_version_pattern(
+    mut repo: TestRepo,
+    mut cli: Command
+) {
+    repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
+    let config_file = repo.create_default_toml_config();
+    repo.commit("0.1.0-rc.1");
+    repo.tag("my/c1.0.0");
+    
+    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path));
+}
+
+#[rstest]
+fn test_that_cli_argument_overrides_configuration_of_version_pattern(
+    mut repo: TestRepo,
+    mut cli: Command
+) {
+    repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
+    let config_file = repo.create_default_toml_config();
+    repo.commit("0.1.0-rc.1");
+    repo.tag("my/v1.0.0");
+    
+    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path).args(&["--version-pattern", "my/v(?<Version>.*)"]));
+}
