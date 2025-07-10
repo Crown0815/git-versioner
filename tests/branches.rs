@@ -1,9 +1,32 @@
 mod common;
 
-use git_versioner::NO_BRANCH_NAME;
-use rstest::rstest;
+use crate::common::{TestRepo, MAIN_BRANCH};
+use git_versioner::{GitVersioner, NO_BRANCH_NAME};
+use rstest::{fixture, rstest};
+
+impl TestRepo {
+    fn assert_branch(&self, expected_name: &str, expected_escaped_name: &str) {
+        let actual = GitVersioner::calculate_version2(&self.config).unwrap();
+        assert_eq!(actual.branch_name, expected_name.to_string());
+        assert_eq!(actual.escaped_branch_name, expected_escaped_name.to_string());
+    }
+}
+
+
+#[fixture]
+fn repo() -> TestRepo {
+    TestRepo::initialize(MAIN_BRANCH)
+}
 
 #[rstest]
 fn test_that_no_branch_name_is_no_branch_in_parenthesis() {
     assert_eq!(NO_BRANCH_NAME, "(no branch)");
+}
+
+#[rstest]
+fn test_result_on_detached_head_is_no_branch(repo: TestRepo) {
+    let oid = repo.commit("commit");
+    repo.checkout(&oid.to_string());
+
+    repo.assert_branch(NO_BRANCH_NAME, "-no-branch-");
 }

@@ -28,12 +28,22 @@ pub struct GitVersioner {
     version_pattern: Regex,
 }
 
+pub struct GitVersion{
+    pub version: Version,
+    pub branch_name: String,
+    pub escaped_branch_name: String,
+}
+
 const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
 pub const NO_BRANCH_NAME: &'static str = "(no branch)";
 
 impl GitVersioner {
     pub fn calculate_version<T: Configuration>(config: &T) -> Result<Version> {
+        Ok(Self::calculate_version2(config)?.version)
+    }
+
+    pub fn calculate_version2<T: Configuration>(config: &T) -> Result<GitVersion> {
         let versioner = Self {
             repo: Repository::open(config.repository_path())?,
             trunk_pattern: Regex::new(&config.main_branch())?,
@@ -46,10 +56,21 @@ impl GitVersioner {
             versioner.print_effective_configuration();
         }
 
-        match versioner.determine_branch_at_head()? {
+        let result = match versioner.determine_branch_at_head()? {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
             BranchType::Other(name) => versioner.calculate_version_for_feature(&name),
+        };
+
+        match result {
+            Err(e) => {Err(e)}
+            Ok(version) => {
+                Ok(GitVersion{
+                    version,
+                    branch_name: NO_BRANCH_NAME.to_string(),
+                    escaped_branch_name: Self::escaped(NO_BRANCH_NAME),
+                })
+            }
         }
     }
 
@@ -76,7 +97,7 @@ impl GitVersioner {
 
     fn determine_branch_at(&self, reference: Reference) -> Result<BranchType> {
         if !reference.is_branch() {
-            return Err(anyhow!("HEAD is not on a branch"));
+            return Ok(BranchType::Other(NO_BRANCH_NAME.to_string()));
         }
 
         match reference.shorthand() {
@@ -162,7 +183,8 @@ impl GitVersioner {
             let (branch, _) = branch?;
             if let Some(name) = branch.name()? {
                 if let BranchType::Release(version) = self.determine_branch_type_by_name(name) {
-                    version_branches.push(VersionSource {version, commit_id: branch.get().peel_to_commit()?.id()});
+                    let commit = branch.get().peel_to_commit()?;
+                    version_branches.push(VersionSource {version, commit_id: commit.id()});
                 }
             }
         }
@@ -286,7 +308,8 @@ impl GitVersioner {
             Some(branch) => branch.distance,
         };
 
-        base_version.pre = Prerelease::new(&format!("{}.{}", name, distance))?;
+        base_version.pre = Prerelease::new(
+            &format!("{}.{}", Self::escaped(name), distance))?;
         Ok(base_version)
     }
 
