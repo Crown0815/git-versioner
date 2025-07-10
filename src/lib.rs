@@ -30,6 +30,7 @@ pub struct GitVersioner {
 
 const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
+pub const NO_BRANCH_NAME: &'static str = "(no branch)";
 
 impl GitVersioner {
     pub fn calculate_version<T: Configuration>(config: &T) -> Result<Version> {
