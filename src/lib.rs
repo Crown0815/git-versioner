@@ -121,11 +121,11 @@ impl GitVersioner {
 
         if let Some(captures) = self.feature_pattern.captures(name) {
             if let Some(branch_name) = captures.name(BRANCH_NAME_ID) {
-                return BranchType::Other(Self::escaped(branch_name.as_str()));
+                return BranchType::Other(branch_name.as_str().to_string());
             }
         }
 
-        BranchType::Other(Self::escaped(name))
+        BranchType::Other(name.to_string())
     }
 
     fn escaped(name: &str) -> String {
