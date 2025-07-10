@@ -34,6 +34,11 @@ pub struct GitVersion{
     pub escaped_branch_name: String,
 }
 
+struct FoundBranch {
+    branch_type: BranchType,
+    distance: i64,
+}
+
 const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
 pub const NO_BRANCH_NAME: &'static str = "(no branch)";
@@ -58,7 +63,7 @@ impl GitVersioner {
 
         let branch_name = Self::branch_name_for(versioner.head()?)?;
         let branch_type_at_head = versioner.determine_branch_type_by_name(&branch_name);
-        
+
         let result = match branch_type_at_head {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
@@ -95,11 +100,11 @@ impl GitVersioner {
         if !reference.is_branch() {
             return Ok(NO_BRANCH_NAME.to_string())
         }
-        
+
         match reference.shorthand() {
             None => Err(anyhow!("Name for branch could not be determined")),
             Some(name) => Ok(name.to_string())
-        }        
+        }
     }
 
     fn determine_branch_type_by_name(&self, name: &str) -> BranchType {
@@ -132,10 +137,10 @@ impl GitVersioner {
         }).collect()
     }
 
-    fn collect_version_tags(&self) -> Result<Vec<VersionSource>> {
+    fn collect_version_tags(&self) -> Vec<VersionSource> {
         let mut version_tags = Vec::new();
 
-        let tag_names = self.repo.tag_names(None)?;
+        let tag_names = self.repo.tag_names(None).unwrap();
         for tag_name in tag_names.iter().flatten() {
             if let Some(version) = self.version_in(tag_name){
                 if let Some(commit_id) = self.tag_id_for(tag_name) {
@@ -144,7 +149,7 @@ impl GitVersioner {
             }
         }
 
-        Ok(version_tags)
+        version_tags
     }
 
     fn version_in(&self, name: &str) -> Option<Version> {
@@ -228,10 +233,9 @@ impl GitVersioner {
     }
 
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
-        let latest_release_tag = self.find_latest_tag_for_release_branch(release_version)?;
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
-        if let Some(tag) = latest_release_tag {
+        if let Some(tag) = self.find_latest_tag_for_release_branch(release_version)? {
             let count = self.count_commits_between(head_id, tag.commit_id)?;
             if count == 0 {
                 return Ok(tag.version);
@@ -242,8 +246,7 @@ impl GitVersioner {
             new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
 
             Ok(new_version)
-        } else {
-            let tag = self.find_latest_tag_base_for_release_branch()?.unwrap();
+        } else if let Some(tag) = self.find_latest_tag_base_for_release_branch(release_version) {
             let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
@@ -253,37 +256,23 @@ impl GitVersioner {
             let mut version = release_version.clone();
             version.pre = Prerelease::new(&format!("rc.{}", count))?;
             Ok(version)
+        } else {
+            let mut found_branches= self.find_all_source_branches(head_id)?;
+
+            found_branches.sort_by(|a, b| a.branch_type.cmp(&b.branch_type));
+            let closest_branch = found_branches.first().unwrap();
+            
+            let count = closest_branch.distance;
+
+            let mut version = release_version.clone();
+            version.pre = Prerelease::new(&format!("rc.{}", count))?;
+            Ok(version)
         }
     }
 
     fn calculate_version_for_feature(&self, name: &str) -> Result<Version> {
-        struct FoundBranch {
-            branch_type: BranchType,
-            distance: i64,
-        }
-
-        let mut found_branches = Vec::new();
         let head_id = self.repo.head()?.peel_to_commit()?.id();
-
-        let branches = self.repo.branches(Some(git2::BranchType::Local))?;
-        for branch in branches {
-            let (branch, _) = branch?;
-            if let Some(name) = branch.name()? {
-                let branch_type = self.determine_branch_type_by_name(name);
-                if let BranchType::Other(_) = branch_type {
-                    continue;
-                }
-
-                let branch_id = branch.get().peel_to_commit()?.id();
-                let merge_base = self.repo.merge_base(head_id, branch_id)?;
-                let distance = self.count_commits_between(head_id, merge_base)?;
-
-                found_branches.push(FoundBranch {
-                    branch_type,
-                    distance,
-                });
-            }
-        }
+        let mut found_branches= self.find_all_source_branches(head_id)?;
 
         found_branches.sort_by(
             |a, b| a.distance.cmp(&b.distance)
@@ -309,9 +298,38 @@ impl GitVersioner {
         Ok(base_version)
     }
 
+    fn find_all_source_branches(&self, count_reference: Oid) -> Result<Vec<FoundBranch>> {
+        let mut found_branches = Vec::new();
+
+        let branches = self.repo.branches(Some(git2::BranchType::Local))?;
+        for branch in branches {
+            let (branch, _) = branch?;
+            if let Some(name) = branch.name()? {
+                let branch_type = self.determine_branch_type_by_name(name);
+                if let BranchType::Other(_) = branch_type {
+                    continue;
+                }
+
+                let branch_id = branch.get().peel_to_commit()?.id();
+                let merge_base = self.repo.merge_base(count_reference, branch_id)?;
+                let distance = self.count_commits_between(count_reference, merge_base)?;
+
+                found_branches.push(FoundBranch {
+                    branch_type,
+                    distance,
+                });
+            }
+        }
+        Ok(found_branches)
+    }
+
     /// Find the latest version tag on the trunk branch
     fn find_latest_trunk_version(&self) -> Result<Option<VersionSource>> {
-        let mut released_tags = [&self.collect_version_tags()?[..], &self.collect_sources_from_release_branches()?[..]].concat()
+        let mut released_tags = 
+            [
+                &self.collect_version_tags()[..], 
+                &self.collect_sources_from_release_branches()?[..]
+            ].concat()
             .iter()
             .filter(|tag| tag.version.pre.is_empty())
             .cloned()
@@ -325,7 +343,7 @@ impl GitVersioner {
     /// Find the latest version tag on a specific release branch
     fn find_latest_tag_for_release_branch(&self, release_version: &Version) -> Result<Option<VersionSource>> {
         let mut matching_tags = self
-            .collect_version_tags()?
+            .collect_version_tags()
             .iter()
             .filter(|tag| {
                 tag.version.major == release_version.major
@@ -340,17 +358,19 @@ impl GitVersioner {
     }
 
     /// Find the latest version tag on a specific release branch
-    fn find_latest_tag_base_for_release_branch(&self) -> Result<Option<VersionSource>> {
+    fn find_latest_tag_base_for_release_branch(&self, release_version: &Version) -> Option<VersionSource> {
         let mut matching_tags = self
-            .collect_version_tags()?
+            .collect_version_tags()
             .iter()
             .filter(|tag| {
-                    tag.version.pre.is_empty()
+                tag.version.major == release_version.major
+                    && tag.version.minor == release_version.minor - 1
+                    && tag.version.pre.is_empty()
             })
             .cloned()
             .collect::<Vec<_>>();
 
         matching_tags.sort_by(|a, b| a.version.cmp(&b.version));
-        Ok(matching_tags.last().cloned())
+        matching_tags.last().cloned()
     }
 }
