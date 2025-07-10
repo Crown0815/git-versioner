@@ -56,7 +56,10 @@ impl GitVersioner {
             versioner.print_effective_configuration();
         }
 
-        let result = match versioner.determine_branch_at_head()? {
+        let branch_name = Self::branch_name_for(versioner.head()?)?;
+        let branch_type_at_head = versioner.determine_branch_type_by_name(&branch_name);
+        
+        let result = match branch_type_at_head {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
             BranchType::Other(name) => versioner.calculate_version_for_feature(&name),
@@ -67,8 +70,8 @@ impl GitVersioner {
             Ok(version) => {
                 Ok(GitVersion{
                     version,
-                    branch_name: NO_BRANCH_NAME.to_string(),
-                    escaped_branch_name: Self::escaped(NO_BRANCH_NAME),
+                    escaped_branch_name: Self::escaped(&branch_name),
+                    branch_name,
                 })
             }
         }
@@ -84,26 +87,19 @@ impl GitVersioner {
         println!();
     }
 
-    fn determine_branch_at_head(&self) -> Result<BranchType> {
-        match self.head() {
-            Ok(head) => self.determine_branch_at(head),
-            Err(error) => Err(anyhow!("Failed to get HEAD: {}", error)),
-        }
-    }
-
     fn head(&self) -> Result<Reference, git2::Error> {
         self.repo.head()
     }
 
-    fn determine_branch_at(&self, reference: Reference) -> Result<BranchType> {
+    fn branch_name_for(reference: Reference) -> Result<String> {
         if !reference.is_branch() {
-            return Ok(BranchType::Other(NO_BRANCH_NAME.to_string()));
+            return Ok(NO_BRANCH_NAME.to_string())
         }
-
+        
         match reference.shorthand() {
             None => Err(anyhow!("Name for branch could not be determined")),
-            Some(name) => Ok(self.determine_branch_type_by_name(name)),
-        }
+            Some(name) => Ok(name.to_string())
+        }        
     }
 
     fn determine_branch_type_by_name(&self, name: &str) -> BranchType {

@@ -30,3 +30,9 @@ fn test_result_on_detached_head_is_no_branch(repo: TestRepo) {
 
     repo.assert_branch(NO_BRANCH_NAME, "-no-branch-");
 }
+
+#[rstest]
+fn test_result_on_main_branch(repo: TestRepo) {
+    repo.commit("commit");
+    repo.assert_branch(MAIN_BRANCH, MAIN_BRANCH);
+}
