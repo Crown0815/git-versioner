@@ -235,8 +235,9 @@ impl GitVersioner {
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
-        if let Some(tag) = self.find_latest_tag_for_release_branch(release_version)? {
-            let count = self.count_commits_between(head_id, tag.commit_id)?;
+        if let Some(tag) = self.find_latest_tag_for_release_branch(release_version, 0) {
+            let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
+            let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
                 return Ok(tag.version);
             }
@@ -246,22 +247,23 @@ impl GitVersioner {
             new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
 
             Ok(new_version)
-        } else if let Some(tag) = self.find_latest_tag_base_for_release_branch(release_version) {
+        } else if let Some(tag) = self.find_latest_tag_for_release_branch(release_version, 1) {
             let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
                 return Ok(tag.version);
             }
 
-            let mut version = release_version.clone();
-            version.pre = Prerelease::new(&format!("rc.{}", count))?;
-            Ok(version)
+            let mut new_version = release_version.clone();
+            new_version.patch += 0;
+            new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
+            Ok(new_version)
         } else {
             let mut found_branches= self.find_all_source_branches(head_id)?;
 
             found_branches.sort_by(|a, b| a.branch_type.cmp(&b.branch_type));
             let closest_branch = found_branches.first().unwrap();
-            
+
             let count = closest_branch.distance;
 
             let mut version = release_version.clone();
@@ -325,9 +327,9 @@ impl GitVersioner {
 
     /// Find the latest version tag on the trunk branch
     fn find_latest_trunk_version(&self) -> Result<Option<VersionSource>> {
-        let mut released_tags = 
+        let mut released_tags =
             [
-                &self.collect_version_tags()[..], 
+                &self.collect_version_tags()[..],
                 &self.collect_sources_from_release_branches()?[..]
             ].concat()
             .iter()
@@ -341,30 +343,13 @@ impl GitVersioner {
     }
 
     /// Find the latest version tag on a specific release branch
-    fn find_latest_tag_for_release_branch(&self, release_version: &Version) -> Result<Option<VersionSource>> {
+    fn find_latest_tag_for_release_branch(&self, release_version: &Version, minor_offset: u64) -> Option<VersionSource> {
         let mut matching_tags = self
             .collect_version_tags()
             .iter()
             .filter(|tag| {
                 tag.version.major == release_version.major
-                    && tag.version.minor == release_version.minor
-                    && tag.version.pre.is_empty()
-            })
-            .cloned()
-            .collect::<Vec<_>>();
-
-        matching_tags.sort_by(|a, b| a.version.cmp(&b.version));
-        Ok(matching_tags.last().cloned())
-    }
-
-    /// Find the latest version tag on a specific release branch
-    fn find_latest_tag_base_for_release_branch(&self, release_version: &Version) -> Option<VersionSource> {
-        let mut matching_tags = self
-            .collect_version_tags()
-            .iter()
-            .filter(|tag| {
-                tag.version.major == release_version.major
-                    && tag.version.minor == release_version.minor - 1
+                    && release_version.minor - tag.version.minor == minor_offset
                     && tag.version.pre.is_empty()
             })
             .cloned()
