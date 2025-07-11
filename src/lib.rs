@@ -235,24 +235,16 @@ impl GitVersioner {
 
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
         let head_id = self.repo.head()?.peel_to_commit()?.id();
-        let current_version = Comparator{
-            op: Op::Exact,
-            major: release_version.major,
-            minor: Some(release_version.minor),
-            patch: None,
-            pre: Prerelease::EMPTY,
-        };
+        let current_version = major_minor_comparator(release_version.major, release_version.minor);
 
-        let previous_version = if release_version.minor > 0{
-            let mut comparator = current_version.clone();
-            comparator.minor = Some(release_version.minor - 1);
-            comparator
+        let previous_version = if release_version.minor > 0 {
+            major_minor_comparator(release_version.major, release_version.minor - 1)
         } else{
-            Comparator::parse("<=0.0.0-0")?
+            none_comparator()
         };
 
 
-        if let Some(tag) = self.find_latest_tag_for_release_branch(&current_version) {
+        if let Some(tag) = self.find_latest_tag_matching(&current_version) {
             let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
@@ -264,7 +256,7 @@ impl GitVersioner {
             new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
 
             Ok(new_version)
-        } else if let Some(tag) = self.find_latest_tag_for_release_branch(&previous_version) {
+        } else if let Some(tag) = self.find_latest_tag_matching(&previous_version) {
             let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
@@ -359,20 +351,30 @@ impl GitVersioner {
         Ok(released_tags.last().cloned())
     }
 
-    /// Find the latest version tag on a specific release branch
-    fn find_latest_tag_for_release_branch(&self, version_pattern: &Comparator) -> Option<VersionSource> {
-        let matches_expected_version = |tag : &&VersionSource| {
-            version_pattern.matches(&tag.version)
-        };
+    fn find_latest_tag_matching(&self, comparator: &Comparator) -> Option<VersionSource> {
         let mut matching_tags = self
             .collect_version_tags()
             .iter()
             .filter(IS_RELEASE_VERSION)
-            .filter(matches_expected_version)
+            .filter(|source: &&VersionSource| comparator.matches(&source.version))
             .cloned()
             .collect::<Vec<_>>();
 
         matching_tags.sort_by(|a, b| a.version.cmp(&b.version));
         matching_tags.last().cloned()
+    }
+}
+
+fn none_comparator() -> Comparator {
+    Comparator::parse("<=0.0.0-0").unwrap()
+}
+
+fn major_minor_comparator(major: u64, minor: u64) -> Comparator {
+    Comparator{
+        op: Op::Exact,
+        major,
+        minor: Some(minor),
+        patch: None,
+        pre: Prerelease::EMPTY,
     }
 }
