@@ -5,7 +5,7 @@ use anyhow::{anyhow, Result};
 pub use config::DefaultConfig;
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
-use semver::{Prerelease, Version};
+use semver::{Comparator, Op, Prerelease, Version};
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BranchType {
@@ -42,6 +42,7 @@ struct FoundBranch {
 const BRANCH_NAME_ID: &'static str = "BranchName";
 const VERSION_ID: &'static str = "Version";
 pub const NO_BRANCH_NAME: &'static str = "(no branch)";
+const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
 
 impl GitVersioner {
     pub fn calculate_version<T: Configuration>(config: &T) -> Result<Version> {
@@ -234,8 +235,24 @@ impl GitVersioner {
 
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
         let head_id = self.repo.head()?.peel_to_commit()?.id();
+        let current_version = Comparator{
+            op: Op::Exact,
+            major: release_version.major,
+            minor: Some(release_version.minor),
+            patch: None,
+            pre: Prerelease::EMPTY,
+        };
 
-        if let Some(tag) = self.find_latest_tag_for_release_branch(release_version, 0) {
+        let previous_version = if release_version.minor > 0{
+            let mut comparator = current_version.clone();
+            comparator.minor = Some(release_version.minor - 1);
+            comparator
+        } else{
+            Comparator::parse("<=0.0.0-0")?
+        };
+
+
+        if let Some(tag) = self.find_latest_tag_for_release_branch(&current_version) {
             let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
@@ -247,7 +264,7 @@ impl GitVersioner {
             new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
 
             Ok(new_version)
-        } else if let Some(tag) = self.find_latest_tag_for_release_branch(release_version, 1) {
+        } else if let Some(tag) = self.find_latest_tag_for_release_branch(&previous_version) {
             let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
@@ -333,7 +350,7 @@ impl GitVersioner {
                 &self.collect_sources_from_release_branches()?[..]
             ].concat()
             .iter()
-            .filter(|tag| tag.version.pre.is_empty())
+            .filter(IS_RELEASE_VERSION)
             .cloned()
             .collect::<Vec<_>>();
 
@@ -343,15 +360,15 @@ impl GitVersioner {
     }
 
     /// Find the latest version tag on a specific release branch
-    fn find_latest_tag_for_release_branch(&self, release_version: &Version, minor_offset: u64) -> Option<VersionSource> {
+    fn find_latest_tag_for_release_branch(&self, version_pattern: &Comparator) -> Option<VersionSource> {
+        let matches_expected_version = |tag : &&VersionSource| {
+            version_pattern.matches(&tag.version)
+        };
         let mut matching_tags = self
             .collect_version_tags()
             .iter()
-            .filter(|tag| {
-                tag.version.major == release_version.major
-                    && release_version.minor - tag.version.minor == minor_offset
-                    && tag.version.pre.is_empty()
-            })
+            .filter(IS_RELEASE_VERSION)
+            .filter(matches_expected_version)
             .cloned()
             .collect::<Vec<_>>();
 
