@@ -334,18 +334,17 @@ impl GitVersioner {
         Ok(found_branches)
     }
 
-    /// Find the latest version tag on the trunk branch
     fn find_latest_trunk_version(&self) -> Result<Option<VersionSource>> {
-        self.find_latest_source_matching(true, &any_comparator())
+        self.find_latest_version_source(true, &any_comparator())
     }
 
     fn find_latest_tag_matching(&self, comparator: &Comparator) -> Result<Option<VersionSource>> {
-        self.find_latest_source_matching(false, comparator)
+        self.find_latest_version_source(false, comparator)
     }
 
-    fn find_latest_source_matching(&self, consider_branches: bool, comparator: &Comparator) -> Result<Option<VersionSource>> {
+    fn find_latest_version_source(&self, track_release_branches: bool, comparator: &Comparator) -> Result<Option<VersionSource>> {
         let mut sources = self.collect_version_tags()?;
-        if consider_branches{
+        if track_release_branches {
             sources.append(&mut self.collect_sources_from_release_branches()?);
         }
         
