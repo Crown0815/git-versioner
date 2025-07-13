@@ -93,10 +93,10 @@ fn test_full_workflow(repo: TestRepo) {
     repo.tag_annotated_and_assert("v", "1.3.0");
     repo.commit_and_assert("1.4.0-rc.1");
     repo.commit_and_assert("1.4.0-rc.2");
-    
+
     repo.branch("release/2.0.0");
     repo.commit_and_assert("2.0.0-rc.1");
-    
+
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("2.1.0-rc.1");
 }
@@ -186,9 +186,9 @@ fn test_release_branches_matching_current_trunk_increment_continue_release_at_ve
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("v", "1.0.0");
     repo.commit_and_assert("1.1.0-rc.1");
-    
+
     repo.branch("release/1.1.0");
-    
+
     repo.commit_and_assert("1.1.0-rc.2");
 }
 
@@ -197,9 +197,9 @@ fn test_release_branches_not_matching_current_trunk_increment_start_new_release_
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("v", "1.0.0");
     repo.commit_and_assert("1.1.0-rc.1");
-    
+
     repo.branch("release/1.2.0");
-    
+
     repo.commit_and_assert("1.2.0-rc.1");
 }
 
