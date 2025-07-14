@@ -52,10 +52,10 @@ impl GitVersioner {
     pub fn calculate_version2<T: Configuration>(config: &T) -> Result<GitVersion> {
         let versioner = Self {
             repo: Repository::open(config.repository_path())?,
-            trunk_pattern: Regex::new(&config.main_branch())?,
-            release_pattern: Regex::new(&config.release_branch())?,
-            feature_pattern: Regex::new(&config.feature_branch())?,
-            version_pattern: Regex::new(&config.version_pattern())?,
+            trunk_pattern: Regex::new(config.main_branch())?,
+            release_pattern: Regex::new(config.release_branch())?,
+            feature_pattern: Regex::new(config.feature_branch())?,
+            version_pattern: Regex::new(config.version_pattern())?,
         };
 
         if config.verbose() {
@@ -245,7 +245,7 @@ impl GitVersioner {
         };
 
         if let Some(tag) = self.find_latest_tag_matching(&current_version)? {
-            let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
+            let merge_base_oid = self.repo.merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
                 return Ok(tag.version);
@@ -257,7 +257,7 @@ impl GitVersioner {
 
             Ok(new_version)
         } else if let Some(tag) = self.find_latest_tag_matching(&previous_version)? {
-            let merge_base_oid = (&self.repo).merge_base(head_id, tag.commit_id)?;
+            let merge_base_oid = self.repo.merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
                 return Ok(tag.version);
@@ -296,7 +296,7 @@ impl GitVersioner {
             None => Ok(Version::new(0, 1, 0)),
             Some(found_branch) => match &found_branch.branch_type {
                 BranchType::Trunk => self.calculate_version_for_trunk(),
-                BranchType::Release(version) => self.calculate_version_for_release(&version),
+                BranchType::Release(version) => self.calculate_version_for_release(version),
                 BranchType::Other(name) => panic!("Unexpected branch type: {}", name),
             },
         }

@@ -23,7 +23,7 @@ fn test_release_on_main_branch_with_custom_version_pattern(repo: TestRepo, mut c
     assert_repo_cmd_snapshot!(
         repo,
         cli.current_dir(&repo.path)
-            .args(&["--version-pattern", "my/v(?<Version>.*)"])
+            .args(["--version-pattern", "my/v(?<Version>.*)"])
     );
 }
 
@@ -36,7 +36,7 @@ fn test_release_branch_with_custom_pattern(repo: TestRepo, mut cli: Command) {
     assert_repo_cmd_snapshot!(
         repo,
         cli.current_dir(&repo.path)
-            .args(&["--release-branch", "custom-release/(?<BranchName>.*)"])
+            .args(["--release-branch", "custom-release/(?<BranchName>.*)"])
     );
 }
 
@@ -48,7 +48,7 @@ fn test_feature_branch_with_custom_pattern(repo: TestRepo, mut cli: Command) {
     assert_repo_cmd_snapshot!(
         repo,
         cli.current_dir(&repo.path)
-            .args(&["--feature-branch", "my-feature/(?<BranchName>.*)"])
+            .args(["--feature-branch", "my-feature/(?<BranchName>.*)"])
     );
 }
 
@@ -57,7 +57,7 @@ fn test_option_custom_main_branch(#[with("custom-main")] repo: TestRepo, mut cli
     assert_repo_cmd_snapshot!(
         repo,
         cli.current_dir(&repo.path)
-            .args(&["--main-branch", "custom-main"])
+            .args(["--main-branch", "custom-main"])
     );
 }
 
@@ -66,11 +66,11 @@ fn test_option_custom_repository_path(repo: TestRepo, mut cli: Command) {
     assert_repo_cmd_snapshot!(
         repo,
         cli.current_dir(".")
-            .args(&["--path", repo.path.to_str().unwrap()])
+            .args(["--path", repo.path.to_str().unwrap()])
     );
 }
 
 #[rstest]
 fn test_help_text(mut cli: Command) {
-    assert_cmd_snapshot!(cli.current_dir(".").args(&["--help"]));
+    assert_cmd_snapshot!(cli.current_dir(".").args(["--help"]));
 }

@@ -49,7 +49,7 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
         repo,
         config_file,
         cli.current_dir(&repo.path)
-            .args(&["--main-branch", CUSTOM_MAIN_BRANCH])
+            .args(["--main-branch", CUSTOM_MAIN_BRANCH])
     );
 }
 
@@ -82,7 +82,7 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
         repo,
         config_file,
         cli.current_dir(&repo.path)
-            .args(&["--release-branch", "custom-release/(?<BranchName>.*)"])
+            .args(["--release-branch", "custom-release/(?<BranchName>.*)"])
     );
 }
 
@@ -113,7 +113,7 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
         repo,
         config_file,
         cli.current_dir(&repo.path)
-            .args(&["--feature-branch", "my-feature/(?<BranchName>.*)"])
+            .args(["--feature-branch", "my-feature/(?<BranchName>.*)"])
     );
 }
 
@@ -144,6 +144,6 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
         repo,
         config_file,
         cli.current_dir(&repo.path)
-            .args(&["--version-pattern", "my/v(?<Version>.*)"])
+            .args(["--version-pattern", "my/v(?<Version>.*)"])
     );
 }
