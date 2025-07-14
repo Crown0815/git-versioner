@@ -41,13 +41,13 @@ fn main() -> Result<()> {
             .pre
             .as_str()
             .split('.')
-            .nth(0)
+            .next()
             .unwrap_or("")
             .to_string(),
         pre_release_label_with_dash: if version.pre.is_empty() {
             "".to_string()
         } else {
-            format!("-{}", version.pre.as_str().split('.').nth(0).unwrap_or(""))
+            format!("-{}", version.pre.as_str().split('.').next().unwrap_or(""))
         },
         pre_release_number: version
             .pre
