@@ -1,6 +1,6 @@
 mod common;
 
-use common::{TestRepo, MAIN_BRANCH};
+use common::{MAIN_BRANCH, TestRepo};
 use git_versioner::GitVersioner;
 use rstest::{fixture, rstest};
 use semver::Version;
@@ -30,9 +30,11 @@ impl TestRepo {
         let actual = GitVersioner::calculate_version(&self.config).unwrap();
         let expected = Version::parse(expected).unwrap();
         let graph = self.graph();
-        assert_eq!(actual, expected,
+        assert_eq!(
+            actual, expected,
             "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
-            graph);
+            graph
+        );
     }
 }
 
@@ -175,14 +177,18 @@ fn test_release_branches_matching_custom_pattern_affect_main_branch(mut repo: Te
 }
 
 #[rstest]
-fn test_release_branches_not_matching_current_trunk_start_new_release_at_their_root(repo: TestRepo) {
+fn test_release_branches_not_matching_current_trunk_start_new_release_at_their_root(
+    repo: TestRepo,
+) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.branch("release/1.0.0");
     repo.commit_and_assert("1.0.0-rc.1");
 }
 
 #[rstest]
-fn test_release_branches_matching_current_trunk_increment_continue_release_at_version_root(repo: TestRepo) {
+fn test_release_branches_matching_current_trunk_increment_continue_release_at_version_root(
+    repo: TestRepo,
+) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("v", "1.0.0");
     repo.commit_and_assert("1.1.0-rc.1");
@@ -193,7 +199,9 @@ fn test_release_branches_matching_current_trunk_increment_continue_release_at_ve
 }
 
 #[rstest]
-fn test_release_branches_not_matching_current_trunk_increment_start_new_release_at_their_root(repo: TestRepo) {
+fn test_release_branches_not_matching_current_trunk_increment_start_new_release_at_their_root(
+    repo: TestRepo,
+) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("v", "1.0.0");
     repo.commit_and_assert("1.1.0-rc.1");
@@ -225,7 +233,7 @@ fn test_release_tags_without_matching_version_tag_prefix_are_ignored(
     #[values("a", "x", "p", "vv", "Vv")] prefix: &str,
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
-    repo.tag(&format!("{}1.0.0",  prefix));
+    repo.tag(&format!("{}1.0.0", prefix));
     repo.assert_version("0.1.0-rc.1");
 }
 
@@ -249,9 +257,11 @@ fn test_feature_branches_inherits_main_branch_base_version(
 }
 
 #[rstest]
-fn test_feature_branches_matching_custom_pattern_inherit_source_branch_base_version(mut repo: TestRepo) {
+fn test_feature_branches_matching_custom_pattern_inherit_source_branch_base_version(
+    mut repo: TestRepo,
+) {
     repo.config.feature_branch = r"^feat(ure)?/(?<BranchName>.+)$".to_string();
-    
+
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("v", "1.0.0");
     repo.branch("feat/feature");
@@ -267,7 +277,7 @@ fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_rep
     #[values('_', '/', ',', '!', '`', ']', '{', '}', '😁')] incompatible_symbol: char,
 ) {
     repo.commit("irrelevant");
-    repo.branch(&format!("feature/a{}a",  incompatible_symbol));
+    repo.branch(&format!("feature/a{}a", incompatible_symbol));
     repo.commit_and_assert("0.1.0-a-a.1");
 }
 

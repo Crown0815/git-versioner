@@ -1,6 +1,6 @@
-use git2::Oid;
-use git_versioner::config::ConfigurationFile;
 use git_versioner::DefaultConfig;
+use git_versioner::config::ConfigurationFile;
+use git2::Oid;
 use insta_cmd::get_cargo_bin;
 use regex::Regex;
 use rstest::fixture;
@@ -46,19 +46,33 @@ impl TestRepo {
         let mut config = DefaultConfig::default();
         config.path = path.clone();
         let cli_config = ConfigurationFile::default();
-        Self { path, config, cli_config, _temp_dir }
+        Self {
+            path,
+            config,
+            cli_config,
+            _temp_dir,
+        }
     }
 
     pub fn initialize(main_branch: &str) -> Self {
         let repo = TestRepo::new();
-        repo.execute(&["init", &format!("--initial-branch={main_branch}")], "initialize repository");
+        repo.execute(
+            &["init", &format!("--initial-branch={main_branch}")],
+            "initialize repository",
+        );
         repo.execute(&["config", "user.name", "tester"], "configure user.name");
-        repo.execute(&["config", "user.email", "tester@tests.com"], "configure user.email");
+        repo.execute(
+            &["config", "user.email", "tester@tests.com"],
+            "configure user.email",
+        );
         repo
     }
 
     pub fn commit(&self, message: &str) -> Oid {
-        self.execute(&["commit", "--allow-empty", "-m", message], &format!("commit {message}"));
+        self.execute(
+            &["commit", "--allow-empty", "-m", message],
+            &format!("commit {message}"),
+        );
         let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
 
         let commit_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
@@ -83,14 +97,20 @@ impl TestRepo {
     }
 
     pub fn tag_annotated(&self, name: &str) {
-        self.execute(&["tag", "-a", name, "-m", name], &format!("create tag {name}"));
+        self.execute(
+            &["tag", "-a", name, "-m", name],
+            &format!("create tag {name}"),
+        );
     }
 
     //noinspection RegExpDuplicateCharacterInClass
     //noinspection RegExpRedundantNestedCharacterClass
     //noinspection RegExpSimplifiable
     pub fn graph(&self) -> String {
-        let output = self.execute(&["log", "--graph", "--oneline", "--all", "--decorate"], "get commit graph");
+        let output = self.execute(
+            &["log", "--graph", "--oneline", "--all", "--decorate"],
+            "get commit graph",
+        );
         let raw = String::from_utf8_lossy(&output.stdout).to_string();
 
         let re = Regex::new(r"\b[[:xdigit:]]{7}\b").unwrap();
@@ -104,7 +124,7 @@ impl TestRepo {
             .output()
             .expect(&format!("Failed to {description}"));
 
-        if !output.status.success(){
+        if !output.status.success() {
             let error = String::from_utf8_lossy(&output.stderr);
             panic!("Failed to {description}, because: {error}")
         }
@@ -116,7 +136,8 @@ impl TestRepo {
     }
 
     pub fn create_toml_config(&self, filename: &str) -> PathBuf {
-        let content = toml::to_string(&self.cli_config).expect("Failed to serialize config to TOML");
+        let content =
+            toml::to_string(&self.cli_config).expect("Failed to serialize config to TOML");
         self.write_config(filename, content)
     }
 
@@ -125,7 +146,8 @@ impl TestRepo {
     }
 
     pub fn create_yaml_config(&self, filename: &str) -> PathBuf {
-        let content = serde_yaml::to_string(&self.cli_config).expect("Failed to serialize config to YAML");
+        let content =
+            serde_yaml::to_string(&self.cli_config).expect("Failed to serialize config to YAML");
         self.write_config(filename, content)
     }
 

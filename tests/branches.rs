@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{TestRepo, MAIN_BRANCH};
+use crate::common::{MAIN_BRANCH, TestRepo};
 use git_versioner::{GitVersioner, NO_BRANCH_NAME};
 use rstest::{fixture, rstest};
 
@@ -8,10 +8,12 @@ impl TestRepo {
     fn assert_branch(&self, expected_name: &str, expected_escaped_name: &str) {
         let actual = GitVersioner::calculate_version2(&self.config).unwrap();
         assert_eq!(actual.branch_name, expected_name.to_string());
-        assert_eq!(actual.escaped_branch_name, expected_escaped_name.to_string());
+        assert_eq!(
+            actual.escaped_branch_name,
+            expected_escaped_name.to_string()
+        );
     }
 }
-
 
 #[fixture]
 fn repo() -> TestRepo {

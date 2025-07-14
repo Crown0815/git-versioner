@@ -106,7 +106,8 @@ impl ConfigurationFile {
     /// The file format is determined by the file extension.
     pub fn from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let path = path.as_ref();
-        let extension = path.extension()
+        let extension = path
+            .extension()
             .and_then(|ext| ext.to_str())
             .ok_or_else(|| anyhow!("File has no extension"))?;
 
@@ -156,7 +157,8 @@ pub fn load_configuration() -> anyhow::Result<ConfigurationLayers> {
     let file = match &args.config_file {
         None => ConfigurationFile::from_default_files(),
         Some(path) => ConfigurationFile::from_file(path),
-    }.unwrap_or_default();
+    }
+    .unwrap_or_default();
     Ok(ConfigurationLayers { args, file, config })
 }
 

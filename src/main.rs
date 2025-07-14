@@ -32,10 +32,30 @@ fn main() -> Result<()> {
         patch: version.patch,
         major_minor_patch: format!("{}.{}.{}", version.major, version.minor, version.patch),
         pre_release_tag: version.pre.to_string(),
-        pre_release_tag_with_dash: if version.pre.is_empty() {"".to_string()} else {format!("-{}", version.pre.as_str())},
-        pre_release_label: version.pre.as_str().split('.').nth(0).unwrap_or("").to_string(),
-        pre_release_label_with_dash: if version.pre.is_empty() {"".to_string()} else {format!("-{}", version.pre.as_str().split('.').nth(0).unwrap_or(""))},
-        pre_release_number: version.pre.as_str().split('.').nth(1).unwrap_or("").to_string(),
+        pre_release_tag_with_dash: if version.pre.is_empty() {
+            "".to_string()
+        } else {
+            format!("-{}", version.pre.as_str())
+        },
+        pre_release_label: version
+            .pre
+            .as_str()
+            .split('.')
+            .nth(0)
+            .unwrap_or("")
+            .to_string(),
+        pre_release_label_with_dash: if version.pre.is_empty() {
+            "".to_string()
+        } else {
+            format!("-{}", version.pre.as_str().split('.').nth(0).unwrap_or(""))
+        },
+        pre_release_number: version
+            .pre
+            .as_str()
+            .split('.')
+            .nth(1)
+            .unwrap_or("")
+            .to_string(),
         build_metadata: version.build.to_string(),
         sem_ver: version.to_string(),
         assembly_sem_ver: format!("{}.{}.{}", version.major, version.minor, version.patch),
