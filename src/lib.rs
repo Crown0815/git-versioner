@@ -39,9 +39,9 @@ struct FoundBranch {
     distance: i64,
 }
 
-const BRANCH_NAME_ID: &'static str = "BranchName";
-const VERSION_ID: &'static str = "Version";
-pub const NO_BRANCH_NAME: &'static str = "(no branch)";
+const BRANCH_NAME_ID: &str = "BranchName";
+const VERSION_ID: &str = "Version";
+pub const NO_BRANCH_NAME: &str = "(no branch)";
 const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
 
 impl GitVersioner {
