@@ -122,7 +122,7 @@ impl TestRepo {
             .args(command)
             .current_dir(&self.path)
             .output()
-            .expect(&format!("Failed to {description}"));
+            .unwrap_or_else(|_| panic!("Failed to {description}"));
 
         if !output.status.success() {
             let error = String::from_utf8_lossy(&output.stderr);
