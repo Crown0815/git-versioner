@@ -14,13 +14,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-musl
           - os: macos-latest
-            target: aarch64-apple-darwin
           - os: windows-latest
-            target: x86_64-pc-windows-msvc
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -30,31 +25,22 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          toolchain: stable
+          components: rustfmt, clippy
 
-      - name: Install musl-tools (for Linux musl)
-        if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      - name: Check format
+        run: cargo fmt -- --check
 
-      - name: Install OpenSSL (for macOS)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install openssl@3
-          echo "OPENSSL_DIR=$(brew --prefix openssl@3)" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=$(brew --prefix openssl@3)/lib/pkgconfig" >> $GITHUB_ENV
-          # For x86_64 cross-compilation on ARM64
-          if [ "${{ matrix.target }}" = "x86_64-apple-darwin" ]; then
-            echo "CC=clang -target x86_64-apple-darwin" >> $GITHUB_ENV
-            echo "CXX=clang++ -target x86_64-apple-darwin" >> $GITHUB_ENV
-          fi
+      - name: Run clippy
+        run: cargo clippy -- -D warnings
 
       - name: Build binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release
 
       - name: Strip binary (Linux/macOS)
         if: matrix.os != 'windows-latest'
         run: strip target/${{ matrix.target }}/release/${{ env.CLI_NAME }}
-          
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
