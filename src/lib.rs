@@ -131,11 +131,8 @@ impl GitVersioner {
     }
 
     fn escaped(name: &str) -> String {
-        const ESCAPE_CHARACTER: char = '-';
-        name.chars().map(|c| {
-            if c.is_ascii_alphanumeric() { c } 
-            else { ESCAPE_CHARACTER }
-        }).collect()
+        const ESCAPE_CHARACTER: &str = "-";
+        name.replace(|c: char| !c.is_alphanumeric(), ESCAPE_CHARACTER)
     }
 
     fn collect_version_tags(&self) -> Result<Vec<VersionSource>> {
