@@ -43,8 +43,10 @@ impl TestRepo {
     fn new() -> Self {
         let _temp_dir = tempfile::tempdir().unwrap();
         let path = _temp_dir.path().to_path_buf();
-        let mut config = DefaultConfig::default();
-        config.path = path.clone();
+        let config = DefaultConfig {
+            path: path.clone(),
+            ..Default::default()
+        };
         let cli_config = ConfigurationFile::default();
         Self {
             path,
