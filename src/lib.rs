@@ -6,6 +6,7 @@ pub use config::DefaultConfig;
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Comparator, Op, Prerelease, Version};
+use std::collections::HashSet;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BranchType {
@@ -14,7 +15,7 @@ pub enum BranchType {
     Other(String),    // Feature branch or any other branch type
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct VersionSource {
     version: Version,
     commit_id: Oid,
@@ -133,14 +134,14 @@ impl GitVersioner {
         name.replace(|c: char| !c.is_alphanumeric(), ESCAPE_CHARACTER)
     }
 
-    fn collect_version_tags(&self) -> Result<Vec<VersionSource>> {
-        let mut version_tags = Vec::new();
+    fn version_tags(&self) -> Result<HashSet<VersionSource>> {
+        let mut version_tags = HashSet::new();
 
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
             if let Some(version) = self.version_in(tag_name) {
                 if let Some(commit_id) = self.tag_id_for(tag_name) {
-                    version_tags.push(VersionSource { version, commit_id });
+                    version_tags.insert(VersionSource { version, commit_id });
                 }
             }
         }
@@ -174,8 +175,8 @@ impl GitVersioner {
         }
     }
 
-    fn collect_sources_from_release_branches(&self) -> Result<Vec<VersionSource>> {
-        let mut version_branches = Vec::new();
+    fn version_branches(&self) -> Result<HashSet<VersionSource>> {
+        let mut version_branches = HashSet::new();
 
         let branches = self.repo.branches(Some(git2::BranchType::Local))?;
         for branch in branches {
@@ -183,10 +184,37 @@ impl GitVersioner {
             if let Some(name) = branch.name()? {
                 if let BranchType::Release(version) = self.determine_branch_type_by_name(name) {
                     let commit = branch.get().peel_to_commit()?;
-                    version_branches.push(VersionSource {
+                    version_branches.insert(VersionSource {
                         version,
                         commit_id: commit.id(),
                     });
+                }
+            }
+        }
+
+        Ok(version_branches)
+    }
+
+    fn remote_version_branches(&self) -> Result<HashSet<VersionSource>> {
+        let mut version_branches = HashSet::new();
+
+        for remote in self.repo.remotes()?.iter() {
+            if let Some(remote) = remote {
+                let branches = self.repo.branches(Some(git2::BranchType::Remote))?;
+                for branch in branches {
+                    let (branch, _) = branch?;
+                    if let Some(name) = branch.name()? {
+                        let name = name.replace(&format!("{}/", remote), "");
+                        if let BranchType::Release(version) =
+                            self.determine_branch_type_by_name(&name)
+                        {
+                            let commit = branch.get().peel_to_commit()?;
+                            version_branches.insert(VersionSource {
+                                version,
+                                commit_id: commit.id(),
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -299,10 +327,20 @@ impl GitVersioner {
     fn find_all_source_branches(&self, count_reference: Oid) -> Result<Vec<FoundBranch>> {
         let mut found_branches = Vec::new();
 
-        let branches = self.repo.branches(Some(git2::BranchType::Local))?;
+        let branches = self.repo.branches(None)?;
         for branch in branches {
-            let (branch, _) = branch?;
-            if let Some(name) = branch.name()? {
+            let (branch, branch_type) = branch?;
+            let cleaned_name = match branch_type {
+                git2::BranchType::Local => branch.name()?,
+                git2::BranchType::Remote => {
+                    let branch_name = branch.name()?.unwrap();
+                    match branch_name.split_once('/') {
+                        None => return Err(anyhow!("Unexpected remote branch: {}", branch_name)),
+                        Some((_, name)) => Some(name),
+                    }
+                }
+            };
+            if let Some(name) = cleaned_name {
                 let branch_type = self.determine_branch_type_by_name(name);
                 if let BranchType::Other(_) = branch_type {
                     continue;
@@ -349,10 +387,15 @@ impl GitVersioner {
         track_release_branches: bool,
         comparator: &Comparator,
     ) -> Result<Option<VersionSource>> {
-        let mut sources = self.collect_version_tags()?;
-        if track_release_branches {
-            sources.append(&mut self.collect_sources_from_release_branches()?);
-        }
+        let sources = if track_release_branches {
+            self.version_tags()?
+                .into_iter()
+                .chain(self.version_branches()?)
+                .chain(self.remote_version_branches()?)
+                .collect()
+        } else {
+            self.version_tags()?
+        };
 
         let mut matching_tags = sources
             .iter()

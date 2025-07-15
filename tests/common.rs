@@ -70,6 +70,15 @@ impl TestRepo {
         repo
     }
 
+    pub fn clone(source: TestRepo) -> Self {
+        let repo = TestRepo::new();
+        repo.execute(
+            &["clone", &format!(r"file://{}", source.path()), repo.path()],
+            &format!("clone {}", source.path()),
+        );
+        repo
+    }
+
     pub fn commit(&self, message: &str) -> Oid {
         self.execute(
             &["commit", "--allow-empty", "-m", message],
@@ -119,7 +128,7 @@ impl TestRepo {
         re.replace_all(&raw, "##SHA##").to_string()
     }
 
-    fn execute(&self, command: &[&str], description: &str) -> Output {
+    pub fn execute(&self, command: &[&str], description: &str) -> Output {
         let output = std::process::Command::new("git")
             .args(command)
             .current_dir(&self.path)
@@ -131,6 +140,10 @@ impl TestRepo {
             panic!("Failed to {description}, because: {error}")
         }
         output
+    }
+
+    fn path(&self) -> &str {
+        self.path.to_str().unwrap()
     }
 
     pub fn create_default_toml_config(&self) -> PathBuf {
