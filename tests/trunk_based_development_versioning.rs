@@ -3,7 +3,6 @@ mod common;
 use common::{MAIN_BRANCH, TestRepo};
 use git_versioner::GitVersioner;
 use rstest::{fixture, rstest};
-use semver::Version;
 
 impl TestRepo {
     fn commit_and_assert(&self, expected_version: &str) {
@@ -24,17 +23,6 @@ impl TestRepo {
     fn merge_and_assert(&self, branch_name: &str, expected_version: &str) {
         self.merge(branch_name);
         self.assert_version(expected_version);
-    }
-
-    fn assert_version(&self, expected: &str) {
-        let actual = GitVersioner::calculate_version(&self.config).unwrap();
-        let expected = Version::parse(expected).unwrap();
-        let graph = self.graph();
-        assert_eq!(
-            actual, expected,
-            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
-            graph
-        );
     }
 }
 

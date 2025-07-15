@@ -4,7 +4,7 @@ use git_versioner::*;
 
 fn main() -> Result<()> {
     let config = load_configuration()?;
-    let version = GitVersioner::calculate_version2(&config)?;
+    let version = GitVersioner::calculate_version(&config)?;
 
     let json = serde_json::to_string_pretty(&version)?;
     println!("{}", json);

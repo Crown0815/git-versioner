@@ -1,22 +1,7 @@
 mod common;
 
 use crate::common::{MAIN_BRANCH, TestRepo};
-use git_versioner::GitVersioner;
 use rstest::{fixture, rstest};
-use semver::Version;
-
-impl TestRepo {
-    fn assert_version(&self, expected: &str) {
-        let actual = GitVersioner::calculate_version(&self.config).unwrap();
-        let expected = Version::parse(expected).unwrap();
-        let graph = self.graph();
-        assert_eq!(
-            actual, expected,
-            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
-            graph
-        );
-    }
-}
 
 #[fixture]
 fn repo() -> TestRepo {

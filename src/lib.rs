@@ -62,13 +62,7 @@ pub const NO_BRANCH_NAME: &str = "(no branch)";
 const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
 
 impl GitVersioner {
-    pub fn calculate_version<T: Configuration>(config: &T) -> Result<Version> {
-        Ok(Version::parse(
-            &Self::calculate_version2(config)?.full_sem_ver,
-        )?)
-    }
-
-    pub fn calculate_version2<T: Configuration>(config: &T) -> Result<GitVersion> {
+    pub fn calculate_version<T: Configuration>(config: &T) -> Result<GitVersion> {
         let versioner = Self {
             repo: Repository::open(config.repository_path())?,
             trunk_pattern: Regex::new(config.main_branch())?,

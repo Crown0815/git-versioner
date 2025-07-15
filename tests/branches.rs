@@ -6,7 +6,7 @@ use rstest::{fixture, rstest};
 
 impl TestRepo {
     fn assert_branch(&self, expected_name: &str, expected_escaped_name: &str) {
-        let actual = GitVersioner::calculate_version2(&self.config).unwrap();
+        let actual = GitVersioner::calculate_version(&self.config).unwrap();
         assert_eq!(actual.branch_name, expected_name.to_string());
         assert_eq!(
             actual.escaped_branch_name,
