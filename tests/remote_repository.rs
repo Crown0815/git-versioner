@@ -47,3 +47,16 @@ fn test_feature_branch_inherits_origin_release_branch_base_version(repo: TestRep
     clone.checkout("feature/feature");
     clone.assert_version("1.0.0-feature.1")
 }
+
+#[rstest]
+fn test_main_branch_considers_origin_release_branches_as_base_version(repo: TestRepo) {
+    repo.commit("0.1.0-rc.1");
+    repo.branch("release/1.0.0");
+    repo.commit("1.0.0-rc.1");
+    repo.checkout(MAIN_BRANCH);
+    repo.commit("1.1.0-rc.1");
+
+    let clone = TestRepo::clone(repo);
+    clone.checkout(MAIN_BRANCH);
+    clone.assert_version("1.1.0-rc.1")
+}
