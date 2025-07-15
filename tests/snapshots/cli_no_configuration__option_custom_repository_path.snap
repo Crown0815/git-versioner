@@ -5,7 +5,7 @@ info:
   program: git-versioner
   args:
     - "--path"
-    - /var/folders/h6/6c04dcj9667bcpbvgl_79p7w0000gn/T/.tmplBWe0W
+    - /var/folders/h6/6c04dcj9667bcpbvgl_79p7w0000gn/T/.tmpVTl9LO
 ---
 success: true
 exit_code: 0
@@ -24,7 +24,9 @@ exit_code: 0
   "SemVer": "0.1.0-rc.1",
   "AssemblySemVer": "0.1.0",
   "FullSemVer": "0.1.0-rc.1",
-  "InformationalVersion": "0.1.0-rc.1"
+  "InformationalVersion": "0.1.0-rc.1",
+  "BranchName": "trunk",
+  "EscapedBranchName": "trunk"
 }
 
 ----- stderr -----

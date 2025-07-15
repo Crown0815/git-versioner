@@ -6,6 +6,7 @@ pub use config::DefaultConfig;
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Comparator, Op, Prerelease, Version};
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -29,8 +30,23 @@ pub struct GitVersioner {
     version_pattern: Regex,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct GitVersion {
-    pub version: Version,
+    pub major: u64,
+    pub minor: u64,
+    pub patch: u64,
+    pub major_minor_patch: String,
+    pub pre_release_tag: String,
+    pub pre_release_tag_with_dash: String,
+    pub pre_release_label: String,
+    pub pre_release_label_with_dash: String,
+    pub pre_release_number: String,
+    pub build_metadata: String,
+    pub sem_ver: String,
+    pub assembly_sem_ver: String,
+    pub full_sem_ver: String,
+    pub informational_version: String,
     pub branch_name: String,
     pub escaped_branch_name: String,
 }
@@ -47,7 +63,9 @@ const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.
 
 impl GitVersioner {
     pub fn calculate_version<T: Configuration>(config: &T) -> Result<Version> {
-        Ok(Self::calculate_version2(config)?.version)
+        Ok(Version::parse(
+            &Self::calculate_version2(config)?.full_sem_ver,
+        )?)
     }
 
     pub fn calculate_version2<T: Configuration>(config: &T) -> Result<GitVersion> {
@@ -75,7 +93,40 @@ impl GitVersioner {
         match result {
             Err(e) => Err(e),
             Ok(version) => Ok(GitVersion {
-                version,
+                major: version.major,
+                minor: version.minor,
+                patch: version.patch,
+                major_minor_patch: format!("{}.{}.{}", version.major, version.minor, version.patch),
+                pre_release_tag: version.pre.to_string(),
+                pre_release_tag_with_dash: if version.pre.is_empty() {
+                    "".to_string()
+                } else {
+                    format!("-{}", version.pre.as_str())
+                },
+                pre_release_label: version
+                    .pre
+                    .as_str()
+                    .split('.')
+                    .next()
+                    .unwrap_or("")
+                    .to_string(),
+                pre_release_label_with_dash: if version.pre.is_empty() {
+                    "".to_string()
+                } else {
+                    format!("-{}", version.pre.as_str().split('.').next().unwrap_or(""))
+                },
+                pre_release_number: version
+                    .pre
+                    .as_str()
+                    .split('.')
+                    .nth(1)
+                    .unwrap_or("")
+                    .to_string(),
+                build_metadata: version.build.to_string(),
+                sem_ver: version.to_string(),
+                assembly_sem_ver: format!("{}.{}.{}", version.major, version.minor, version.patch),
+                full_sem_ver: version.to_string(),
+                informational_version: version.to_string(),
                 escaped_branch_name: Self::escaped(&branch_name),
                 branch_name,
             }),

@@ -22,7 +22,9 @@ exit_code: 0
   "SemVer": "1.0.0",
   "AssemblySemVer": "1.0.0",
   "FullSemVer": "1.0.0",
-  "InformationalVersion": "1.0.0"
+  "InformationalVersion": "1.0.0",
+  "BranchName": "trunk",
+  "EscapedBranchName": "trunk"
 }
 
 ----- stderr -----
