@@ -219,21 +219,6 @@ impl GitVersioner {
         }
     }
 
-    fn count_commits_between(&self, from: Oid, to: Oid) -> Result<i64> {
-        let mut revision_walk = self.repo.revwalk()?;
-        revision_walk.push(from)?;
-        revision_walk.set_sorting(git2::Sort::TOPOLOGICAL)?;
-        let mut count = 0;
-        for oid in revision_walk {
-            if oid? == to {
-                break;
-            } // Stop counting when the specific commit is reached
-            count += 1;
-        }
-
-        Ok(count)
-    }
-
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
         let head_id = self.repo.head()?.peel_to_commit()?.id();
         let current_version = major_minor_comparator(release_version.major, release_version.minor);
@@ -334,6 +319,21 @@ impl GitVersioner {
             }
         }
         Ok(found_branches)
+    }
+
+    fn count_commits_between(&self, from: Oid, to: Oid) -> Result<i64> {
+        let mut revision_walk = self.repo.revwalk()?;
+        revision_walk.push(from)?;
+        revision_walk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+        let mut count = 0;
+        for oid in revision_walk {
+            if oid? == to {
+                break;
+            } // Stop counting when the specific commit is reached
+            count += 1;
+        }
+
+        Ok(count)
     }
 
     fn find_latest_trunk_version(&self) -> Result<Option<VersionSource>> {
