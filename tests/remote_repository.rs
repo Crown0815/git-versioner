@@ -24,7 +24,7 @@ fn repo() -> TestRepo {
 }
 
 #[rstest]
-fn test_feature_branch_inherits_origin_main_branch_base_version(repo: TestRepo) {
+fn test_feature_branch_inherits_remote_main_branch_base_version(repo: TestRepo) {
     repo.commit("0.1.0-rc.1");
     repo.tag("v1.0.0");
     repo.branch("feature/feature");
@@ -36,7 +36,7 @@ fn test_feature_branch_inherits_origin_main_branch_base_version(repo: TestRepo) 
 }
 
 #[rstest]
-fn test_feature_branch_inherits_origin_release_branch_base_version(repo: TestRepo) {
+fn test_feature_branch_inherits_remote_release_branch_base_version(repo: TestRepo) {
     repo.commit("0.1.0-rc.1");
     repo.branch("release/1.0.0");
     repo.commit("1.0.0-rc.1");
@@ -49,7 +49,7 @@ fn test_feature_branch_inherits_origin_release_branch_base_version(repo: TestRep
 }
 
 #[rstest]
-fn test_main_branch_considers_origin_release_branches_as_base_version(repo: TestRepo) {
+fn test_main_branch_considers_remote_release_branches_as_base_version(repo: TestRepo) {
     repo.commit("0.1.0-rc.1");
     repo.branch("release/1.0.0");
     repo.commit("1.0.0-rc.1");
