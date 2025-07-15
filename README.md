@@ -46,7 +46,3 @@ gitGraph:
     commit id: "1.3.0-rc.2" tag: "1.3.0"
     commit id: "1.4.0-rc.1"
 ```
-
-## License
-
-MIT
