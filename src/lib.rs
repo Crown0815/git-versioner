@@ -208,7 +208,7 @@ impl GitVersioner {
     }
 
     fn tag_id_for(&self, name: &str) -> Option<Oid> {
-        match self.repo.revparse_single(&format!("refs/tags/{}", name)) {
+        match self.repo.revparse_single(&format!("refs/tags/{name}")) {
             Ok(tag_obj) => {
                 if let Some(tag) = tag_obj.as_tag() {
                     Some(tag.target_id())
@@ -243,22 +243,19 @@ impl GitVersioner {
     fn remote_version_branches(&self) -> Result<HashSet<VersionSource>> {
         let mut version_branches = HashSet::new();
 
-        for remote in self.repo.remotes()?.iter() {
-            if let Some(remote) = remote {
-                let branches = self.repo.branches(Some(git2::BranchType::Remote))?;
-                for branch in branches {
-                    let (branch, _) = branch?;
-                    if let Some(name) = branch.name()? {
-                        let name = name.replace(&format!("{}/", remote), "");
-                        if let BranchType::Release(version) =
-                            self.determine_branch_type_by_name(&name)
-                        {
-                            let commit = branch.get().peel_to_commit()?;
-                            version_branches.insert(VersionSource {
-                                version,
-                                commit_id: commit.id(),
-                            });
-                        }
+        for remote in self.repo.remotes()?.iter().flatten() {
+            let branches = self.repo.branches(Some(git2::BranchType::Remote))?;
+            for branch in branches {
+                let (branch, _) = branch?;
+                if let Some(name) = branch.name()? {
+                    let name = name.replace(&format!("{remote}/"), "");
+                    if let BranchType::Release(version) = self.determine_branch_type_by_name(&name)
+                    {
+                        let commit = branch.get().peel_to_commit()?;
+                        version_branches.insert(VersionSource {
+                            version,
+                            commit_id: commit.id(),
+                        });
                     }
                 }
             }
@@ -281,13 +278,13 @@ impl GitVersioner {
             let mut version = tag.version.clone();
             version.minor += 1;
             version.patch = 0;
-            version.pre = Prerelease::new(&format!("rc.{}", count))?;
+            version.pre = Prerelease::new(&format!("rc.{count}"))?;
             Ok(version)
         } else {
             let count = self.count_commits_between(head_id, Oid::zero())?;
 
             let mut version = Version::new(0, 1, 0);
-            version.pre = Prerelease::new(&format!("rc.{}", count))?;
+            version.pre = Prerelease::new(&format!("rc.{count}"))?;
             Ok(version)
         }
     }
@@ -311,7 +308,7 @@ impl GitVersioner {
 
             let mut new_version = tag.version.clone();
             new_version.patch += 1;
-            new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
+            new_version.pre = Prerelease::new(&format!("rc.{count}"))?;
 
             Ok(new_version)
         } else if let Some(tag) = self.find_latest_tag_matching(&previous_version)? {
@@ -323,7 +320,7 @@ impl GitVersioner {
 
             let mut new_version = release_version.clone();
             new_version.patch += 0;
-            new_version.pre = Prerelease::new(&format!("rc.{}", count))?;
+            new_version.pre = Prerelease::new(&format!("rc.{count}"))?;
             Ok(new_version)
         } else {
             let mut found_branches = self.find_all_source_branches(head_id)?;
@@ -334,7 +331,7 @@ impl GitVersioner {
             let count = closest_branch.distance;
 
             let mut version = release_version.clone();
-            version.pre = Prerelease::new(&format!("rc.{}", count))?;
+            version.pre = Prerelease::new(&format!("rc.{count}"))?;
             Ok(version)
         }
     }
@@ -355,7 +352,7 @@ impl GitVersioner {
             Some(found_branch) => match &found_branch.branch_type {
                 BranchType::Trunk => self.calculate_version_for_trunk(),
                 BranchType::Release(version) => self.calculate_version_for_release(version),
-                BranchType::Other(name) => panic!("Unexpected branch type: {}", name),
+                BranchType::Other(name) => panic!("Unexpected branch type: {name}"),
             },
         }
         .unwrap_or(Version::new(0, 1, 0));

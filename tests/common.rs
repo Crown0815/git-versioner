@@ -149,8 +149,7 @@ impl TestRepo {
         let graph = self.graph();
         assert_eq!(
             actual, expected,
-            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
-            graph
+            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{graph}------"
         );
     }
 

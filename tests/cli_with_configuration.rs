@@ -31,7 +31,7 @@ fn test_that_toml_config_file_overrides_default_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: TestRepo,
     mut cli: Command,
 ) {
-    repo.cli_config.main_branch = Some(format!("^{}$", CUSTOM_MAIN_BRANCH));
+    repo.cli_config.main_branch = Some(format!("^{CUSTOM_MAIN_BRANCH}$"));
     let config_file = repo.create_default_toml_config();
 
     assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(&repo.path));

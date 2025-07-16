@@ -1,7 +1,6 @@
 mod common;
 
 use common::{MAIN_BRANCH, TestRepo};
-use git_versioner::GitVersioner;
 use rstest::{fixture, rstest};
 
 impl TestRepo {
@@ -11,12 +10,12 @@ impl TestRepo {
     }
 
     fn tag_and_assert(&self, prefix: &str, expected_version: &str) {
-        self.tag(&format!("{}{}", prefix, expected_version));
+        self.tag(&format!("{prefix}{expected_version}"));
         self.assert_version(expected_version);
     }
 
     fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) {
-        self.tag_annotated(&format!("{}{}", prefix, expected_version));
+        self.tag_annotated(&format!("{prefix}{expected_version}"));
         self.assert_version(expected_version);
     }
 
@@ -149,7 +148,7 @@ fn test_release_branches_with_matching_version_tag_prefix_affect_main_branch(
     #[values("v", "V", "")] prefix: &str,
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
-    repo.branch(&format!("release{}{}{}1.0.0", casing, separator, prefix));
+    repo.branch(&format!("release{casing}{separator}{prefix}1.0.0"));
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.1.0-rc.1");
 }
@@ -221,7 +220,7 @@ fn test_release_tags_without_matching_version_tag_prefix_are_ignored(
     #[values("a", "x", "p", "vv", "Vv")] prefix: &str,
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
-    repo.tag(&format!("{}1.0.0", prefix));
+    repo.tag(&format!("{prefix}1.0.0"));
     repo.assert_version("0.1.0-rc.1");
 }
 
@@ -240,7 +239,7 @@ fn test_feature_branches_inherits_main_branch_base_version(
 ) {
     repo.commit_and_assert("0.1.0-rc.1");
     repo.tag_and_assert("v", "1.0.0");
-    repo.branch(&format!("feature{}feature", case));
+    repo.branch(&format!("feature{case}feature"));
     repo.commit_and_assert("1.1.0-feature.1");
 }
 
@@ -265,7 +264,7 @@ fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_rep
     #[values('_', '/', ',', '!', '`', ']', '{', '}', '😁')] incompatible_symbol: char,
 ) {
     repo.commit("irrelevant");
-    repo.branch(&format!("feature/a{}a", incompatible_symbol));
+    repo.branch(&format!("feature/a{incompatible_symbol}a"));
     repo.commit_and_assert("0.1.0-a-a.1");
 }
 

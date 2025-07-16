@@ -7,7 +7,7 @@ fn main() -> Result<()> {
     let version = GitVersioner::calculate_version(&config)?;
 
     let json = serde_json::to_string_pretty(&version)?;
-    println!("{}", json);
+    println!("{json}");
 
     Ok(())
 }
