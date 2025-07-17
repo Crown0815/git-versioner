@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{MAIN_BRANCH, TestRepo};
+use common::{MAIN_BRANCH, TestRepo};
 use git_versioner::{GitVersioner, NO_BRANCH_NAME};
 use rstest::{fixture, rstest};
 

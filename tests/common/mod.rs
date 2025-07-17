@@ -1,10 +1,8 @@
-use git_versioner::config::ConfigurationFile;
 use git_versioner::{DefaultConfig, GitVersioner};
 use git2::Oid;
 use insta_cmd::get_cargo_bin;
 use regex::Regex;
 use rstest::fixture;
-use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
 
@@ -35,7 +33,6 @@ macro_rules! assert_repo_cmd_snapshot {
 pub struct TestRepo {
     pub path: PathBuf,
     pub config: DefaultConfig,
-    pub cli_config: ConfigurationFile,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
 
@@ -47,11 +44,9 @@ impl TestRepo {
             path: path.clone(),
             ..Default::default()
         };
-        let cli_config = ConfigurationFile::default();
         Self {
             path,
             config,
-            cli_config,
             _temp_dir,
         }
     }
@@ -143,31 +138,5 @@ impl TestRepo {
             "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
             self.graph()
         );
-    }
-
-    pub fn create_default_toml_config(&self) -> PathBuf {
-        self.create_toml_config(".git-versioner.toml")
-    }
-
-    pub fn create_toml_config(&self, filename: &str) -> PathBuf {
-        let content =
-            toml::to_string(&self.cli_config).expect("Failed to serialize config to TOML");
-        self.write_config(filename, content)
-    }
-
-    pub fn create_default_yaml_config(&self) -> PathBuf {
-        self.create_yaml_config(".git-versioner.yaml")
-    }
-
-    pub fn create_yaml_config(&self, filename: &str) -> PathBuf {
-        let content =
-            serde_yaml::to_string(&self.cli_config).expect("Failed to serialize config to YAML");
-        self.write_config(filename, content)
-    }
-
-    fn write_config(&self, filename: &str, toml_content: String) -> PathBuf {
-        let config_path = self.path.join(filename);
-        fs::write(&config_path, toml_content).expect("Failed to write TOML config file");
-        config_path
     }
 }
