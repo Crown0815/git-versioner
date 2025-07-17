@@ -163,7 +163,14 @@ jobs:
 
       - name: Strip binary (Linux/macOS)
         if: runner.os != 'Windows'
-        run: strip target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}
+        run: |
+          if [[ "${{ matrix.build.target }}" == aarch64* && "${{ runner.os }}" == Linux ]]; then
+            sudo apt-get update
+            sudo apt-get install -y binutils-aarch64-linux-gnu
+            aarch64-linux-gnu-strip target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}
+          else
+            strip target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}
+          fi
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
