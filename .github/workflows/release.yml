@@ -86,7 +86,6 @@ jobs:
             toolchain: stable,
             target: aarch64-apple-darwin,
           }
-
     runs-on: ${{ matrix.build.os }}
     steps:
       - name: Checkout code
@@ -98,11 +97,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends musl-tools libssl-dev
 
-      - name: Install rust
+      - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: ${{ matrix.build.toolchain }}
-          target: ${{ matrix.build.target }}
+          targets: ${{ matrix.build.target }}
           components: rustfmt, clippy
 
       - name: Install cross (Linux/macOS)
@@ -122,14 +121,14 @@ jobs:
 
       - name: Strip binary (Linux/macOS)
         if: !startsWith(matrix.build.os, 'windows')
-        run: strip target/release/${{ env.CLI_NAME }}
+        run: strip target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.build.target }}
           path: target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}${{ startsWith(matrix.build.os, 'windows') && '.exe' || '' }}
-          if-no-files-found: 'error'
+          if-no-files-found: error
 
   release:
     needs: build
@@ -139,6 +138,31 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: artifacts
+
+      - name: Rename artifacts for uniqueness
+        run: |
+          mkdir -p release-artifacts
+          for dir in artifacts/*; do
+            if [ -d "$dir" ]; then
+              target=$(basename "$dir" | sed 's/^binary-//')
+              for file in "$dir"/*; do
+                if [ -f "$file" ]; then
+                  filename=$(basename "$file")
+                  ext="${filename##*.}"
+                  if [ "$ext" = "$filename" ]; then
+                    mv "$file" "release-artifacts/${{ env.CLI_NAME }}-${target}"
+                  else
+                    mv "$file" "release-artifacts/${{ env.CLI_NAME }}-${target}.${ext}"
+                  fi
+                fi
+              done
+            fi
+          done
+        env:
+          CLI_NAME: git-versioner
+
+      - name: List release artifacts
+        run: ls -l release-artifacts
 
       - name: Determine prerelease status
         id: prerelease
@@ -158,6 +182,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/*
+          files: release-artifacts/*
           draft: true
           prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
