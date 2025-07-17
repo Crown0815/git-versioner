@@ -76,7 +76,7 @@ jobs:
           }
           - {
             name: darwin-x64,
-            os: macos-15,
+            os: macos-13,
             toolchain: stable,
             target: x86_64-apple-darwin,
           }
@@ -95,7 +95,7 @@ jobs:
         if: endsWith(matrix.build.target, 'musl')
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends musl-tools libssl-dev
+          sudo apt-get install -y --no-install-recommends musl-tools
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -112,7 +112,9 @@ jobs:
 
       - name: Install libssh2 (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libssh2-1-dev pkg-config
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssh2-1-dev libssl-dev pkg-config
 
       - name: Install libssh2 (macOS)
         if: runner.os == 'macOS'
