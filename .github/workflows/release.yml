@@ -11,22 +11,103 @@ env:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-          - os: macos-latest
-          - os: windows-latest
+        build:
+          - {
+            name: linux-x64-glibc,
+            os: ubuntu-22.04,
+            toolchain: stable,
+            target: x86_64-unknown-linux-gnu,
+          }
+          - {
+            name: linux-x64-musl,
+            os: ubuntu-22.04,
+            toolchain: stable,
+            target: x86_64-unknown-linux-musl,
+          }
+          - {
+            name: linux-x86-glibc,
+            os: ubuntu-22.04,
+            toolchain: stable,
+            target: i686-unknown-linux-gnu,
+          }
+          - {
+            name: linux-x86-musl,
+            os: ubuntu-22.04,
+            toolchain: stable,
+            target: i686-unknown-linux-musl,
+          }
+          - {
+            name: linux-arm64-glibc,
+            os: ubuntu-22.04,
+            toolchain: stable,
+            target: aarch64-unknown-linux-gnu,
+          }
+          - {
+            name: linux-arm64-musl,
+            os: ubuntu-22.04,
+            toolchain: stable,
+            target: aarch64-unknown-linux-musl,
+          }
+          - {
+            name: win32-x64-mingw,
+            os: windows-2022,
+            toolchain: stable,
+            target: x86_64-pc-windows-gnu,
+          }
+          - {
+            name: win32-x64-msvc,
+            os: windows-2022,
+            toolchain: stable,
+            target: x86_64-pc-windows-msvc,
+          }
+          - {
+            name: win32-x86-msvc,
+            os: windows-2022,
+            toolchain: stable,
+            target: i686-pc-windows-msvc,
+          }
+          - {
+            name: win32-arm64-msvc,
+            os: windows-2022,
+            toolchain: stable,
+            target: aarch64-pc-windows-msvc,
+          }
+          - {
+            name: darwin-x64,
+            os: macos-15,
+            toolchain: stable,
+            target: x86_64-apple-darwin,
+          }
+          - {
+            name: darwin-arm64,
+            os: macos-15,
+            toolchain: stable,
+            target: aarch64-apple-darwin,
+          }
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.build.os }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust
+      - name: Install MUSL-libc dependencies (Linux)
+        if: endsWith(matrix.build.target, 'musl')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends musl-tools libssl-dev
+
+      - name: Install rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: ${{ matrix.build.toolchain }}
+          target: ${{ matrix.build.target }}
           components: rustfmt, clippy
+
+      - name: Install cross (Linux/macOS)
+        if: startsWith(matrix.build.os, 'windows') == 'false'
+        run: cargo install cross
 
       - name: Check format
         run: cargo fmt -- --check
@@ -35,17 +116,19 @@ jobs:
         run: cargo clippy -- -D warnings
 
       - name: Build binary
-        run: cargo build --release
+        run: cargo build --release --locked --target ${{ matrix.build.target }}
+        env:
+          CARGO_TARGET_DIR: target
 
       - name: Strip binary (Linux/macOS)
-        if: matrix.os != 'windows-latest'
+        if: startsWith(matrix.build.os, 'windows') == 'false'
         run: strip target/release/${{ env.CLI_NAME }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.CLI_NAME }}-${{ matrix.os }}
-          path: target/${{ matrix.target }}/release/${{ env.CLI_NAME }}${{ matrix.os == 'windows-latest' && '.exe' || '' }}
+          name: binary-${{ matrix.build.target }}
+          path: target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}${{ startsWith(matrix.build.os, 'windows') && '.exe' || '' }}
           if-no-files-found: 'error'
 
   release:
@@ -75,7 +158,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          files: artifacts/*
           draft: true
           prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
-          token: ${{ secrets.GITHUB_TOKEN }}
