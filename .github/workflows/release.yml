@@ -105,7 +105,7 @@ jobs:
           components: rustfmt, clippy
 
       - name: Install cross (Linux/macOS)
-        if: !startsWith(matrix.build.os, 'windows')
+        if: startsWith(matrix.build.os, 'windows') != true
         run: cargo install cross
 
       - name: Check format
@@ -120,7 +120,7 @@ jobs:
           CARGO_TARGET_DIR: target
 
       - name: Strip binary (Linux/macOS)
-        if: !startsWith(matrix.build.os, 'windows')
+        if: startsWith(matrix.build.os, 'windows') != true
         run: strip target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}
 
       - name: Upload artifact
