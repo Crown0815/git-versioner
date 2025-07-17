@@ -120,7 +120,7 @@ impl TestRepo {
     }
 
     pub fn execute(&self, command: &[&str], description: &str) -> Output {
-        let output = std::process::Command::new("git")
+        let output = Command::new("git")
             .args(command)
             .current_dir(&self.path)
             .output()
