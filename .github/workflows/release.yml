@@ -118,10 +118,10 @@ jobs:
           pre-build = ["apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev libssh2-1-dev pkg-config"]
 
           [target.i686-unknown-linux-gnu]
-          pre-build = ["apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev libssh2-1-dev pkg-config"]
+          pre-build = ["dpkg --add-architecture i386", "apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev:i386 libssh2-1-dev:i386 pkg-config"]
 
           [target.aarch64-unknown-linux-gnu]
-          pre-build = ["apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev libssh2-1-dev pkg-config"]
+          pre-build = ["dpkg --add-architecture arm64", "apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev:arm64 libssh2-1-dev:arm64 pkg-config"]
 
           [target.x86_64-unknown-linux-musl]
           pre-build = ["apk add --no-cache openssl-dev libssh2-dev pkgconf"]
@@ -136,6 +136,18 @@ jobs:
       - name: Install cross (Linux)
         if: runner.os == 'Linux'
         run: cargo install cross
+
+      - name: Set PKG_CONFIG env (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
+          if [ "${{ matrix.build.target }}" == "x86_64-unknown-linux-gnu" ]; then
+            echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+          elif [ "${{ matrix.build.target }}" == "i686-unknown-linux-gnu" ]; then
+            echo "PKG_CONFIG_PATH=/usr/lib/i386-linux-gnu/pkgconfig" >> $GITHUB_ENV
+          elif [ "${{ matrix.build.target }}" == "aarch64-unknown-linux-gnu" ]; then
+            echo "PKG_CONFIG_PATH=/usr/lib/aarch64-linux-gnu/pkgconfig" >> $GITHUB_ENV
+          fi
 
       - name: Build binary (Linux)
         if: runner.os == 'Linux'
