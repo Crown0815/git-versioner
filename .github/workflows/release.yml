@@ -124,13 +124,13 @@ jobs:
           pre-build = ["dpkg --add-architecture arm64", "apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev:arm64 libssh2-1-dev:arm64 pkg-config"]
 
           [target.x86_64-unknown-linux-musl]
-          pre-build = ["apk add --no-cache openssl-dev libssh2-dev pkgconf"]
+          pre-build = ["apk add --no-cache cmake make git"]
 
           [target.i686-unknown-linux-musl]
-          pre-build = ["apk add --no-cache openssl-dev libssh2-dev pkgconf"]
+          pre-build = ["apk add --no-cache cmake make git"]
 
           [target.aarch64-unknown-linux-musl]
-          pre-build = ["apk add --no-cache openssl-dev libssh2-dev pkgconf"]
+          pre-build = ["apk add --no-cache cmake make git"]
           EOF
 
       - name: Install cross (Linux)
