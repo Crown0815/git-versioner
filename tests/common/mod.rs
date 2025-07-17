@@ -137,10 +137,11 @@ impl TestRepo {
         let actual = GitVersioner::calculate_version(&self.config)
             .unwrap()
             .full_sem_ver;
-        let graph = self.graph();
         assert_eq!(
-            actual, expected,
-            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{graph}------"
+            actual,
+            expected,
+            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
+            self.graph()
         );
     }
 
