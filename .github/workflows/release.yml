@@ -116,10 +116,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libssh2-1-dev libssl-dev pkg-config
 
-      - name: Install libssh2 (macOS)
-        if: runner.os == 'macOS'
-        run: brew install libssh2
-
       - name: Install cross (Linux/macOS)
         if: runner.os != 'Windows'
         run: cargo install cross
