@@ -3,7 +3,8 @@ name: Release Binaries
 on:
   push:
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-[a-zA-Z]+.[0-9]+'
 
 env:
   CLI_NAME: git-versioner
@@ -217,15 +218,10 @@ jobs:
         id: prerelease
         run: |
           TAG=${{ github.ref_name }}
-          if [[ $TAG =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
-            if [[ $TAG =~ - ]]; then
-              echo "is_prerelease=true" >> $GITHUB_OUTPUT
-            else
-              echo "is_prerelease=false" >> $GITHUB_OUTPUT
-            fi
+          if [[ $TAG =~ - ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
           else
-            echo "Invalid tag format: $TAG"
-            exit 1
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Create Release
