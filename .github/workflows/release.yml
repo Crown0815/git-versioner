@@ -116,18 +116,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libssh2-1-dev libssl-dev pkg-config
 
-      - name: Install cross (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Install cross (Linux)
+        if: runner.os == 'Linux'
         run: cargo install cross
 
-      - name: Build binary (Linux/macOS)
-        if: runner.os != 'Windows'
+      - name: Build binary (Linux)
+        if: runner.os == 'Linux'
         run: cross build --release --locked --target ${{ matrix.build.target }}
         env:
           CARGO_TARGET_DIR: target
 
-      - name: Build binary (Windows)
-        if: runner.os == 'Windows'
+      - name: Build binary (Windows/macOS)
+        if: runner.os != 'Linux'
         run: cargo build --release --locked --target ${{ matrix.build.target }}
         env:
           CARGO_TARGET_DIR: target
