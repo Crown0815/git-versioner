@@ -3,6 +3,21 @@ mod common;
 use crate::common::{MAIN_BRANCH, TestRepo};
 use rstest::{fixture, rstest};
 
+impl TestRepo {
+    pub fn path(&self) -> &str {
+        self.path.to_str().unwrap()
+    }
+
+    pub fn clone(source: TestRepo) -> Self {
+        let repo = TestRepo::new();
+        repo.execute(
+            &["clone", &format!(r"file://{}", source.path()), repo.path()],
+            &format!("clone {}", source.path()),
+        );
+        repo
+    }
+}
+
 #[fixture]
 fn repo() -> TestRepo {
     TestRepo::initialize(MAIN_BRANCH)

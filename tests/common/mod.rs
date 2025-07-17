@@ -40,7 +40,7 @@ pub struct TestRepo {
 }
 
 impl TestRepo {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let _temp_dir = tempfile::tempdir().unwrap();
         let path = _temp_dir.path().to_path_buf();
         let config = DefaultConfig {
@@ -66,15 +66,6 @@ impl TestRepo {
         repo.execute(
             &["config", "user.email", "tester@tests.com"],
             "configure user.email",
-        );
-        repo
-    }
-
-    pub fn clone(source: TestRepo) -> Self {
-        let repo = TestRepo::new();
-        repo.execute(
-            &["clone", &format!(r"file://{}", source.path()), repo.path()],
-            &format!("clone {}", source.path()),
         );
         repo
     }
@@ -151,10 +142,6 @@ impl TestRepo {
             actual, expected,
             "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{graph}------"
         );
-    }
-
-    fn path(&self) -> &str {
-        self.path.to_str().unwrap()
     }
 
     pub fn create_default_toml_config(&self) -> PathBuf {
