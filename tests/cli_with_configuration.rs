@@ -1,10 +1,9 @@
 mod common;
 
 use crate::common::MAIN_BRANCH;
-use ConfigType::*;
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use common::{TestRepo, cli};
-use git_versioner::config::{Configuration, ConfigurationFile};
+use git_versioner::config::ConfigurationFile;
 use insta::with_settings;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::{fixture, rstest};
@@ -13,16 +12,11 @@ use std::path::PathBuf;
 use std::process::Command;
 
 const CUSTOM_MAIN_BRANCH: &str = "stem";
-const DEFAULT_CONFIG_NAME: &str = ".git-versioner";
+const DEFAULT_CONFIG: &str = ".git-versioner";
 
 struct ConfiguredTestRepo {
     inner: TestRepo,
     cli_config: ConfigurationFile,
-}
-
-enum ConfigType {
-    Toml,
-    Yaml,
 }
 
 impl ConfiguredTestRepo {
@@ -33,15 +27,17 @@ impl ConfiguredTestRepo {
         self.inner.graph()
     }
 
-    pub fn create_config(&self, config_type: ConfigType, name: &str) -> Result<PathBuf> {
-        match config_type {
-            Toml => self.write(name, "toml", toml::to_string(&self.cli_config)?),
-            Yaml => self.write(name, "yaml", serde_yaml::to_string(&self.cli_config)?),
-        }
+    pub fn create_config(&self, name: &str, extension: &str) -> Result<PathBuf> {
+        let content = match extension {
+            "toml" => toml::to_string(&self.cli_config)?,
+            "yaml" => serde_yaml::to_string(&self.cli_config)?,
+            &_ => return Err(anyhow!("Unsupported file extension {extension}")),
+        };
+        self.write(name, extension, content)
     }
 
     fn write(&self, filename: &str, extension: &str, content: String) -> Result<PathBuf> {
-        let config_path = self.path().join(&format!("{filename}.{extension}"));
+        let config_path = self.path().join(format!("{filename}.{extension}"));
         fs::write(&config_path, content)?;
         Ok(config_path)
     }
@@ -79,10 +75,11 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str) -> ConfiguredTestRepo {
 #[rstest]
 fn test_that_toml_config_file_overrides_default_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.main_branch = Some(format!("^{CUSTOM_MAIN_BRANCH}$"));
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
 
     assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
 }
@@ -90,10 +87,11 @@ fn test_that_toml_config_file_overrides_default_main_branch_pattern(
 #[rstest]
 fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.main_branch = Some(format!("^{}$", "another_main_branch"));
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
 
     assert_configured_repo_cmd_snapshot!(
         repo,
@@ -106,10 +104,11 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
 #[rstest]
 fn test_that_toml_config_file_overrides_default_release_branch_pattern(
     mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.release_branch = Some("custom-release/(?<BranchName>.*)".to_string());
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
     repo.inner.commit("0.1.0-rc.1");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
@@ -120,10 +119,11 @@ fn test_that_toml_config_file_overrides_default_release_branch_pattern(
 #[rstest]
 fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.release_branch = Some("whatever-release/(?<BranchName>.*)".to_string());
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
     repo.inner.commit("0.1.0-rc.1");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
@@ -139,10 +139,11 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
 #[rstest]
 fn test_that_toml_config_file_overrides_default_feature_branch_pattern(
     mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.feature_branch = Some("my-feature/(?<BranchName>.*)".to_string());
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
     repo.inner.commit("0.1.0-rc.1");
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
@@ -152,10 +153,11 @@ fn test_that_toml_config_file_overrides_default_feature_branch_pattern(
 #[rstest]
 fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
     mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.feature_branch = Some("whatever-feature/(?<BranchName>.*)".to_string());
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
     repo.inner.commit("0.1.0-rc.1");
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
@@ -170,10 +172,11 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
 #[rstest]
 fn test_that_toml_config_file_overrides_default_version_pattern(
     mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
     repo.inner.commit("0.1.0-rc.1");
     repo.inner.tag("my/c1.0.0");
 
@@ -183,10 +186,11 @@ fn test_that_toml_config_file_overrides_default_version_pattern(
 #[rstest]
 fn test_that_cli_argument_overrides_configuration_of_version_pattern(
     mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
     mut cli: Command,
 ) {
     repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
-    let config_file = repo.create_config(Toml, DEFAULT_CONFIG_NAME).unwrap();
+    let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
     repo.inner.commit("0.1.0-rc.1");
     repo.inner.tag("my/v1.0.0");
 

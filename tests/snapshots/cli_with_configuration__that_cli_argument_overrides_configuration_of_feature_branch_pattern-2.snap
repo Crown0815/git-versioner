@@ -1,0 +1,32 @@
+---
+source: tests/cli_with_configuration.rs
+description: "Git Graph:\n    * ##SHA## (HEAD -> my-feature/feature) 0.1.0-feature.1\n    * ##SHA## (trunk) 0.1.0-rc.1\n    * ##SHA## 0.1.0-rc.1\n\nConfiguration (.git-versioner.yaml):\n    MainBranch: null\n    ReleaseBranch: null\n    FeatureBranch: whatever-feature/(?<BranchName>.*)\n    VersionPattern: null\n"
+info:
+  program: git-versioner
+  args:
+    - "--feature-branch"
+    - my-feature/(?<BranchName>.*)
+---
+success: true
+exit_code: 0
+----- stdout -----
+{
+  "Major": 0,
+  "Minor": 1,
+  "Patch": 0,
+  "MajorMinorPatch": "0.1.0",
+  "PreReleaseTag": "feature.1",
+  "PreReleaseTagWithDash": "-feature.1",
+  "PreReleaseLabel": "feature",
+  "PreReleaseLabelWithDash": "-feature",
+  "PreReleaseNumber": "1",
+  "BuildMetadata": "",
+  "SemVer": "0.1.0-feature.1",
+  "AssemblySemVer": "0.1.0",
+  "FullSemVer": "0.1.0-feature.1",
+  "InformationalVersion": "0.1.0-feature.1",
+  "BranchName": "my-feature/feature",
+  "EscapedBranchName": "my-feature-feature"
+}
+
+----- stderr -----

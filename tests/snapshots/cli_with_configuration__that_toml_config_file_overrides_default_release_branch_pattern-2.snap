@@ -1,0 +1,30 @@
+---
+source: tests/cli_with_configuration.rs
+description: "Git Graph:\n    * ##SHA## (HEAD -> custom-release/1.0.0) 1.0.1-rc.1\n    * ##SHA## (tag: v1.0.0, trunk) 0.1.0-rc.1\n    * ##SHA## 0.1.0-rc.1\n\nConfiguration (.git-versioner.toml):\n    ReleaseBranch = \"custom-release/(?<BranchName>.*)\"\n"
+info:
+  program: git-versioner
+  args: []
+---
+success: true
+exit_code: 0
+----- stdout -----
+{
+  "Major": 1,
+  "Minor": 0,
+  "Patch": 1,
+  "MajorMinorPatch": "1.0.1",
+  "PreReleaseTag": "rc.1",
+  "PreReleaseTagWithDash": "-rc.1",
+  "PreReleaseLabel": "rc",
+  "PreReleaseLabelWithDash": "-rc",
+  "PreReleaseNumber": "1",
+  "BuildMetadata": "",
+  "SemVer": "1.0.1-rc.1",
+  "AssemblySemVer": "1.0.1",
+  "FullSemVer": "1.0.1-rc.1",
+  "InformationalVersion": "1.0.1-rc.1",
+  "BranchName": "custom-release/1.0.0",
+  "EscapedBranchName": "custom-release-1-0-0"
+}
+
+----- stderr -----
