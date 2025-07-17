@@ -85,19 +85,8 @@ impl TestRepo {
         self.execute(&["checkout", name], &format!("checkout {name}"));
     }
 
-    pub fn merge(&self, name: &str) {
-        self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
-    }
-
     pub fn tag(&self, name: &str) {
         self.execute(&["tag", name], &format!("create tag {name}"));
-    }
-
-    pub fn tag_annotated(&self, name: &str) {
-        self.execute(
-            &["tag", "-a", name, "-m", name],
-            &format!("create tag {name}"),
-        );
     }
 
     //noinspection RegExpDuplicateCharacterInClass

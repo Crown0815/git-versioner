@@ -14,9 +14,20 @@ impl TestRepo {
         self.assert_version(expected_version);
     }
 
+    pub fn tag_annotated(&self, name: &str) {
+        self.execute(
+            &["tag", "-a", name, "-m", name],
+            &format!("create tag {name}"),
+        );
+    }
+
     fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) {
         self.tag_annotated(&format!("{prefix}{expected_version}"));
         self.assert_version(expected_version);
+    }
+
+    pub fn merge(&self, name: &str) {
+        self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
     }
 
     fn merge_and_assert(&self, branch_name: &str, expected_version: &str) {
