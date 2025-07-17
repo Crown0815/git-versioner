@@ -104,17 +104,24 @@ jobs:
           targets: ${{ matrix.build.target }}
           components: rustfmt, clippy
 
-      - name: Install cross (Linux/macOS)
-        if: startsWith(matrix.build.os, 'windows') != true
-        run: cargo install cross
-
       - name: Check format
         run: cargo fmt -- --check
 
       - name: Run clippy
         run: cargo clippy -- -D warnings
 
-      - name: Build binary
+      - name: Install cross (Linux/macOS)
+        if: startsWith(matrix.build.os, 'windows') != true
+        run: cargo install cross
+
+      - name: Build binary (Linux/macOS)
+        if: startsWith(matrix.build.os, 'windows') != true
+        run: cross build --release --locked --target ${{ matrix.build.target }}
+        env:
+          CARGO_TARGET_DIR: target
+
+      - name: Build binary (Windows)
+        if: startsWith(matrix.build.os, 'windows')
         run: cargo build --release --locked --target ${{ matrix.build.target }}
         env:
           CARGO_TARGET_DIR: target
