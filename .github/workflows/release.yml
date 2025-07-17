@@ -110,11 +110,28 @@ jobs:
       - name: Run clippy
         run: cargo clippy -- -D warnings
 
-      - name: Install libssh2 (Linux)
+      - name: Create Cross.toml (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libssh2-1-dev libssl-dev pkg-config
+          cat << EOF > Cross.toml
+          [target.x86_64-unknown-linux-gnu]
+          pre-build = ["apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev libssh2-1-dev pkg-config"]
+
+          [target.i686-unknown-linux-gnu]
+          pre-build = ["apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev libssh2-1-dev pkg-config"]
+
+          [target.aarch64-unknown-linux-gnu]
+          pre-build = ["apt-get update -qq -y", "apt-get install -y --no-install-recommends libssl-dev libssh2-1-dev pkg-config"]
+
+          [target.x86_64-unknown-linux-musl]
+          pre-build = ["apk add --no-cache openssl-dev libssh2-dev pkgconf"]
+
+          [target.i686-unknown-linux-musl]
+          pre-build = ["apk add --no-cache openssl-dev libssh2-dev pkgconf"]
+
+          [target.aarch64-unknown-linux-musl]
+          pre-build = ["apk add --no-cache openssl-dev libssh2-dev pkgconf"]
+          EOF
 
       - name: Install cross (Linux)
         if: runner.os == 'Linux'
