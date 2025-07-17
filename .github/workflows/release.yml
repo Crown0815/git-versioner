@@ -110,31 +110,39 @@ jobs:
       - name: Run clippy
         run: cargo clippy -- -D warnings
 
+      - name: Install libssh2 (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libssh2-1-dev pkg-config
+
+      - name: Install libssh2 (macOS)
+        if: runner.os == 'macOS'
+        run: brew install libssh2
+
       - name: Install cross (Linux/macOS)
-        if: startsWith(matrix.build.os, 'windows') != true
+        if: runner.os != 'Windows'
         run: cargo install cross
 
       - name: Build binary (Linux/macOS)
-        if: startsWith(matrix.build.os, 'windows') != true
+        if: runner.os != 'Windows'
         run: cross build --release --locked --target ${{ matrix.build.target }}
         env:
           CARGO_TARGET_DIR: target
 
       - name: Build binary (Windows)
-        if: startsWith(matrix.build.os, 'windows')
+        if: runner.os == 'Windows'
         run: cargo build --release --locked --target ${{ matrix.build.target }}
         env:
           CARGO_TARGET_DIR: target
 
       - name: Strip binary (Linux/macOS)
-        if: startsWith(matrix.build.os, 'windows') != true
+        if: runner.os != 'Windows'
         run: strip target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.build.target }}
-          path: target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}${{ startsWith(matrix.build.os, 'windows') && '.exe' || '' }}
+          path: target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}${{ runner.os == 'Windows' && '.exe' || '' }}
           if-no-files-found: error
 
   release:
