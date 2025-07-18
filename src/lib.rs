@@ -8,6 +8,7 @@ use regex::Regex;
 use semver::{Comparator, Op, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::fmt::Display;
 
 const BRANCH_NAME_ID: &str = "BranchName";
 const VERSION_ID: &str = "Version";
@@ -36,7 +37,7 @@ pub struct GitVersioner {
     prerelease_tag: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "PascalCase")]
 pub struct GitVersion {
     pub major: u64,
@@ -478,5 +479,11 @@ impl GitVersion {
             escaped_branch_name: GitVersioner::escaped(&branch_name),
             branch_name,
         }
+    }
+}
+
+impl Display for GitVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{} ({})", self.full_sem_ver, self.branch_name))
     }
 }

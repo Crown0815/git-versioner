@@ -3,10 +3,10 @@ mod common;
 use crate::common::MAIN_BRANCH;
 use anyhow::{Result, anyhow};
 use common::{TestRepo, cli};
+use git_versioner::GitVersion;
 use git_versioner::config::ConfigurationFile;
-use insta::with_settings;
-use insta_cmd::assert_cmd_snapshot;
 use rstest::{fixture, rstest};
+use semver::Version;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -41,23 +41,48 @@ impl ConfiguredTestRepo {
         fs::write(&config_path, content)?;
         Ok(config_path)
     }
-}
 
-#[macro_export]
-macro_rules! assert_configured_repo_cmd_snapshot {
-    ($repo:expr, $config:expr, $cmd:expr) => {
-        with_settings!(
-            { description =>
-                format!(
-                    "Git Graph:\n    {}\nConfiguration ({}):\n    {}",
-                    $repo.graph().replace("\n", &format!("\n{}", "    ")).trim_end_matches(' '),
-                    $config.file_name().unwrap().to_string_lossy(),
-                    fs::read_to_string(&$config).unwrap().replace("\n", &format!("\n{}", "    ")).trim_end_matches(' ')
-                )
-            },
-            { assert_cmd_snapshot!($cmd); }
+    pub fn assert_version(
+        &self,
+        version: &str,
+        branch: &str,
+        mut cmd: Command,
+        config_path: PathBuf,
+    ) {
+        let output = cmd.output().unwrap();
+        let stdout = str::from_utf8(&output.stdout).unwrap();
+        let actual: GitVersion = serde_json::from_str(stdout).unwrap();
+
+        let expected = GitVersion::new(Version::parse(version).unwrap(), branch.to_string());
+
+        assert_eq!(
+            actual,
+            expected,
+            "Expected HEAD version: {expected}, found: {actual}\n\
+            Git Graph:\n  {}\n\
+            Config ({}):\n  {}\n\
+            Args:\n  {}\n",
+            self.graph()
+                .replace("\n", &format!("\n{}", "  "))
+                .trim_end_matches(' '),
+            config_path.file_name().unwrap().to_string_lossy(),
+            fs::read_to_string(&config_path)
+                .unwrap()
+                .replace("\n", &format!("\n{}", "  "))
+                .trim_end_matches(' '),
+            cmd.get_args()
+                .map(|s| {
+                    let arg = s.to_string_lossy();
+                    if arg.contains(' ') || arg.is_empty() {
+                        format!("\"{arg}\"")
+                    } else {
+                        arg.into_owned()
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(" "),
         );
-    };
+    }
 }
 
 #[fixture]
@@ -80,8 +105,9 @@ fn test_that_toml_config_file_overrides_default_main_branch_pattern(
 ) {
     repo.cli_config.main_branch = Some(format!("^{CUSTOM_MAIN_BRANCH}$"));
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
+    cli.current_dir(repo.path());
 
-    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
+    repo.assert_version("0.1.0-pre.1", CUSTOM_MAIN_BRANCH, cli, config_file);
 }
 
 #[rstest]
@@ -92,13 +118,10 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
 ) {
     repo.cli_config.main_branch = Some(format!("^{}$", "another_main_branch"));
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
+    cli.current_dir(repo.path())
+        .args(["--main-branch", CUSTOM_MAIN_BRANCH]);
 
-    assert_configured_repo_cmd_snapshot!(
-        repo,
-        config_file,
-        cli.current_dir(repo.path())
-            .args(["--main-branch", CUSTOM_MAIN_BRANCH])
-    );
+    repo.assert_version("0.1.0-pre.1", CUSTOM_MAIN_BRANCH, cli, config_file);
 }
 
 #[rstest]
@@ -113,7 +136,10 @@ fn test_that_toml_config_file_overrides_default_release_branch_pattern(
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
-    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
+
+    cli.current_dir(repo.path());
+
+    repo.assert_version("1.0.1-pre.1", "custom-release/1.0.0", cli, config_file);
 }
 
 #[rstest]
@@ -128,12 +154,11 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
-    assert_configured_repo_cmd_snapshot!(
-        repo,
-        config_file,
-        cli.current_dir(repo.path())
-            .args(["--release-branch", "custom-release/(?<BranchName>.*)"])
-    );
+
+    cli.current_dir(repo.path())
+        .args(["--release-branch", "custom-release/(?<BranchName>.*)"]);
+
+    repo.assert_version("1.0.1-pre.1", "custom-release/1.0.0", cli, config_file);
 }
 
 #[rstest]
@@ -147,7 +172,10 @@ fn test_that_toml_config_file_overrides_default_feature_branch_pattern(
     repo.inner.commit("0.1.0-pre.1");
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
-    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
+
+    cli.current_dir(repo.path());
+
+    repo.assert_version("0.1.0-feature.1", "my-feature/feature", cli, config_file);
 }
 
 #[rstest]
@@ -161,12 +189,11 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
     repo.inner.commit("0.1.0-pre.1");
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
-    assert_configured_repo_cmd_snapshot!(
-        repo,
-        config_file,
-        cli.current_dir(repo.path())
-            .args(["--feature-branch", "my-feature/(?<BranchName>.*)"])
-    );
+
+    cli.current_dir(repo.path())
+        .args(["--feature-branch", "my-feature/(?<BranchName>.*)"]);
+
+    repo.assert_version("0.1.0-feature.1", "my-feature/feature", cli, config_file);
 }
 
 #[rstest]
@@ -180,7 +207,9 @@ fn test_that_toml_config_file_overrides_default_version_pattern(
     repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/c1.0.0");
 
-    assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
+    cli.current_dir(repo.path());
+
+    repo.assert_version("1.0.0", MAIN_BRANCH, cli, config_file);
 }
 
 #[rstest]
@@ -194,10 +223,8 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
     repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/v1.0.0");
 
-    assert_configured_repo_cmd_snapshot!(
-        repo,
-        config_file,
-        cli.current_dir(repo.path())
-            .args(["--version-pattern", "my/v(?<Version>.*)"])
-    );
+    cli.current_dir(repo.path())
+        .args(["--version-pattern", "my/v(?<Version>.*)"]);
+
+    repo.assert_version("1.0.0", MAIN_BRANCH, cli, config_file);
 }
