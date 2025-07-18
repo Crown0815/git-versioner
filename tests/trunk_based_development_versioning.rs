@@ -246,7 +246,7 @@ fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: Te
 }
 
 #[rstest]
-fn test_feature_branches_inherits_main_branch_base_version(
+fn test_feature_branches_from_main_branch_inherits_main_branch_base_version(
     repo: TestRepo,
     #[values("/", "-", "s/", "s-")] case: &str,
 ) {
@@ -254,6 +254,25 @@ fn test_feature_branches_inherits_main_branch_base_version(
     repo.tag_and_assert("v", "1.0.0");
     repo.branch(&format!("feature{case}feature"));
     repo.commit_and_assert("1.1.0-feature.1");
+}
+
+#[rstest]
+fn test_feature_branches_from_release_branch_inherits_main_branch_base_version(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("release/0.2.0");
+    repo.commit_and_assert("0.2.0-pre.1");
+    repo.branch("feature/feature");
+    repo.commit_and_assert("0.2.0-feature.1");
+}
+
+#[rstest]
+fn test_feature_branches_from_feature_branches_extend_source_feature_branch(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.branch("feature/feature-A");
+    repo.commit_and_assert("1.1.0-feature-A.1");
+    repo.branch("feature/feature-B");
+    repo.commit_and_assert("1.1.0-feature-B.2"); // feature 2 has 2 ahead of main
 }
 
 #[rstest]
