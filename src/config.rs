@@ -8,6 +8,7 @@ pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
 pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>.+)";
+pub const PRERELEASE_TAG: &str = "pre";
 
 pub trait Configuration {
     fn repository_path(&self) -> &PathBuf;
@@ -15,6 +16,7 @@ pub trait Configuration {
     fn release_branch(&self) -> &str;
     fn feature_branch(&self) -> &str;
     fn version_pattern(&self) -> &str;
+    fn prerelease_tag(&self) -> &str;
     fn verbose(&self) -> bool {
         false
     }
@@ -27,6 +29,7 @@ pub struct DefaultConfig {
     pub release_branch: String,
     pub feature_branch: String,
     pub version_pattern: String,
+    pub prerelease_tag: String,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -36,6 +39,7 @@ pub struct ConfigurationFile {
     pub release_branch: Option<String>,
     pub feature_branch: Option<String>,
     pub version_pattern: Option<String>,
+    pub prerelease_tag: Option<String>,
 }
 
 #[derive(Parser, Debug)]
@@ -55,6 +59,9 @@ pub struct Args {
 
     #[arg(long, value_parser)]
     version_pattern: Option<String>,
+
+    #[arg(long, value_parser)]
+    prerelease_tag: Option<String>,
 
     #[arg(short, long)]
     verbose: bool,
@@ -79,6 +86,7 @@ impl Default for DefaultConfig {
             release_branch: RELEASE_BRANCH.to_string(),
             feature_branch: FEATURE_BRANCH.to_string(),
             version_pattern: VERSION_PATTERN.to_string(),
+            prerelease_tag: PRERELEASE_TAG.to_string(),
         }
     }
 }
@@ -99,11 +107,12 @@ impl Configuration for DefaultConfig {
     fn version_pattern(&self) -> &str {
         &self.version_pattern
     }
+    fn prerelease_tag(&self) -> &str {
+        &self.prerelease_tag
+    }
 }
 
 impl ConfigurationFile {
-    /// Attempts to load configuration from a file with the given path.
-    /// The file format is determined by the file extension.
     pub fn from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let path = path.as_ref();
         let extension = path
@@ -118,22 +127,18 @@ impl ConfigurationFile {
         }
     }
 
-    /// Loads configuration from a TOML file.
     pub fn from_toml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let content = fs::read_to_string(path)?;
         let config: Self = toml::from_str(&content)?;
         Ok(config)
     }
 
-    /// Loads configuration from a YAML file.
     pub fn from_yaml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let content = fs::read_to_string(path)?;
         let config: Self = serde_yaml::from_str(&content)?;
         Ok(config)
     }
 
-    /// Attempts to load configuration from default configuration files.
-    /// Looks for .git-versioner.toml and .git-versioner.yaml in the current directory.
     pub fn from_default_files() -> anyhow::Result<Self> {
         let toml_path = Path::new(".git-versioner.toml");
         let yaml_path = Path::new(".git-versioner.yaml");
@@ -206,6 +211,16 @@ impl Configuration for ConfigurationLayers {
             branch
         } else {
             &self.config.version_pattern
+        }
+    }
+
+    fn prerelease_tag(&self) -> &str {
+        if let Some(branch) = &self.args.prerelease_tag {
+            branch
+        } else if let Some(branch) = &self.file.prerelease_tag {
+            branch
+        } else {
+            &self.config.prerelease_tag
         }
     }
 

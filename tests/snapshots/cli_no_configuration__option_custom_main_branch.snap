@@ -1,6 +1,6 @@
 ---
 source: tests/cli_no_configuration.rs
-description: "* ##SHA## (HEAD -> custom-main) 0.1.0-rc.1\n"
+description: "* ##SHA## (HEAD -> custom-main) 0.1.0-pre.1\n"
 info:
   program: git-versioner
   args:
@@ -15,16 +15,16 @@ exit_code: 0
   "Minor": 1,
   "Patch": 0,
   "MajorMinorPatch": "0.1.0",
-  "PreReleaseTag": "rc.1",
-  "PreReleaseTagWithDash": "-rc.1",
-  "PreReleaseLabel": "rc",
-  "PreReleaseLabelWithDash": "-rc",
+  "PreReleaseTag": "pre.1",
+  "PreReleaseTagWithDash": "-pre.1",
+  "PreReleaseLabel": "pre",
+  "PreReleaseLabelWithDash": "-pre",
   "PreReleaseNumber": "1",
   "BuildMetadata": "",
-  "SemVer": "0.1.0-rc.1",
+  "SemVer": "0.1.0-pre.1",
   "AssemblySemVer": "0.1.0",
-  "FullSemVer": "0.1.0-rc.1",
-  "InformationalVersion": "0.1.0-rc.1",
+  "FullSemVer": "0.1.0-pre.1",
+  "InformationalVersion": "0.1.0-pre.1",
   "BranchName": "custom-main",
   "EscapedBranchName": "custom-main"
 }

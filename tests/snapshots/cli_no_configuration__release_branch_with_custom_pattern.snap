@@ -1,6 +1,6 @@
 ---
 source: tests/cli_no_configuration.rs
-description: "* ##SHA## (HEAD -> custom-release/1.0.0) 1.0.1-rc.1\n* ##SHA## (tag: v1.0.0, trunk) 0.1.0-rc.1\n* ##SHA## 0.1.0-rc.1\n"
+description: "* ##SHA## (HEAD -> custom-release/1.0.0) 1.0.1-pre.1\n* ##SHA## (tag: v1.0.0, trunk) 0.1.0-pre.1\n* ##SHA## 0.1.0-pre.1\n"
 info:
   program: git-versioner
   args:
@@ -15,16 +15,16 @@ exit_code: 0
   "Minor": 0,
   "Patch": 1,
   "MajorMinorPatch": "1.0.1",
-  "PreReleaseTag": "rc.1",
-  "PreReleaseTagWithDash": "-rc.1",
-  "PreReleaseLabel": "rc",
-  "PreReleaseLabelWithDash": "-rc",
+  "PreReleaseTag": "pre.1",
+  "PreReleaseTagWithDash": "-pre.1",
+  "PreReleaseLabel": "pre",
+  "PreReleaseLabelWithDash": "-pre",
   "PreReleaseNumber": "1",
   "BuildMetadata": "",
-  "SemVer": "1.0.1-rc.1",
+  "SemVer": "1.0.1-pre.1",
   "AssemblySemVer": "1.0.1",
-  "FullSemVer": "1.0.1-rc.1",
-  "InformationalVersion": "1.0.1-rc.1",
+  "FullSemVer": "1.0.1-pre.1",
+  "InformationalVersion": "1.0.1-pre.1",
   "BranchName": "custom-release/1.0.0",
   "EscapedBranchName": "custom-release-1-0-0"
 }

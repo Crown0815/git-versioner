@@ -16,6 +16,7 @@ Options:
       --release-branch <RELEASE_BRANCH>    
       --feature-branch <FEATURE_BRANCH>    
       --version-pattern <VERSION_PATTERN>  
+      --prerelease-tag <PRERELEASE_TAG>    
   -v, --verbose                            
   -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
   -h, --help                               Print help

@@ -28,6 +28,7 @@ pub struct GitVersioner {
     release_pattern: Regex,
     feature_pattern: Regex,
     version_pattern: Regex,
+    prerelease_tag: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -69,6 +70,7 @@ impl GitVersioner {
             release_pattern: Regex::new(config.release_branch())?,
             feature_pattern: Regex::new(config.feature_branch())?,
             version_pattern: Regex::new(config.version_pattern())?,
+            prerelease_tag: config.prerelease_tag().to_string(),
         };
 
         if config.verbose() {
@@ -278,15 +280,22 @@ impl GitVersioner {
             let mut version = tag.version.clone();
             version.minor += 1;
             version.patch = 0;
-            version.pre = Prerelease::new(&format!("rc.{count}"))?;
+            version.pre = self.prerelease(count)?;
             Ok(version)
         } else {
             let count = self.count_commits_between(head_id, Oid::zero())?;
 
             let mut version = Version::new(0, 1, 0);
-            version.pre = Prerelease::new(&format!("rc.{count}"))?;
+            version.pre = self.prerelease(count)?;
             Ok(version)
         }
+    }
+
+    fn prerelease(&self, count: i64) -> Result<Prerelease> {
+        Ok(Prerelease::new(&format!(
+            "{}.{}",
+            self.prerelease_tag, count
+        ))?)
     }
 
     fn calculate_version_for_release(&self, release_version: &Version) -> Result<Version> {
@@ -308,7 +317,7 @@ impl GitVersioner {
 
             let mut new_version = tag.version.clone();
             new_version.patch += 1;
-            new_version.pre = Prerelease::new(&format!("rc.{count}"))?;
+            new_version.pre = self.prerelease(count)?;
 
             Ok(new_version)
         } else if let Some(tag) = self.find_latest_tag_matching(&previous_version)? {
@@ -320,7 +329,7 @@ impl GitVersioner {
 
             let mut new_version = release_version.clone();
             new_version.patch += 0;
-            new_version.pre = Prerelease::new(&format!("rc.{count}"))?;
+            new_version.pre = self.prerelease(count)?;
             Ok(new_version)
         } else {
             let mut found_branches = self.find_all_source_branches(head_id)?;
@@ -331,7 +340,7 @@ impl GitVersioner {
             let count = closest_branch.distance;
 
             let mut version = release_version.clone();
-            version.pre = Prerelease::new(&format!("rc.{count}"))?;
+            version.pre = self.prerelease(count)?;
             Ok(version)
         }
     }

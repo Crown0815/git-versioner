@@ -1,6 +1,6 @@
 ---
 source: tests/cli_with_configuration.rs
-description: "Git Graph:\n    * ##SHA## (HEAD -> trunk, tag: my/c1.0.0) 0.1.0-rc.1\n    * ##SHA## 0.1.0-rc.1\n\nConfiguration (.git-versioner.toml):\n    VersionPattern = \"my/c(?<Version>.*)\"\n"
+description: "Git Graph:\n    * ##SHA## (HEAD -> trunk, tag: my/c1.0.0) 0.1.0-pre.1\n    * ##SHA## 0.1.0-pre.1\n\nConfiguration (.git-versioner.toml):\n    VersionPattern = \"my/c(?<Version>.*)\"\n"
 info:
   program: git-versioner
   args: []

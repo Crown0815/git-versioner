@@ -64,7 +64,7 @@ macro_rules! assert_configured_repo_cmd_snapshot {
 pub fn repo(#[default(MAIN_BRANCH)] main: &str) -> ConfiguredTestRepo {
     let repo = TestRepo::initialize(main);
     let cli_config = ConfigurationFile::default();
-    repo.commit("0.1.0-rc.1");
+    repo.commit("0.1.0-pre.1");
 
     ConfiguredTestRepo {
         inner: repo,
@@ -109,10 +109,10 @@ fn test_that_toml_config_file_overrides_default_release_branch_pattern(
 ) {
     repo.cli_config.release_branch = Some("custom-release/(?<BranchName>.*)".to_string());
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
-    repo.inner.commit("0.1.0-rc.1");
+    repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
-    repo.inner.commit("1.0.1-rc.1");
+    repo.inner.commit("1.0.1-pre.1");
     assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
 }
 
@@ -124,10 +124,10 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
 ) {
     repo.cli_config.release_branch = Some("whatever-release/(?<BranchName>.*)".to_string());
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
-    repo.inner.commit("0.1.0-rc.1");
+    repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
-    repo.inner.commit("1.0.1-rc.1");
+    repo.inner.commit("1.0.1-pre.1");
     assert_configured_repo_cmd_snapshot!(
         repo,
         config_file,
@@ -144,7 +144,7 @@ fn test_that_toml_config_file_overrides_default_feature_branch_pattern(
 ) {
     repo.cli_config.feature_branch = Some("my-feature/(?<BranchName>.*)".to_string());
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
-    repo.inner.commit("0.1.0-rc.1");
+    repo.inner.commit("0.1.0-pre.1");
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
     assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
@@ -158,7 +158,7 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
 ) {
     repo.cli_config.feature_branch = Some("whatever-feature/(?<BranchName>.*)".to_string());
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
-    repo.inner.commit("0.1.0-rc.1");
+    repo.inner.commit("0.1.0-pre.1");
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
     assert_configured_repo_cmd_snapshot!(
@@ -177,7 +177,7 @@ fn test_that_toml_config_file_overrides_default_version_pattern(
 ) {
     repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
-    repo.inner.commit("0.1.0-rc.1");
+    repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/c1.0.0");
 
     assert_configured_repo_cmd_snapshot!(repo, config_file, cli.current_dir(repo.path()));
@@ -191,7 +191,7 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
 ) {
     repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
     let config_file = repo.create_config(DEFAULT_CONFIG, extension).unwrap();
-    repo.inner.commit("0.1.0-rc.1");
+    repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/v1.0.0");
 
     assert_configured_repo_cmd_snapshot!(
