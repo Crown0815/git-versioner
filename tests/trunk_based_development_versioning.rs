@@ -177,7 +177,7 @@ fn test_release_branches_matching_custom_pattern_affect_main_branch(mut repo: Te
 }
 
 #[rstest]
-fn test_release_branches_not_matching_current_trunk_start_new_release_at_their_root(
+fn test_release_branches_not_matching_current_trunk_version_start_new_release_at_their_root(
     repo: TestRepo,
 ) {
     repo.commit_and_assert("0.1.0-pre.1");
@@ -186,7 +186,7 @@ fn test_release_branches_not_matching_current_trunk_start_new_release_at_their_r
 }
 
 #[rstest]
-fn test_release_branches_matching_current_trunk_increment_continue_release_at_version_root(
+fn test_release_branches_matching_current_trunk_version_increment_continue_release_at_version_root(
     repo: TestRepo,
 ) {
     repo.commit_and_assert("0.1.0-pre.1");
@@ -199,7 +199,7 @@ fn test_release_branches_matching_current_trunk_increment_continue_release_at_ve
 }
 
 #[rstest]
-fn test_release_branches_not_matching_current_trunk_increment_start_new_release_at_their_root(
+fn test_release_branches_not_matching_current_trunk_version_increment_start_new_release_at_their_root(
     repo: TestRepo,
 ) {
     repo.commit_and_assert("0.1.0-pre.1");
