@@ -9,6 +9,11 @@ use semver::{Comparator, Op, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
+const BRANCH_NAME_ID: &str = "BranchName";
+const VERSION_ID: &str = "Version";
+pub const NO_BRANCH_NAME: &str = "(no branch)";
+const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum BranchType {
     Trunk,            // Main development branch (trunk)
@@ -57,11 +62,6 @@ struct FoundBranch {
     distance: i64,
 }
 
-const BRANCH_NAME_ID: &str = "BranchName";
-const VERSION_ID: &str = "Version";
-pub const NO_BRANCH_NAME: &str = "(no branch)";
-const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
-
 impl GitVersioner {
     pub fn calculate_version<T: Configuration>(config: &T) -> Result<GitVersion> {
         let versioner = Self {
@@ -86,44 +86,7 @@ impl GitVersioner {
             BranchType::Other(name) => versioner.calculate_version_for_feature(&name),
         }?;
 
-        Ok(GitVersion {
-            major: version.major,
-            minor: version.minor,
-            patch: version.patch,
-            major_minor_patch: format!("{}.{}.{}", version.major, version.minor, version.patch),
-            pre_release_tag: version.pre.to_string(),
-            pre_release_tag_with_dash: if version.pre.is_empty() {
-                "".to_string()
-            } else {
-                format!("-{}", version.pre.as_str())
-            },
-            pre_release_label: version
-                .pre
-                .as_str()
-                .split('.')
-                .next()
-                .unwrap_or("")
-                .to_string(),
-            pre_release_label_with_dash: if version.pre.is_empty() {
-                "".to_string()
-            } else {
-                format!("-{}", version.pre.as_str().split('.').next().unwrap_or(""))
-            },
-            pre_release_number: version
-                .pre
-                .as_str()
-                .split('.')
-                .nth(1)
-                .unwrap_or("")
-                .to_string(),
-            build_metadata: version.build.to_string(),
-            sem_ver: version.to_string(),
-            assembly_sem_ver: format!("{}.{}.{}", version.major, version.minor, version.patch),
-            full_sem_ver: version.to_string(),
-            informational_version: version.to_string(),
-            escaped_branch_name: Self::escaped(&branch_name),
-            branch_name,
-        })
+        Ok(GitVersion::new(version, branch_name))
     }
 
     fn print_effective_configuration(&self) {
@@ -472,5 +435,48 @@ fn major_minor_comparator(major: u64, minor: u64) -> Comparator {
         minor: Some(minor),
         patch: None,
         pre: Prerelease::EMPTY,
+    }
+}
+
+impl GitVersion {
+    pub fn new(version: Version, branch_name: String) -> Self {
+        Self {
+            major: version.major,
+            minor: version.minor,
+            patch: version.patch,
+            major_minor_patch: format!("{}.{}.{}", version.major, version.minor, version.patch),
+            pre_release_tag: version.pre.to_string(),
+            pre_release_tag_with_dash: if version.pre.is_empty() {
+                "".to_string()
+            } else {
+                format!("-{}", version.pre.as_str())
+            },
+            pre_release_label: version
+                .pre
+                .as_str()
+                .split('.')
+                .next()
+                .unwrap_or("")
+                .to_string(),
+            pre_release_label_with_dash: if version.pre.is_empty() {
+                "".to_string()
+            } else {
+                format!("-{}", version.pre.as_str().split('.').next().unwrap_or(""))
+            },
+            pre_release_number: version
+                .pre
+                .as_str()
+                .split('.')
+                .nth(1)
+                .unwrap_or("")
+                .to_string(),
+            build_metadata: version.build.to_string(),
+            sem_ver: version.to_string(),
+            assembly_sem_ver: format!("{}.{}.{}", version.major, version.minor, version.patch),
+            full_sem_ver: version.to_string(),
+            informational_version: version.to_string(),
+            escaped_branch_name: GitVersioner::escaped(&branch_name),
+            branch_name,
+        }
     }
 }
