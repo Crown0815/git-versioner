@@ -6,7 +6,6 @@ use common::{TestRepo, cli};
 use git_versioner::GitVersion;
 use git_versioner::config::ConfigurationFile;
 use rstest::{fixture, rstest};
-use rstest_reuse::{apply, template};
 use semver::Version;
 use std::fs;
 use std::path::PathBuf;
@@ -99,14 +98,10 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str, mut cli: Command) -> ConfiguredT
     }
 }
 
-#[template]
 #[rstest]
-fn cases(#[values("toml", "yaml")] extension: &str) {}
-
-#[apply(cases)]
 fn test_that_toml_config_file_overrides_default_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.main_branch = Some(format!("^{CUSTOM_MAIN_BRANCH}$"));
 
@@ -119,10 +114,10 @@ fn test_that_toml_config_file_overrides_default_main_branch_pattern(
     );
 }
 
-#[apply(cases)]
+#[rstest]
 fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.main_branch = Some(format!("^{}$", "another_main_branch"));
 
@@ -135,10 +130,10 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
     );
 }
 
-#[apply(cases)]
+#[rstest]
 fn test_that_toml_config_file_overrides_default_release_branch_pattern(
     mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.release_branch = Some("custom-release/(?<BranchName>.*)".to_string());
     repo.inner.commit("0.1.0-pre.1");
@@ -155,10 +150,10 @@ fn test_that_toml_config_file_overrides_default_release_branch_pattern(
     );
 }
 
-#[apply(cases)]
+#[rstest]
 fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.release_branch = Some("whatever-release/(?<BranchName>.*)".to_string());
     repo.inner.commit("0.1.0-pre.1");
@@ -175,10 +170,10 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     );
 }
 
-#[apply(cases)]
+#[rstest]
 fn test_that_toml_config_file_overrides_default_feature_branch_pattern(
     mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.feature_branch = Some("my-feature/(?<BranchName>.*)".to_string());
     repo.inner.commit("0.1.0-pre.1");
@@ -194,10 +189,10 @@ fn test_that_toml_config_file_overrides_default_feature_branch_pattern(
     );
 }
 
-#[apply(cases)]
+#[rstest]
 fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
     mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.feature_branch = Some("whatever-feature/(?<BranchName>.*)".to_string());
     repo.inner.commit("0.1.0-pre.1");
@@ -213,10 +208,10 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
     );
 }
 
-#[apply(cases)]
+#[rstest]
 fn test_that_toml_config_file_overrides_default_version_pattern(
     mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
     repo.inner.commit("0.1.0-pre.1");
@@ -225,10 +220,10 @@ fn test_that_toml_config_file_overrides_default_version_pattern(
     repo.assert_version("1.0.0", MAIN_BRANCH, [], DEFAULT_CONFIG, extension);
 }
 
-#[apply(cases)]
+#[rstest]
 fn test_that_cli_argument_overrides_configuration_of_version_pattern(
     mut repo: ConfiguredTestRepo,
-    extension: &str,
+    #[values("toml", "yaml")] extension: &str,
 ) {
     repo.cli_config.version_pattern = Some("my/c(?<Version>.*)".to_string());
     repo.inner.commit("0.1.0-pre.1");
