@@ -237,28 +237,25 @@ impl GitVersioner {
     }
 
     fn calculate_version_for_trunk(&self) -> Result<Version> {
-        let latest_trunk_tag = self.find_latest_trunk_version()?;
+        let source = self.find_trunk_version_source()?.unwrap_or(no_source());
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
-        if let Some(tag) = latest_trunk_tag {
-            let merge_base_oid = self.repo.merge_base(head_id, tag.commit_id)?;
-            let count = self.count_commits_between(head_id, merge_base_oid)?;
-            if count == 0 {
-                return Ok(tag.version);
-            }
-
-            let mut version = tag.version.clone();
-            version.minor += 1;
-            version.patch = 0;
-            version.pre = self.prerelease(count)?;
-            Ok(version)
+        let merge_base_oid = if source.commit_id.is_zero() {
+            source.commit_id
         } else {
-            let count = self.count_commits_between(head_id, Oid::zero())?;
+            self.repo.merge_base(head_id, source.commit_id)?
+        };
 
-            let mut version = Version::new(0, 1, 0);
-            version.pre = self.prerelease(count)?;
-            Ok(version)
+        let count = self.count_commits_between(head_id, merge_base_oid)?;
+        if count == 0 {
+            return Ok(source.version);
         }
+
+        let mut version = source.version.clone();
+        version.minor += 1;
+        version.patch = 0;
+        version.pre = self.prerelease(count)?;
+        Ok(version)
     }
 
     fn prerelease(&self, count: i64) -> Result<Prerelease> {
@@ -395,7 +392,7 @@ impl GitVersioner {
         Ok(count)
     }
 
-    fn find_latest_trunk_version(&self) -> Result<Option<VersionSource>> {
+    fn find_trunk_version_source(&self) -> Result<Option<VersionSource>> {
         self.find_latest_version_source(true, &any_comparator())
     }
 
@@ -427,6 +424,13 @@ impl GitVersioner {
 
         matching_tags.sort_by(|a, b| a.version.cmp(&b.version));
         Ok(matching_tags.last().cloned())
+    }
+}
+
+fn no_source() -> VersionSource {
+    VersionSource {
+        version: Version::parse("0.0.0").unwrap(),
+        commit_id: Oid::zero(),
     }
 }
 
