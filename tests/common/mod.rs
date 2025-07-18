@@ -1,4 +1,4 @@
-use git_versioner::{DefaultConfig, GitVersioner};
+use git_versioner::{DefaultConfig, GitVersion, GitVersioner};
 use git2::Oid;
 use insta_cmd::get_cargo_bin;
 use regex::Regex;
@@ -117,15 +117,14 @@ impl TestRepo {
         output
     }
 
-    pub fn assert_version(&self, expected: &str) {
-        let actual = GitVersioner::calculate_version(&self.config)
-            .unwrap()
-            .full_sem_ver;
+    pub fn assert_version(&self, expected: &str) -> GitVersion {
+        let version = GitVersioner::calculate_version(&self.config).unwrap();
         assert_eq!(
-            actual,
+            version.full_sem_ver,
             expected,
-            "Expected HEAD version: {expected}, found: {actual}\n\n Git Graph:\n-------\n{}------",
+            "Expected HEAD version: {expected}, found: {version}\n\n Git Graph:\n-------\n{}------",
             self.graph()
         );
+        version
     }
 }

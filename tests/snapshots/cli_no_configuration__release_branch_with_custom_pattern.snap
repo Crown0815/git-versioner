@@ -14,19 +14,28 @@ exit_code: 0
   "Major": 1,
   "Minor": 0,
   "Patch": 1,
-  "MajorMinorPatch": "1.0.1",
   "PreReleaseTag": "pre.1",
   "PreReleaseTagWithDash": "-pre.1",
   "PreReleaseLabel": "pre",
   "PreReleaseLabelWithDash": "-pre",
-  "PreReleaseNumber": "1",
+  "PreReleaseNumber": 1,
+  "WeightedPreReleaseNumber": 60001,
   "BuildMetadata": "",
+  "FullBuildMetaData": "",
+  "MajorMinorPatch": "1.0.1",
   "SemVer": "1.0.1-pre.1",
   "AssemblySemVer": "1.0.1",
-  "FullSemVer": "1.0.1-pre.1",
+  "AssemblySemFileVer": "",
   "InformationalVersion": "1.0.1-pre.1",
+  "FullSemVer": "1.0.1-pre.1",
   "BranchName": "custom-release/1.0.0",
-  "EscapedBranchName": "custom-release-1-0-0"
+  "EscapedBranchName": "custom-release-1-0-0",
+  "Sha": "",
+  "ShortSha": "",
+  "VersionSourceSha": "",
+  "CommitsSinceVersionSource": 0,
+  "CommitDate": "",
+  "UncommittedChanges": 0
 }
 
 ----- stderr -----

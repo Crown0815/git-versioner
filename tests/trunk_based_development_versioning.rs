@@ -1,17 +1,19 @@
 mod common;
 
+use anyhow::Result;
 use common::{MAIN_BRANCH, TestRepo};
+use git_versioner::GitVersion;
 use rstest::{fixture, rstest};
 
 impl TestRepo {
-    fn commit_and_assert(&self, expected_version: &str) {
+    fn commit_and_assert(&self, expected_version: &str) -> GitVersion {
         self.commit(expected_version);
-        self.assert_version(expected_version);
+        self.assert_version(expected_version)
     }
 
-    fn tag_and_assert(&self, prefix: &str, expected_version: &str) {
+    fn tag_and_assert(&self, prefix: &str, expected_version: &str) -> GitVersion {
         self.tag(&format!("{prefix}{expected_version}"));
-        self.assert_version(expected_version);
+        self.assert_version(expected_version)
     }
 
     pub fn tag_annotated(&self, name: &str) {
@@ -21,18 +23,18 @@ impl TestRepo {
         );
     }
 
-    fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) {
+    fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) -> GitVersion {
         self.tag_annotated(&format!("{prefix}{expected_version}"));
-        self.assert_version(expected_version);
+        self.assert_version(expected_version)
     }
 
     pub fn merge(&self, name: &str) {
         self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
     }
 
-    fn merge_and_assert(&self, branch_name: &str, expected_version: &str) {
+    fn merge_and_assert(&self, branch_name: &str, expected_version: &str) -> GitVersion {
         self.merge(branch_name);
-        self.assert_version(expected_version);
+        self.assert_version(expected_version)
     }
 }
 
@@ -285,4 +287,11 @@ fn test_non_matching_branches_are_treated_as_feature_branches(repo: TestRepo) {
     repo.tag_and_assert("v", "1.0.0");
     repo.branch("refactor/abc");
     repo.commit_and_assert("1.1.0-refactor-abc.1");
+}
+
+#[rstest]
+fn test_weighted_prerelease_number_for_main_branch_adds_60000(repo: TestRepo) {
+    let version = repo.commit_and_assert("0.1.0-pre.1");
+
+    assert_eq!(version.weighted_pre_release_number, 60001);
 }

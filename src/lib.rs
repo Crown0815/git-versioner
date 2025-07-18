@@ -43,19 +43,28 @@ pub struct GitVersion {
     pub major: u64,
     pub minor: u64,
     pub patch: u64,
-    pub major_minor_patch: String,
     pub pre_release_tag: String,
     pub pre_release_tag_with_dash: String,
     pub pre_release_label: String,
     pub pre_release_label_with_dash: String,
-    pub pre_release_number: String,
+    pub pre_release_number: u64,
+    pub weighted_pre_release_number: u64,
     pub build_metadata: String,
+    pub full_build_meta_data: String,
+    pub major_minor_patch: String,
     pub sem_ver: String,
     pub assembly_sem_ver: String,
-    pub full_sem_ver: String,
+    pub assembly_sem_file_ver: String,
     pub informational_version: String,
+    pub full_sem_ver: String,
     pub branch_name: String,
     pub escaped_branch_name: String,
+    pub sha: String,
+    pub short_sha: String,
+    pub version_source_sha: String,
+    pub commits_since_version_source: u64,
+    pub commit_date: String,
+    pub uncommitted_changes: u64,
 }
 
 struct FoundBranch {
@@ -469,15 +478,25 @@ impl GitVersion {
                 .as_str()
                 .split('.')
                 .nth(1)
-                .unwrap_or("")
-                .to_string(),
+                .unwrap_or("0")
+                .parse()
+                .unwrap(),
+            weighted_pre_release_number: 60001,
             build_metadata: version.build.to_string(),
             sem_ver: version.to_string(),
             assembly_sem_ver: format!("{}.{}.{}", version.major, version.minor, version.patch),
             full_sem_ver: version.to_string(),
             informational_version: version.to_string(),
             escaped_branch_name: GitVersioner::escaped(&branch_name),
+            sha: "".to_string(),
+            short_sha: "".to_string(),
+            version_source_sha: "".to_string(),
+            commits_since_version_source: 0,
+            commit_date: "".to_string(),
             branch_name,
+            full_build_meta_data: "".to_string(),
+            assembly_sem_file_ver: "".to_string(),
+            uncommitted_changes: 0,
         }
     }
 }
