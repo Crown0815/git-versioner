@@ -15,21 +15,6 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
     repo
 }
 
-#[fixture]
-pub fn cli() -> Command {
-    Command::new(get_cargo_bin(env!("CARGO_PKG_NAME")))
-}
-
-#[macro_export]
-macro_rules! assert_repo_cmd_snapshot {
-    ($repo:expr, $cmd:expr) => {
-        with_settings!(
-            { description => $repo.graph() },
-            { assert_cmd_snapshot!($cmd); }
-        );
-    };
-}
-
 pub struct TestRepo {
     pub path: PathBuf,
     pub config: DefaultConfig,
@@ -89,18 +74,12 @@ impl TestRepo {
         self.execute(&["tag", name], &format!("create tag {name}"));
     }
 
-    //noinspection RegExpDuplicateCharacterInClass
-    //noinspection RegExpRedundantNestedCharacterClass
-    //noinspection RegExpSimplifiable
     pub fn graph(&self) -> String {
         let output = self.execute(
             &["log", "--graph", "--oneline", "--all", "--decorate"],
             "get commit graph",
         );
-        let raw = String::from_utf8_lossy(&output.stdout).to_string();
-
-        let re = Regex::new(r"\b[[:xdigit:]]{7}\b").unwrap();
-        re.replace_all(&raw, "##SHA##").to_string()
+        String::from_utf8_lossy(&output.stdout).to_string()
     }
 
     pub fn execute(&self, command: &[&str], description: &str) -> Output {
