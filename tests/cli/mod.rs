@@ -58,44 +58,7 @@ impl ConfiguredTestRepo {
         args: I,
         source_id: Oid,
     ) {
-        let output = self.cli.args(args).output().unwrap();
-
-        let stdout = str::from_utf8(&output.stdout).unwrap();
-        let actual: GitVersion = serde_json::from_str(stdout).unwrap();
-
-        let expected = GitVersion::new(
-            Version::parse(version).unwrap(),
-            branch.to_string(),
-            source_id,
-        );
-
-        assert_eq!(
-            actual,
-            expected,
-            "Expected HEAD version: {expected}, found: {actual}\n\
-            Git Graph:\n  {}\n\
-            Config ({}):\n  {}\n\
-            Args:\n  {}\n",
-            shifted(self.inner.graph()),
-            "None",
-            "",
-            self.cli
-                .get_args()
-                .map(|s| {
-                    let arg = s.to_string_lossy();
-                    if arg.contains(' ') || arg.is_empty() {
-                        format!("\"{arg}\"")
-                    } else {
-                        arg.into_owned()
-                    }
-                })
-                .collect::<Vec<_>>()
-                .join(" "),
-        );
-
-        fn shifted(raw: String) -> String {
-            raw.replace("\n", "\n  ").trim_end_matches(' ').to_string()
-        }
+        self.inner_assert(version, branch, args, None, source_id);
     }
 
     pub fn assert_configured_version<'a, I: IntoIterator<Item = &'a str>>(
@@ -107,7 +70,28 @@ impl ConfiguredTestRepo {
         config_extension: &str,
         source_id: Oid,
     ) {
-        let config_path = self.write_config(config_name, config_extension).unwrap();
+        self.inner_assert(
+            version,
+            branch,
+            args,
+            Some((config_name, config_extension)),
+            source_id,
+        );
+    }
+
+    fn inner_assert<'a, I: IntoIterator<Item = &'a str>>(
+        &mut self,
+        version: &str,
+        branch: &str,
+        args: I,
+        config_file: Option<(&str, &str)>,
+        source_id: Oid,
+    ) {
+        let config_path = match config_file {
+            None => PathBuf::new(),
+            Some((name, ext)) => self.write_config(name, ext).unwrap(),
+        };
+
         let output = self.cli.args(args).output().unwrap();
 
         let stdout = str::from_utf8(&output.stdout).unwrap();
@@ -127,8 +111,11 @@ impl ConfiguredTestRepo {
             Config ({}):\n  {}\n\
             Args:\n  {}\n",
             shifted(self.inner.graph()),
-            config_path.file_name().unwrap().to_string_lossy(),
-            shifted(fs::read_to_string(&config_path).unwrap()),
+            config_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy(),
+            shifted(fs::read_to_string(&config_path).unwrap_or_default()),
             self.cli
                 .get_args()
                 .map(|s| {
