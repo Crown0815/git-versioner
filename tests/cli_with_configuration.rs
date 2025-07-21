@@ -155,3 +155,37 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
         source,
     );
 }
+
+#[rstest]
+fn test_that_config_file_overrides_default_prerelease_tag(
+    mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
+) {
+    repo.config_file.prerelease_tag = Some("alpha".to_string());
+
+    repo.assert_configured_version(
+        "0.1.0-alpha.1",
+        MAIN_BRANCH,
+        [],
+        DEFAULT_CONFIG,
+        extension,
+        Oid::zero(),
+    );
+}
+
+#[rstest]
+fn test_that_cli_argument_overrides_configuration_of_prerelease_tag(
+    mut repo: ConfiguredTestRepo,
+    #[values("toml", "yaml")] extension: &str,
+) {
+    repo.config_file.prerelease_tag = Some("whatever".to_string());
+
+    repo.assert_configured_version(
+        "0.1.0-alpha.1",
+        MAIN_BRANCH,
+        ["--prerelease-tag", "alpha"],
+        DEFAULT_CONFIG,
+        extension,
+        Oid::zero(),
+    );
+}

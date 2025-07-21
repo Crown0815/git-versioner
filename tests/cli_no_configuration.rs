@@ -120,6 +120,17 @@ fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
 }
 
 #[rstest]
+fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
+    let path = repo.inner.path.to_string_lossy().to_string();
+    repo.assert_version(
+        "0.1.0-alpha.1",
+        MAIN_BRANCH,
+        ["--prerelease-tag", "alpha"],
+        Oid::zero(),
+    );
+}
+
+#[rstest]
 fn test_help_text(mut cmd: Command) {
     assert_cmd_snapshot!(cmd.current_dir(".").args(["--help"]));
 }
