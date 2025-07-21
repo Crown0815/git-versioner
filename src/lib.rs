@@ -3,7 +3,7 @@ pub mod config;
 use crate::config::Configuration;
 use anyhow::{Result, anyhow};
 pub use config::DefaultConfig;
-use git2::{Commit, Oid, Reference, Repository};
+use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Comparator, Op, Prerelease, Version};
 use serde::{Deserialize, Serialize};
