@@ -10,7 +10,7 @@ const CUSTOM_MAIN_BRANCH: &str = "stem";
 const DEFAULT_CONFIG: &str = ".git-versioner";
 
 impl ConfiguredTestRepo {
-    pub fn assert_configured_version<'a, I: IntoIterator<Item = &'a str>>(
+    fn assert_configured_version<'a, I: IntoIterator<Item = &'a str>>(
         &mut self,
         version: &str,
         branch: &str,

@@ -9,7 +9,7 @@ use rstest::rstest;
 use std::process::Command;
 
 impl ConfiguredTestRepo {
-    pub fn assert_version<'a, I: IntoIterator<Item = &'a str>>(
+    fn assert_version<'a, I: IntoIterator<Item = &'a str>>(
         &mut self,
         version: &str,
         branch: &str,
