@@ -10,7 +10,7 @@ const CUSTOM_MAIN_BRANCH: &str = "stem";
 const DEFAULT_CONFIG: &str = ".git-versioner";
 
 #[rstest]
-fn test_that_toml_config_file_overrides_default_main_branch_pattern(
+fn test_that_config_file_overrides_default_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
@@ -44,7 +44,7 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
 }
 
 #[rstest]
-fn test_that_toml_config_file_overrides_default_release_branch_pattern(
+fn test_that_config_file_overrides_default_release_branch_pattern(
     mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
@@ -86,7 +86,7 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
 }
 
 #[rstest]
-fn test_that_toml_config_file_overrides_default_feature_branch_pattern(
+fn test_that_config_file_overrides_default_feature_branch_pattern(
     mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
@@ -126,7 +126,7 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
 }
 
 #[rstest]
-fn test_that_toml_config_file_overrides_default_version_pattern(
+fn test_that_config_file_overrides_default_version_pattern(
     mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
