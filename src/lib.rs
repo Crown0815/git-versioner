@@ -470,6 +470,15 @@ fn major_minor_comparator(major: u64, minor: u64) -> Comparator {
 
 impl GitVersion {
     pub fn new(version: Version, branch_name: String, source: Oid) -> Self {
+        let pre_release_number = version
+            .pre
+            .as_str()
+            .split('.')
+            .nth(1)
+            .unwrap_or("0")
+            .parse()
+            .unwrap();
+
         Self {
             major: version.major,
             minor: version.minor,
@@ -493,15 +502,8 @@ impl GitVersion {
             } else {
                 format!("-{}", version.pre.as_str().split('.').next().unwrap_or(""))
             },
-            pre_release_number: version
-                .pre
-                .as_str()
-                .split('.')
-                .nth(1)
-                .unwrap_or("0")
-                .parse()
-                .unwrap(),
-            weighted_pre_release_number: 60001,
+            pre_release_number,
+            weighted_pre_release_number: pre_release_number + 55000,
             build_metadata: version.build.to_string(),
             sem_ver: version.to_string(),
             assembly_sem_ver: format!("{}.{}.{}", version.major, version.minor, version.patch),

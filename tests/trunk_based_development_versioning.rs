@@ -308,8 +308,8 @@ fn test_non_matching_branches_are_treated_as_feature_branches(repo: TestRepo) {
 }
 
 #[rstest]
-fn test_weighted_prerelease_number_for_main_branch_adds_60000(repo: TestRepo) {
+fn test_weighted_prerelease_number_for_main_branch_adds_55000(repo: TestRepo) {
     let version = repo.commit_and_assert("0.1.0-pre.1");
 
-    assert_eq!(version.weighted_pre_release_number, 60001);
+    assert_eq!(version.weighted_pre_release_number, 55001);
 }
