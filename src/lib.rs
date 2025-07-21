@@ -290,17 +290,22 @@ impl GitVersioner {
             new_version.pre = self.prerelease(count)?;
 
             Ok((new_version, tag))
-        } else if let Some(tag) = self.find_latest_tag_matching(&previous_version)? {
-            let merge_base_oid = self.repo.merge_base(head_id, tag.commit_id)?;
+        } else if let Some(source) = self.find_latest_tag_matching(&previous_version)? {
+            let merge_base_oid = if source.commit_id.is_zero() {
+                source.commit_id
+            } else {
+                self.repo.merge_base(head_id, source.commit_id)?
+            };
+
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
-                return Ok((tag.version.clone(), tag));
+                return Ok((source.version.clone(), source));
             }
 
             let mut new_version = release_version.clone();
             new_version.patch += 0;
             new_version.pre = self.prerelease(count)?;
-            Ok((new_version, tag))
+            Ok((new_version, source))
         } else {
             let mut found_branches = self.find_all_source_branches(head_id)?;
 
@@ -431,7 +436,10 @@ impl GitVersioner {
             self.version_tags()?
         };
 
-        let mut matching_tags = sources
+        let mut all_sources = HashSet::from([no_source()]);
+        all_sources.extend(sources);
+
+        let mut matching_tags = all_sources
             .iter()
             .filter(IS_RELEASE_VERSION)
             .filter(|source: &&VersionSource| comparator.matches(&source.version))

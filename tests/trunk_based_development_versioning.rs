@@ -166,6 +166,28 @@ fn test_release_branches_with_matching_version_tag_prefix_affect_main_branch(
 }
 
 #[rstest]
+fn test_release_branches_matching_initial_trunk_version_continue_release_at_version_root(
+    repo: TestRepo,
+) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("release/0.1.0");
+    repo.commit_and_assert("0.1.0-pre.2");
+}
+
+#[rstest]
+fn test_release_branches_matching_tag_incremented_trunk_version_continue_release_at_version_root(
+    repo: TestRepo,
+) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.commit_and_assert("1.1.0-pre.1");
+
+    repo.branch("release/1.1.0");
+
+    repo.commit_and_assert("1.1.0-pre.2");
+}
+
+#[rstest]
 fn test_release_branches_matching_custom_pattern_affect_main_branch(mut repo: TestRepo) {
     repo.config.release_branch = r"^stabilize/my/(?<BranchName>.+)$".to_string();
 
@@ -182,19 +204,6 @@ fn test_release_branches_not_matching_current_trunk_version_start_new_release_at
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("release/1.0.0");
     repo.commit_and_assert("1.0.0-pre.1");
-}
-
-#[rstest]
-fn test_release_branches_matching_current_trunk_version_increment_continue_release_at_version_root(
-    repo: TestRepo,
-) {
-    repo.commit_and_assert("0.1.0-pre.1");
-    repo.tag_and_assert("v", "1.0.0");
-    repo.commit_and_assert("1.1.0-pre.1");
-
-    repo.branch("release/1.1.0");
-
-    repo.commit_and_assert("1.1.0-pre.2");
 }
 
 #[rstest]
@@ -312,4 +321,13 @@ fn test_weighted_prerelease_number_for_main_branch_adds_55000(repo: TestRepo) {
     let version = repo.commit_and_assert("0.1.0-pre.1");
 
     assert_eq!(version.weighted_pre_release_number, 55001);
+}
+
+#[rstest]
+fn test_weighted_prerelease_number_for_release_branch_adds_55000(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("release/0.1.0");
+    let version = repo.commit_and_assert("0.1.0-pre.2");
+
+    assert_eq!(version.weighted_pre_release_number, 55002);
 }
