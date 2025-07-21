@@ -340,10 +340,36 @@ fn test_weighted_prerelease_number_for_main_branch_adds_55000(repo: TestRepo) {
 }
 
 #[rstest]
+fn test_weighted_prerelease_number_for_main_branch_release_tag_adds_60000(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.tag_and_assert("v", "1.0.0")
+        .weighted_pre_release_number(60000);
+}
+
+#[rstest]
 fn test_weighted_prerelease_number_for_release_branch_adds_55000(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("release/0.1.0");
 
     repo.commit_and_assert("0.1.0-pre.2")
         .weighted_pre_release_number(55002);
+}
+
+#[rstest]
+fn test_weighted_prerelease_number_for_release_branch_release_tag_adds_60000(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("release/0.1.0");
+
+    repo.commit_and_assert("0.1.0-pre.2");
+    repo.tag_and_assert("v", "0.1.0")
+        .weighted_pre_release_number(60000);
+}
+
+#[rstest]
+fn test_weighted_prerelease_number_for_feature_branch_adds_30000(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("feature/feature-A");
+
+    repo.commit_and_assert("0.1.0-feature-A.1")
+        .weighted_pre_release_number(30001);
 }
