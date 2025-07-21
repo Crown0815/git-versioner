@@ -1,6 +1,5 @@
 mod common;
 
-use anyhow::Result;
 use common::{MAIN_BRANCH, TestRepo};
 use git_versioner::GitVersion;
 use rstest::{fixture, rstest};

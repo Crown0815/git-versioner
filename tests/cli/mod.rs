@@ -51,16 +51,6 @@ impl ConfiguredTestRepo {
         Ok(file_path)
     }
 
-    pub fn assert_version<'a, I: IntoIterator<Item = &'a str>>(
-        &mut self,
-        version: &str,
-        branch: &str,
-        args: I,
-        source_id: Oid,
-    ) {
-        self.inner_assert(version, branch, args, None, source_id);
-    }
-
     pub fn inner_assert<'a, I: IntoIterator<Item = &'a str>>(
         &mut self,
         version: &str,
