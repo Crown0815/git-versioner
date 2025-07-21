@@ -2,13 +2,16 @@ pub mod config;
 
 use crate::config::Configuration;
 use anyhow::{Result, anyhow};
+use chrono::DateTime;
+use chrono::offset::Utc;
 pub use config::DefaultConfig;
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Comparator, Op, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
+use std::time;
 
 const BRANCH_NAME_ID: &str = "BranchName";
 const VERSION_ID: &str = "Version";
@@ -93,7 +96,8 @@ impl GitVersioner {
             versioner.print_effective_configuration();
         }
 
-        let branch_name = Self::branch_name_for(versioner.head()?)?;
+        let head = versioner.head()?;
+        let branch_name = Self::branch_name_for(&head)?;
         let branch_type_at_head = versioner.determine_branch_type_by_name(&branch_name);
 
         let (version, source, prerelease_weight) = match branch_type_at_head {
@@ -107,6 +111,7 @@ impl GitVersioner {
             branch_name,
             source.commit_id,
             prerelease_weight,
+            head,
         ))
     }
 
@@ -124,7 +129,7 @@ impl GitVersioner {
         self.repo.head()
     }
 
-    fn branch_name_for(reference: Reference) -> Result<String> {
+    fn branch_name_for(reference: &Reference) -> Result<String> {
         if !reference.is_branch() {
             return Ok(NO_BRANCH_NAME.to_string());
         }
@@ -504,7 +509,13 @@ fn major_minor_comparator(major: u64, minor: u64) -> Comparator {
 }
 
 impl GitVersion {
-    fn new(version: Version, branch_name: String, source: Oid, prerelease_weight: u64) -> Self {
+    fn new(
+        version: Version,
+        branch_name: String,
+        source: Oid,
+        prerelease_weight: u64,
+        head: Reference,
+    ) -> Self {
         let pre_release_number = version
             .pre
             .as_str()
@@ -515,6 +526,19 @@ impl GitVersion {
             .unwrap();
 
         let weighted_pre_release_number = pre_release_number + prerelease_weight;
+
+        let commit = head.peel_to_commit().unwrap();
+        let sha = commit.id().to_string();
+        let short_sha = sha[..7].to_string();
+        let seconds_since_epoch = time::Duration::from_secs(commit.time().seconds() as u64);
+        let commit_date_time: DateTime<Utc> = (time::UNIX_EPOCH + seconds_since_epoch).into();
+        let commit_date = commit_date_time.format("%Y-%m-%d").to_string();
+
+        let version_source_sha = if source.is_zero() {
+            "".to_string()
+        } else {
+            source.to_string()
+        };
         Self {
             major: version.major,
             minor: version.minor,
@@ -550,15 +574,11 @@ impl GitVersion {
             full_sem_ver: version.to_string(),
             informational_version: version.to_string(),
             escaped_branch_name: GitVersioner::escaped(&branch_name),
-            sha: "".to_string(),
-            short_sha: "".to_string(),
-            version_source_sha: if source.is_zero() {
-                "".to_string()
-            } else {
-                source.to_string()
-            },
+            sha,
+            short_sha,
+            version_source_sha,
             commits_since_version_source: 0,
-            commit_date: "".to_string(),
+            commit_date,
             branch_name,
             full_build_meta_data: "".to_string(),
             uncommitted_changes: 0,

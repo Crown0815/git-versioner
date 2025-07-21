@@ -14,7 +14,7 @@ fn test_release_candidate_on_main_branch(mut repo: ConfiguredTestRepo) {
     repo.execute_and_assert([], None)
         .version("0.1.0-pre.1")
         .branch_name(MAIN_BRANCH)
-        .has_no_source();
+        .has_no_version_source();
 }
 
 #[rstest]
@@ -25,7 +25,7 @@ fn test_release_on_main_branch(mut repo: ConfiguredTestRepo) {
     repo.execute_and_assert([], None)
         .version("0.1.0")
         .branch_name(MAIN_BRANCH)
-        .source_id(source);
+        .version_source(source);
 }
 
 #[rstest]
@@ -36,7 +36,7 @@ fn test_release_on_main_branch_with_custom_version_pattern(mut repo: ConfiguredT
     repo.execute_and_assert(["--version-pattern", "my/v(?<Version>.*)"], None)
         .version("0.1.0")
         .branch_name(MAIN_BRANCH)
-        .source_id(source);
+        .version_source(source);
 }
 
 #[rstest]
@@ -52,7 +52,7 @@ fn test_release_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
     )
     .version("1.0.1-pre.1")
     .branch_name("custom-release/1.0.0")
-    .source_id(source);
+    .version_source(source);
 }
 
 #[rstest]
@@ -64,7 +64,7 @@ fn test_feature_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
     repo.execute_and_assert(["--feature-branch", "my-feature/(?<BranchName>.*)"], None)
         .version("0.1.0-feature.1")
         .branch_name("my-feature/feature")
-        .has_no_source();
+        .has_no_version_source();
 }
 
 #[rstest]
@@ -72,7 +72,7 @@ fn test_option_custom_main_branch(#[with("custom-main")] mut repo: ConfiguredTes
     repo.execute_and_assert(["--main-branch", "custom-main"], None)
         .version("0.1.0-pre.1")
         .branch_name("custom-main")
-        .has_no_source();
+        .has_no_version_source();
 }
 
 #[rstest]
@@ -82,7 +82,7 @@ fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
     repo.execute_and_assert(["--path", &path], None)
         .version("0.1.0-pre.1")
         .branch_name(MAIN_BRANCH)
-        .has_no_source();
+        .has_no_version_source();
 }
 
 #[rstest]
@@ -90,7 +90,7 @@ fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
     repo.execute_and_assert(["--pre-release-tag", "alpha"], None)
         .version("0.1.0-alpha.1")
         .branch_name(MAIN_BRANCH)
-        .has_no_source();
+        .has_no_version_source();
 }
 
 #[rstest]

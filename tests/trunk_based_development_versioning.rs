@@ -170,7 +170,8 @@ fn test_release_branches_matching_initial_trunk_version_continue_release_at_vers
 ) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("release/0.1.0");
-    repo.commit_and_assert("0.1.0-pre.2").has_no_source();
+    repo.commit_and_assert("0.1.0-pre.2")
+        .has_no_version_source();
 }
 
 #[rstest]
@@ -238,7 +239,7 @@ fn test_release_tags_with_matching_version_tag_prefix_are_considered(
     #[values("v", "V", "")] prefix: &str,
 ) {
     let source = repo.commit("0.1.0-pre.1");
-    repo.tag_and_assert(prefix, "1.0.0").source_id(source);
+    repo.tag_and_assert(prefix, "1.0.0").version_source(source);
 }
 
 #[rstest]
@@ -384,4 +385,16 @@ fn test_assembly_sem_ver_is_major_minor_patch_dot_zero(repo: TestRepo) {
 fn test_assembly_sem_file_ver_is_major_minor_patch_dot_weighted_pre_release_number(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1")
         .assembly_sem_ver("0.1.0.55001");
+}
+
+#[rstest]
+fn test_sha_matches_head(repo: TestRepo) {
+    let commit = repo.commit("0.1.0-pre.1");
+    repo.assert().sha(&commit.to_string());
+}
+
+#[rstest]
+fn test_short_sha_is_first_7_chars_of_sha(repo: TestRepo) {
+    let commit = repo.commit("0.1.0-pre.1");
+    repo.assert().short_sha(&commit.to_string()[..7]);
 }

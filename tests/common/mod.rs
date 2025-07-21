@@ -54,7 +54,6 @@ impl TestRepo {
             &format!("commit {message}"),
         );
         let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
-
         let commit_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
         Oid::from_str(&commit_hash).unwrap()
     }
@@ -147,19 +146,39 @@ impl Assertable {
         self
     }
 
-    pub fn source_id(self, expected: Oid) -> Self {
-        self.source_sha(&expected.to_string())
+    pub fn sha(self, expected: &str) -> Self {
+        let actual = &self.result.sha;
+        assert_eq!(
+            actual, expected,
+            "Expected sha: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
     }
 
-    pub fn has_no_source(self) -> Self {
-        self.source_sha("")
+    pub fn short_sha(self, expected: &str) -> Self {
+        let actual = &self.result.short_sha;
+        assert_eq!(
+            actual, expected,
+            "Expected short_sha: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
     }
 
-    pub fn source_sha(self, expected: &str) -> Self {
+    pub fn version_source(self, expected: Oid) -> Self {
+        self.version_source_sha(&expected.to_string())
+    }
+
+    pub fn has_no_version_source(self) -> Self {
+        self.version_source_sha("")
+    }
+
+    pub fn version_source_sha(self, expected: &str) -> Self {
         let actual = &self.result.version_source_sha;
         assert_eq!(
             actual, expected,
-            "Expected source_id: {expected}, found: {actual}\n{}",
+            "Expected version_source_sha: {expected}, found: {actual}\n{}",
             self.context
         );
         self
