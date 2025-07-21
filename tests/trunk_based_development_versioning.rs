@@ -188,6 +188,20 @@ fn test_release_branches_matching_tag_incremented_trunk_version_continue_release
 }
 
 #[rstest]
+fn test_release_branches_matching_release_branch_incremented_trunk_version_continue_release_at_version_root(
+    repo: TestRepo,
+) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("release/1.0.0");
+    repo.checkout(MAIN_BRANCH);
+    repo.commit_and_assert("1.1.0-pre.1");
+
+    repo.branch("release/1.1.0");
+
+    repo.commit_and_assert("1.1.0-pre.2");
+}
+
+#[rstest]
 fn test_release_branches_matching_custom_pattern_affect_main_branch(mut repo: TestRepo) {
     repo.config.release_branch = r"^stabilize/my/(?<BranchName>.+)$".to_string();
 

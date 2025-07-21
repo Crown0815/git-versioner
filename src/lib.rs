@@ -278,7 +278,7 @@ impl GitVersioner {
             none_comparator()
         };
 
-        if let Some(tag) = self.find_latest_tag_matching(&current_version)? {
+        if let Some(tag) = self.find_latest_version_source(false, &current_version)? {
             let merge_base_oid = self.repo.merge_base(head_id, tag.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
@@ -290,7 +290,7 @@ impl GitVersioner {
             new_version.pre = self.prerelease(count)?;
 
             Ok((new_version, tag))
-        } else if let Some(source) = self.find_latest_tag_matching(&previous_version)? {
+        } else if let Some(source) = self.find_latest_version_source(true, &previous_version)? {
             let merge_base_oid = if source.commit_id.is_zero() {
                 source.commit_id
             } else {
@@ -415,10 +415,6 @@ impl GitVersioner {
 
     fn find_trunk_version_source(&self) -> Result<Option<VersionSource>> {
         self.find_latest_version_source(true, &any_comparator())
-    }
-
-    fn find_latest_tag_matching(&self, comparator: &Comparator) -> Result<Option<VersionSource>> {
-        self.find_latest_version_source(false, comparator)
     }
 
     fn find_latest_version_source(
