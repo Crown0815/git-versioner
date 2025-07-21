@@ -94,14 +94,64 @@ impl TestRepo {
         output
     }
 
-    pub fn assert_version(&self, expected: &str) -> GitVersion {
-        let version = GitVersioner::calculate_version(&self.config).unwrap();
+    pub fn assert(&self) -> Assertable {
+        let result = GitVersioner::calculate_version(&self.config).unwrap();
+        let context = format!("Git Graph:\n  {}", self.graph());
+        Assertable { result, context }
+    }
+}
+
+pub struct Assertable {
+    pub result: GitVersion,
+    pub context: String,
+}
+
+impl Assertable {
+    pub fn version(self, expected: &str) -> Self {
+        let actual = &self.result.full_sem_ver;
         assert_eq!(
-            version.full_sem_ver,
-            expected,
-            "Expected HEAD version: {expected}, found: {version}\n\n Git Graph:\n-------\n{}------",
-            self.graph()
+            actual, expected,
+            "Expected version: {expected}, found: {actual}\n{}",
+            self.result,
         );
-        version
+        self
+    }
+
+    pub fn branch_name(self, expected: &str) -> Self {
+        let actual = &self.result.branch_name;
+        assert_eq!(
+            actual, expected,
+            "Expected branch: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
+    }
+
+    pub fn weighted_pre_release_number(self, expected: u64) -> Self {
+        let actual = self.result.weighted_pre_release_number;
+        assert_eq!(
+            actual, expected,
+            "Expected branch: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
+    }
+
+    pub fn source_id(self, expected: Oid) -> Self {
+        self.source_sha(&expected.to_string())
+    }
+
+    pub fn has_no_source(self) -> Self {
+        self.source_sha("")
+    }
+
+    pub fn source_sha(self, expected: &str) -> Self {
+        let actual = &self.result.version_source_sha;
+        assert_eq!(
+            actual, expected,
+            "Expected source_id: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
     }
 }

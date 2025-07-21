@@ -17,7 +17,7 @@ fn test_that_config_file_overrides_default_main_branch_pattern(
 
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("0.1.0-pre.1")
-        .branch(CUSTOM_MAIN_BRANCH)
+        .branch_name(CUSTOM_MAIN_BRANCH)
         .has_no_source();
 }
 
@@ -33,7 +33,7 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
         Some((DEFAULT_CONFIG, extension)),
     )
     .version("0.1.0-pre.1")
-    .branch(CUSTOM_MAIN_BRANCH)
+    .branch_name(CUSTOM_MAIN_BRANCH)
     .has_no_source();
 }
 
@@ -50,7 +50,7 @@ fn test_that_config_file_overrides_default_release_branch_pattern(
 
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("1.0.1-pre.1")
-        .branch("custom-release/1.0.0")
+        .branch_name("custom-release/1.0.0")
         .source_id(source);
 }
 
@@ -70,7 +70,7 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
         Some((DEFAULT_CONFIG, extension)),
     )
     .version("1.0.1-pre.1")
-    .branch("custom-release/1.0.0")
+    .branch_name("custom-release/1.0.0")
     .source_id(source);
 }
 
@@ -86,7 +86,7 @@ fn test_that_config_file_overrides_default_feature_branch_pattern(
 
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("0.1.0-feature.1")
-        .branch("my-feature/feature")
+        .branch_name("my-feature/feature")
         .has_no_source();
 }
 
@@ -105,7 +105,7 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
         Some((DEFAULT_CONFIG, extension)),
     )
     .version("0.1.0-feature.1")
-    .branch("my-feature/feature")
+    .branch_name("my-feature/feature")
     .has_no_source();
 }
 
@@ -120,7 +120,7 @@ fn test_that_config_file_overrides_default_version_pattern(
 
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("1.0.0")
-        .branch(MAIN_BRANCH)
+        .branch_name(MAIN_BRANCH)
         .source_id(source);
 }
 
@@ -138,7 +138,7 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
         Some((DEFAULT_CONFIG, extension)),
     )
     .version("1.0.0")
-    .branch(MAIN_BRANCH)
+    .branch_name(MAIN_BRANCH)
     .source_id(source);
 }
 
@@ -151,7 +151,7 @@ fn test_that_config_file_overrides_default_prerelease_tag(
 
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("0.1.0-alpha.1")
-        .branch(MAIN_BRANCH)
+        .branch_name(MAIN_BRANCH)
         .has_no_source();
 }
 
@@ -167,6 +167,6 @@ fn test_that_cli_argument_overrides_configuration_of_prerelease_tag(
         Some((DEFAULT_CONFIG, extension)),
     )
     .version("0.1.0-alpha.1")
-    .branch(MAIN_BRANCH)
+    .branch_name(MAIN_BRANCH)
     .has_no_source();
 }

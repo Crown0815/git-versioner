@@ -1,8 +1,7 @@
-use crate::common::{MAIN_BRANCH, TestRepo};
+use crate::common::{Assertable, MAIN_BRANCH, TestRepo};
 use anyhow::anyhow;
 use git_versioner::GitVersion;
 use git_versioner::config::ConfigurationFile;
-use git2::Oid;
 use insta_cmd::get_cargo_bin;
 use rstest::fixture;
 use std::fs;
@@ -91,50 +90,5 @@ impl ConfiguredTestRepo {
         }
 
         Assertable { result, context }
-    }
-}
-
-pub struct Assertable {
-    result: GitVersion,
-    context: String,
-}
-
-impl Assertable {
-    pub fn version(self, expected: &str) -> Self {
-        let actual = &self.result.full_sem_ver;
-        assert_eq!(
-            actual, expected,
-            "Expected version: {expected}, found: {actual}\n{}",
-            self.result,
-        );
-        self
-    }
-
-    pub fn branch(self, expected: &str) -> Self {
-        let actual = &self.result.branch_name;
-        assert_eq!(
-            actual, expected,
-            "Expected branch: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn source_id(self, expected: Oid) -> Self {
-        self.source_sha(&expected.to_string())
-    }
-
-    pub fn has_no_source(self) -> Self {
-        self.source_sha("")
-    }
-
-    pub fn source_sha(self, expected: &str) -> Self {
-        let actual = &self.result.version_source_sha;
-        assert_eq!(
-            actual, expected,
-            "Expected source_id: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
     }
 }

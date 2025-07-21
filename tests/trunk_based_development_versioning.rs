@@ -1,18 +1,17 @@
 mod common;
 
-use common::{MAIN_BRANCH, TestRepo};
-use git_versioner::GitVersion;
+use common::{Assertable, MAIN_BRANCH, TestRepo};
 use rstest::{fixture, rstest};
 
 impl TestRepo {
-    fn commit_and_assert(&self, expected_version: &str) -> GitVersion {
-        self.commit(expected_version);
-        self.assert_version(expected_version)
+    fn commit_and_assert(&self, expected: &str) -> Assertable {
+        self.commit(expected);
+        self.assert().version(expected)
     }
 
-    fn tag_and_assert(&self, prefix: &str, expected_version: &str) -> GitVersion {
-        self.tag(&format!("{prefix}{expected_version}"));
-        self.assert_version(expected_version)
+    fn tag_and_assert(&self, prefix: &str, expected: &str) -> Assertable {
+        self.tag(&format!("{prefix}{expected}"));
+        self.assert().version(expected)
     }
 
     pub fn tag_annotated(&self, name: &str) {
@@ -22,18 +21,18 @@ impl TestRepo {
         );
     }
 
-    fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) -> GitVersion {
+    fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) -> Assertable {
         self.tag_annotated(&format!("{prefix}{expected_version}"));
-        self.assert_version(expected_version)
+        self.assert().version(expected_version)
     }
 
     pub fn merge(&self, name: &str) {
         self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
     }
 
-    fn merge_and_assert(&self, branch_name: &str, expected_version: &str) -> GitVersion {
+    fn merge_and_assert(&self, branch_name: &str, expected_version: &str) -> Assertable {
         self.merge(branch_name);
-        self.assert_version(expected_version)
+        self.assert().version(expected_version)
     }
 }
 
@@ -149,7 +148,7 @@ fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] mut repo: TestRe
     repo.config.main_branch = r"^custom-trunk$".to_string();
 
     repo.commit("Initial commit");
-    repo.assert_version("0.1.0-pre.1");
+    repo.assert().version("0.1.0-pre.1");
 }
 
 #[rstest]
@@ -171,7 +170,7 @@ fn test_release_branches_matching_initial_trunk_version_continue_release_at_vers
 ) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("release/0.1.0");
-    repo.commit_and_assert("0.1.0-pre.2");
+    repo.commit_and_assert("0.1.0-pre.2").has_no_source();
 }
 
 #[rstest]
@@ -238,15 +237,15 @@ fn test_release_tags_with_matching_version_tag_prefix_are_considered(
     repo: TestRepo,
     #[values("v", "V", "")] prefix: &str,
 ) {
-    repo.commit_and_assert("0.1.0-pre.1");
-    repo.tag_and_assert(prefix, "1.0.0");
+    let source = repo.commit("0.1.0-pre.1");
+    repo.tag_and_assert(prefix, "1.0.0").source_id(source);
 }
 
 #[rstest]
 fn test_prerelease_tags_with_matching_version_tag_prefix_are_ignored(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.tag("v1.0.0-pre.1");
-    repo.assert_version("0.1.0-pre.1");
+    repo.assert().version("0.1.0-pre.1");
 }
 
 #[rstest]
@@ -256,7 +255,7 @@ fn test_release_tags_without_matching_version_tag_prefix_are_ignored(
 ) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.tag(&format!("{prefix}1.0.0"));
-    repo.assert_version("0.1.0-pre.1");
+    repo.assert().version("0.1.0-pre.1");
 }
 
 #[rstest]
@@ -317,9 +316,13 @@ fn test_valid_feature_branch_symbols_incompatible_with_semantic_versions_are_rep
     repo: TestRepo,
     #[values('_', '/', ',', '!', '`', ']', '{', '}', '😁')] incompatible_symbol: char,
 ) {
+    let branch_name = &format!("feature/a{incompatible_symbol}a");
+
     repo.commit("irrelevant");
-    repo.branch(&format!("feature/a{incompatible_symbol}a"));
-    repo.commit_and_assert("0.1.0-a-a.1");
+    repo.branch(branch_name);
+
+    repo.commit_and_assert("0.1.0-a-a.1")
+        .branch_name(branch_name);
 }
 
 #[rstest]
@@ -332,16 +335,15 @@ fn test_non_matching_branches_are_treated_as_feature_branches(repo: TestRepo) {
 
 #[rstest]
 fn test_weighted_prerelease_number_for_main_branch_adds_55000(repo: TestRepo) {
-    let version = repo.commit_and_assert("0.1.0-pre.1");
-
-    assert_eq!(version.weighted_pre_release_number, 55001);
+    repo.commit_and_assert("0.1.0-pre.1")
+        .weighted_pre_release_number(55001);
 }
 
 #[rstest]
 fn test_weighted_prerelease_number_for_release_branch_adds_55000(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("release/0.1.0");
-    let version = repo.commit_and_assert("0.1.0-pre.2");
 
-    assert_eq!(version.weighted_pre_release_number, 55002);
+    repo.commit_and_assert("0.1.0-pre.2")
+        .weighted_pre_release_number(55002);
 }

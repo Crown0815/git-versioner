@@ -32,7 +32,7 @@ fn test_feature_branch_inherits_remote_main_branch_base_version(repo: TestRepo) 
 
     let clone = TestRepo::clone(repo);
     clone.checkout("feature/feature");
-    clone.assert_version("1.1.0-feature.1");
+    clone.assert().version("1.1.0-feature.1");
 }
 
 #[rstest]
@@ -45,7 +45,7 @@ fn test_feature_branch_inherits_remote_release_branch_base_version(repo: TestRep
 
     let clone = TestRepo::clone(repo);
     clone.checkout("feature/feature");
-    clone.assert_version("1.0.0-feature.1");
+    clone.assert().version("1.0.0-feature.1");
 }
 
 #[rstest]
@@ -58,5 +58,5 @@ fn test_main_branch_considers_remote_release_branches_as_base_version(repo: Test
 
     let clone = TestRepo::clone(repo);
     clone.checkout(MAIN_BRANCH);
-    clone.assert_version("1.1.0-pre.1");
+    clone.assert().version("1.1.0-pre.1");
 }
