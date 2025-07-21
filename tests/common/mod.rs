@@ -1,5 +1,4 @@
 use git_versioner::{DefaultConfig, GitVersion, GitVersioner};
-use git2::Oid;
 use rstest::fixture;
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -48,14 +47,21 @@ impl TestRepo {
         repo
     }
 
-    pub fn commit(&self, message: &str) -> Oid {
+    pub fn commit(&self, message: &str) -> (String, String) {
         self.execute(
             &["commit", "--allow-empty", "-m", message],
             &format!("commit {message}"),
         );
         let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
-        let commit_hash = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        Oid::from_str(&commit_hash).unwrap()
+        let commit_sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+        let output = self.execute(
+            &["log", "-1", "--format=%cd", "--date=format:%Y-%m-%d"],
+            "get commit date",
+        );
+        let commit_date = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+        (commit_sha, commit_date)
     }
 
     pub fn branch(&self, name: &str) {
@@ -146,6 +152,16 @@ impl Assertable {
         self
     }
 
+    pub fn assembly_sem_file_ver(self, expected: &str) -> Self {
+        let actual = &self.result.assembly_sem_file_ver;
+        assert_eq!(
+            actual, expected,
+            "Expected assembly_sem_file_ver: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
+    }
+
     pub fn sha(self, expected: &str) -> Self {
         let actual = &self.result.sha;
         assert_eq!(
@@ -164,14 +180,6 @@ impl Assertable {
             self.context
         );
         self
-    }
-
-    pub fn version_source(self, expected: Oid) -> Self {
-        self.version_source_sha(&expected.to_string())
-    }
-
-    pub fn has_no_version_source(self) -> Self {
-        self.version_source_sha("")
     }
 
     pub fn version_source_sha(self, expected: &str) -> Self {

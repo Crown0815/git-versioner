@@ -18,7 +18,7 @@ fn test_that_config_file_overrides_default_main_branch_pattern(
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("0.1.0-pre.1")
         .branch_name(CUSTOM_MAIN_BRANCH)
-        .has_no_version_source();
+        .version_source_sha("");
 }
 
 #[rstest]
@@ -34,7 +34,7 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
     )
     .version("0.1.0-pre.1")
     .branch_name(CUSTOM_MAIN_BRANCH)
-    .has_no_version_source();
+    .version_source_sha("");
 }
 
 #[rstest]
@@ -43,7 +43,7 @@ fn test_that_config_file_overrides_default_release_branch_pattern(
     #[values("toml", "yaml")] extension: &str,
 ) {
     repo.config_file.release_branch = Some("custom-release/(?<BranchName>.*)".to_string());
-    let source = repo.inner.commit("0.1.0-pre.2");
+    let (source, _) = repo.inner.commit("0.1.0-pre.2");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
@@ -51,7 +51,7 @@ fn test_that_config_file_overrides_default_release_branch_pattern(
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("1.0.1-pre.1")
         .branch_name("custom-release/1.0.0")
-        .version_source(source);
+        .version_source_sha(&source);
 }
 
 #[rstest]
@@ -60,7 +60,7 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     #[values("toml", "yaml")] extension: &str,
 ) {
     repo.config_file.release_branch = Some("whatever-release/(?<BranchName>.*)".to_string());
-    let source = repo.inner.commit("0.1.0-pre.1");
+    let (source, _) = repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
@@ -71,7 +71,7 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     )
     .version("1.0.1-pre.1")
     .branch_name("custom-release/1.0.0")
-    .version_source(source);
+    .version_source_sha(&source);
 }
 
 #[rstest]
@@ -87,7 +87,7 @@ fn test_that_config_file_overrides_default_feature_branch_pattern(
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("0.1.0-feature.1")
         .branch_name("my-feature/feature")
-        .has_no_version_source();
+        .version_source_sha("");
 }
 
 #[rstest]
@@ -106,7 +106,7 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
     )
     .version("0.1.0-feature.1")
     .branch_name("my-feature/feature")
-    .has_no_version_source();
+    .version_source_sha("");
 }
 
 #[rstest]
@@ -115,13 +115,13 @@ fn test_that_config_file_overrides_default_version_pattern(
     #[values("toml", "yaml")] extension: &str,
 ) {
     repo.config_file.version_pattern = Some("my/c(?<Version>.*)".to_string());
-    let source = repo.inner.commit("0.1.0-pre.1");
+    let (source, _) = repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/c1.0.0");
 
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("1.0.0")
         .branch_name(MAIN_BRANCH)
-        .version_source(source);
+        .version_source_sha(&source);
 }
 
 #[rstest]
@@ -130,7 +130,7 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
     #[values("toml", "yaml")] extension: &str,
 ) {
     repo.config_file.version_pattern = Some("my/c(?<Version>.*)".to_string());
-    let source = repo.inner.commit("0.1.0-pre.1");
+    let (source, _) = repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/v1.0.0");
 
     repo.execute_and_assert(
@@ -139,7 +139,7 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
     )
     .version("1.0.0")
     .branch_name(MAIN_BRANCH)
-    .version_source(source);
+    .version_source_sha(&source);
 }
 
 #[rstest]
@@ -152,7 +152,7 @@ fn test_that_config_file_overrides_default_prerelease_tag(
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("0.1.0-alpha.1")
         .branch_name(MAIN_BRANCH)
-        .has_no_version_source();
+        .version_source_sha("");
 }
 
 #[rstest]
@@ -168,5 +168,5 @@ fn test_that_cli_argument_overrides_configuration_of_prerelease_tag(
     )
     .version("0.1.0-alpha.1")
     .branch_name(MAIN_BRANCH)
-    .has_no_version_source();
+    .version_source_sha("");
 }

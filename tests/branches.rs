@@ -27,8 +27,8 @@ fn test_that_no_branch_name_is_no_branch_in_parenthesis() {
 
 #[rstest]
 fn test_result_on_detached_head_is_no_branch(repo: TestRepo) {
-    let oid = repo.commit("commit");
-    repo.checkout(&oid.to_string());
+    let (sha, _) = repo.commit("commit");
+    repo.checkout(&sha);
 
     repo.assert_branch(NO_BRANCH_NAME, "-no-branch-");
 }
