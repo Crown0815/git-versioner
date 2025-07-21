@@ -11,7 +11,7 @@ impl ConfiguredTestRepo {}
 
 #[rstest]
 fn test_release_candidate_on_main_branch(mut repo: ConfiguredTestRepo) {
-    repo.assert([], None)
+    repo.execute_and_assert([], None)
         .version("0.1.0-pre.1")
         .branch(MAIN_BRANCH)
         .has_no_source();
@@ -22,7 +22,7 @@ fn test_release_on_main_branch(mut repo: ConfiguredTestRepo) {
     let source = repo.inner.commit("tagged");
     repo.inner.tag("0.1.0");
 
-    repo.assert([], None)
+    repo.execute_and_assert([], None)
         .version("0.1.0")
         .branch(MAIN_BRANCH)
         .source_id(source);
@@ -33,7 +33,7 @@ fn test_release_on_main_branch_with_custom_version_pattern(mut repo: ConfiguredT
     let source = repo.inner.commit("tagged");
     repo.inner.tag("my/v0.1.0");
 
-    repo.assert(["--version-pattern", "my/v(?<Version>.*)"], None)
+    repo.execute_and_assert(["--version-pattern", "my/v(?<Version>.*)"], None)
         .version("0.1.0")
         .branch(MAIN_BRANCH)
         .source_id(source);
@@ -46,7 +46,7 @@ fn test_release_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
 
-    repo.assert(
+    repo.execute_and_assert(
         ["--release-branch", "custom-release/(?<BranchName>.*)"],
         None,
     )
@@ -61,7 +61,7 @@ fn test_feature_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
 
-    repo.assert(["--feature-branch", "my-feature/(?<BranchName>.*)"], None)
+    repo.execute_and_assert(["--feature-branch", "my-feature/(?<BranchName>.*)"], None)
         .version("0.1.0-feature.1")
         .branch("my-feature/feature")
         .has_no_source();
@@ -69,7 +69,7 @@ fn test_feature_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_option_custom_main_branch(#[with("custom-main")] mut repo: ConfiguredTestRepo) {
-    repo.assert(["--main-branch", "custom-main"], None)
+    repo.execute_and_assert(["--main-branch", "custom-main"], None)
         .version("0.1.0-pre.1")
         .branch("custom-main")
         .has_no_source();
@@ -79,7 +79,7 @@ fn test_option_custom_main_branch(#[with("custom-main")] mut repo: ConfiguredTes
 fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
     let path = repo.inner.path.to_string_lossy().to_string();
 
-    repo.assert(["--path", &path], None)
+    repo.execute_and_assert(["--path", &path], None)
         .version("0.1.0-pre.1")
         .branch(MAIN_BRANCH)
         .has_no_source();
@@ -87,7 +87,7 @@ fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
-    repo.assert(["--prerelease-tag", "alpha"], None)
+    repo.execute_and_assert(["--prerelease-tag", "alpha"], None)
         .version("0.1.0-alpha.1")
         .branch(MAIN_BRANCH)
         .has_no_source();

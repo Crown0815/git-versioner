@@ -50,7 +50,7 @@ impl ConfiguredTestRepo {
         Ok(file_path)
     }
 
-    pub fn assert<'a, I: IntoIterator<Item = &'a str>>(
+    pub fn execute_and_assert<'a, I: IntoIterator<Item = &'a str>>(
         &mut self,
         args: I,
         config_file: Option<(&str, &str)>,
