@@ -3,31 +3,10 @@ mod common;
 
 use crate::cli::{ConfiguredTestRepo, repo};
 use crate::common::MAIN_BRANCH;
-use git2::Oid;
 use rstest::rstest;
 
 const CUSTOM_MAIN_BRANCH: &str = "stem";
 const DEFAULT_CONFIG: &str = ".git-versioner";
-
-impl ConfiguredTestRepo {
-    fn assert_configured_version<'a, I: IntoIterator<Item = &'a str>>(
-        &mut self,
-        version: &str,
-        branch: &str,
-        args: I,
-        config_name: &str,
-        config_extension: &str,
-        source_id: Oid,
-    ) {
-        self.inner_assert(
-            version,
-            branch,
-            args,
-            Some((config_name, config_extension)),
-            source_id,
-        );
-    }
-}
 
 #[rstest]
 fn test_that_config_file_overrides_default_main_branch_pattern(
@@ -36,14 +15,10 @@ fn test_that_config_file_overrides_default_main_branch_pattern(
 ) {
     repo.config_file.main_branch = Some(format!("^{CUSTOM_MAIN_BRANCH}$"));
 
-    repo.assert_configured_version(
-        "0.1.0-pre.1",
-        CUSTOM_MAIN_BRANCH,
-        [],
-        DEFAULT_CONFIG,
-        extension,
-        Oid::zero(),
-    );
+    repo.assert([], Some((DEFAULT_CONFIG, extension)))
+        .version("0.1.0-pre.1")
+        .branch(CUSTOM_MAIN_BRANCH)
+        .has_no_source();
 }
 
 #[rstest]
@@ -53,14 +28,13 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
 ) {
     repo.config_file.main_branch = Some(format!("^{}$", "another_main_branch"));
 
-    repo.assert_configured_version(
-        "0.1.0-pre.1",
-        CUSTOM_MAIN_BRANCH,
+    repo.assert(
         ["--main-branch", CUSTOM_MAIN_BRANCH],
-        DEFAULT_CONFIG,
-        extension,
-        Oid::zero(),
-    );
+        Some((DEFAULT_CONFIG, extension)),
+    )
+    .version("0.1.0-pre.1")
+    .branch(CUSTOM_MAIN_BRANCH)
+    .has_no_source();
 }
 
 #[rstest]
@@ -74,14 +48,10 @@ fn test_that_config_file_overrides_default_release_branch_pattern(
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
 
-    repo.assert_configured_version(
-        "1.0.1-pre.1",
-        "custom-release/1.0.0",
-        [],
-        DEFAULT_CONFIG,
-        extension,
-        source,
-    );
+    repo.assert([], Some((DEFAULT_CONFIG, extension)))
+        .version("1.0.1-pre.1")
+        .branch("custom-release/1.0.0")
+        .source_id(source);
 }
 
 #[rstest]
@@ -95,14 +65,13 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
 
-    repo.assert_configured_version(
-        "1.0.1-pre.1",
-        "custom-release/1.0.0",
+    repo.assert(
         ["--release-branch", "custom-release/(?<BranchName>.*)"],
-        DEFAULT_CONFIG,
-        extension,
-        source,
-    );
+        Some((DEFAULT_CONFIG, extension)),
+    )
+    .version("1.0.1-pre.1")
+    .branch("custom-release/1.0.0")
+    .source_id(source);
 }
 
 #[rstest]
@@ -115,14 +84,10 @@ fn test_that_config_file_overrides_default_feature_branch_pattern(
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
 
-    repo.assert_configured_version(
-        "0.1.0-feature.1",
-        "my-feature/feature",
-        [],
-        DEFAULT_CONFIG,
-        extension,
-        Oid::zero(),
-    );
+    repo.assert([], Some((DEFAULT_CONFIG, extension)))
+        .version("0.1.0-feature.1")
+        .branch("my-feature/feature")
+        .has_no_source();
 }
 
 #[rstest]
@@ -135,14 +100,13 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
 
-    repo.assert_configured_version(
-        "0.1.0-feature.1",
-        "my-feature/feature",
+    repo.assert(
         ["--feature-branch", "my-feature/(?<BranchName>.*)"],
-        DEFAULT_CONFIG,
-        extension,
-        Oid::zero(),
-    );
+        Some((DEFAULT_CONFIG, extension)),
+    )
+    .version("0.1.0-feature.1")
+    .branch("my-feature/feature")
+    .has_no_source();
 }
 
 #[rstest]
@@ -154,7 +118,10 @@ fn test_that_config_file_overrides_default_version_pattern(
     let source = repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/c1.0.0");
 
-    repo.assert_configured_version("1.0.0", MAIN_BRANCH, [], DEFAULT_CONFIG, extension, source);
+    repo.assert([], Some((DEFAULT_CONFIG, extension)))
+        .version("1.0.0")
+        .branch(MAIN_BRANCH)
+        .source_id(source);
 }
 
 #[rstest]
@@ -166,14 +133,13 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
     let source = repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/v1.0.0");
 
-    repo.assert_configured_version(
-        "1.0.0",
-        MAIN_BRANCH,
+    repo.assert(
         ["--version-pattern", "my/v(?<Version>.*)"],
-        DEFAULT_CONFIG,
-        extension,
-        source,
-    );
+        Some((DEFAULT_CONFIG, extension)),
+    )
+    .version("1.0.0")
+    .branch(MAIN_BRANCH)
+    .source_id(source);
 }
 
 #[rstest]
@@ -183,14 +149,10 @@ fn test_that_config_file_overrides_default_prerelease_tag(
 ) {
     repo.config_file.prerelease_tag = Some("alpha".to_string());
 
-    repo.assert_configured_version(
-        "0.1.0-alpha.1",
-        MAIN_BRANCH,
-        [],
-        DEFAULT_CONFIG,
-        extension,
-        Oid::zero(),
-    );
+    repo.assert([], Some((DEFAULT_CONFIG, extension)))
+        .version("0.1.0-alpha.1")
+        .branch(MAIN_BRANCH)
+        .has_no_source();
 }
 
 #[rstest]
@@ -200,12 +162,11 @@ fn test_that_cli_argument_overrides_configuration_of_prerelease_tag(
 ) {
     repo.config_file.prerelease_tag = Some("whatever".to_string());
 
-    repo.assert_configured_version(
-        "0.1.0-alpha.1",
-        MAIN_BRANCH,
+    repo.assert(
         ["--prerelease-tag", "alpha"],
-        DEFAULT_CONFIG,
-        extension,
-        Oid::zero(),
-    );
+        Some((DEFAULT_CONFIG, extension)),
+    )
+    .version("0.1.0-alpha.1")
+    .branch(MAIN_BRANCH)
+    .has_no_source();
 }

@@ -5,7 +5,6 @@ use git_versioner::config::ConfigurationFile;
 use git2::Oid;
 use insta_cmd::get_cargo_bin;
 use rstest::fixture;
-use semver::Version;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -51,14 +50,11 @@ impl ConfiguredTestRepo {
         Ok(file_path)
     }
 
-    pub fn inner_assert<'a, I: IntoIterator<Item = &'a str>>(
+    pub fn assert<'a, I: IntoIterator<Item = &'a str>>(
         &mut self,
-        version: &str,
-        branch: &str,
         args: I,
         config_file: Option<(&str, &str)>,
-        source_id: Oid,
-    ) {
+    ) -> Assertable {
         let config_path = match config_file {
             None => PathBuf::new(),
             Some((name, ext)) => self.write_config(name, ext).unwrap(),
@@ -67,21 +63,9 @@ impl ConfiguredTestRepo {
         let output = self.cli.args(args).output().unwrap();
 
         let stdout = str::from_utf8(&output.stdout).unwrap();
-        let actual: GitVersion = serde_json::from_str(stdout).unwrap();
-
-        let expected = GitVersion::new(
-            Version::parse(version).unwrap(),
-            branch.to_string(),
-            source_id,
-        );
-
-        assert_eq!(
-            actual,
-            expected,
-            "Expected HEAD version: {expected}, found: {actual}\n\
-            Git Graph:\n  {}\n\
-            Config ({}):\n  {}\n\
-            Args:\n  {}\n",
+        let result: GitVersion = serde_json::from_str(stdout).unwrap();
+        let context = format!(
+            "Git Graph:\n  {}\nConfig ({}):\n  {}\nArgs:\n  {}\n",
             shifted(self.inner.graph()),
             config_path
                 .file_name()
@@ -105,5 +89,52 @@ impl ConfiguredTestRepo {
         fn shifted(raw: String) -> String {
             raw.replace("\n", "\n  ").trim_end_matches(' ').to_string()
         }
+
+        Assertable { result, context }
+    }
+}
+
+pub struct Assertable {
+    result: GitVersion,
+    context: String,
+}
+
+impl Assertable {
+    pub fn version(self, expected: &str) -> Self {
+        let actual = &self.result.full_sem_ver;
+        assert_eq!(
+            actual, expected,
+            "Expected version: {expected}, found: {actual}\n{}",
+            self.result,
+        );
+        self
+    }
+
+    pub fn branch(self, expected: &str) -> Self {
+        let actual = &self.result.branch_name;
+        assert_eq!(
+            actual, expected,
+            "Expected branch: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
+    }
+
+    pub fn source_id(self, expected: Oid) -> Self {
+        self.source_sha(&expected.to_string())
+    }
+
+    pub fn has_no_source(self) -> Self {
+        self.source_sha("")
+    }
+
+    pub fn source_sha(self, expected: &str) -> Self {
+        let actual = &self.result.version_source_sha;
+        assert_eq!(
+            actual, expected,
+            "Expected source_id: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
     }
 }

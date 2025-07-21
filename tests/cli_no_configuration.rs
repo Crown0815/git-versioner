@@ -3,33 +3,29 @@ mod common;
 
 use crate::cli::{ConfiguredTestRepo, cmd, repo};
 use crate::common::MAIN_BRANCH;
-use git2::Oid;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::rstest;
 use std::process::Command;
 
-impl ConfiguredTestRepo {
-    fn assert_version<'a, I: IntoIterator<Item = &'a str>>(
-        &mut self,
-        version: &str,
-        branch: &str,
-        args: I,
-        source_id: Oid,
-    ) {
-        self.inner_assert(version, branch, args, None, source_id);
-    }
-}
+impl ConfiguredTestRepo {}
 
 #[rstest]
 fn test_release_candidate_on_main_branch(mut repo: ConfiguredTestRepo) {
-    repo.assert_version("0.1.0-pre.1", MAIN_BRANCH, [], Oid::zero());
+    repo.assert([], None)
+        .version("0.1.0-pre.1")
+        .branch(MAIN_BRANCH)
+        .has_no_source();
 }
 
 #[rstest]
 fn test_release_on_main_branch(mut repo: ConfiguredTestRepo) {
     let source = repo.inner.commit("tagged");
     repo.inner.tag("0.1.0");
-    repo.assert_version("0.1.0", MAIN_BRANCH, [], source);
+
+    repo.assert([], None)
+        .version("0.1.0")
+        .branch(MAIN_BRANCH)
+        .source_id(source);
 }
 
 #[rstest]
@@ -37,12 +33,10 @@ fn test_release_on_main_branch_with_custom_version_pattern(mut repo: ConfiguredT
     let source = repo.inner.commit("tagged");
     repo.inner.tag("my/v0.1.0");
 
-    repo.assert_version(
-        "0.1.0",
-        MAIN_BRANCH,
-        ["--version-pattern", "my/v(?<Version>.*)"],
-        source,
-    );
+    repo.assert(["--version-pattern", "my/v(?<Version>.*)"], None)
+        .version("0.1.0")
+        .branch(MAIN_BRANCH)
+        .source_id(source);
 }
 
 #[rstest]
@@ -52,12 +46,13 @@ fn test_release_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1-pre.1");
 
-    repo.assert_version(
-        "1.0.1-pre.1",
-        "custom-release/1.0.0",
+    repo.assert(
         ["--release-branch", "custom-release/(?<BranchName>.*)"],
-        source,
-    );
+        None,
+    )
+    .version("1.0.1-pre.1")
+    .branch("custom-release/1.0.0")
+    .source_id(source);
 }
 
 #[rstest]
@@ -66,38 +61,36 @@ fn test_feature_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
 
-    repo.assert_version(
-        "0.1.0-feature.1",
-        "my-feature/feature",
-        ["--feature-branch", "my-feature/(?<BranchName>.*)"],
-        Oid::zero(),
-    );
+    repo.assert(["--feature-branch", "my-feature/(?<BranchName>.*)"], None)
+        .version("0.1.0-feature.1")
+        .branch("my-feature/feature")
+        .has_no_source();
 }
 
 #[rstest]
 fn test_option_custom_main_branch(#[with("custom-main")] mut repo: ConfiguredTestRepo) {
-    repo.assert_version(
-        "0.1.0-pre.1",
-        "custom-main",
-        ["--main-branch", "custom-main"],
-        Oid::zero(),
-    );
+    repo.assert(["--main-branch", "custom-main"], None)
+        .version("0.1.0-pre.1")
+        .branch("custom-main")
+        .has_no_source();
 }
 
 #[rstest]
 fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
     let path = repo.inner.path.to_string_lossy().to_string();
-    repo.assert_version("0.1.0-pre.1", MAIN_BRANCH, ["--path", &path], Oid::zero());
+
+    repo.assert(["--path", &path], None)
+        .version("0.1.0-pre.1")
+        .branch(MAIN_BRANCH)
+        .has_no_source();
 }
 
 #[rstest]
 fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
-    repo.assert_version(
-        "0.1.0-alpha.1",
-        MAIN_BRANCH,
-        ["--prerelease-tag", "alpha"],
-        Oid::zero(),
-    );
+    repo.assert(["--prerelease-tag", "alpha"], None)
+        .version("0.1.0-alpha.1")
+        .branch(MAIN_BRANCH)
+        .has_no_source();
 }
 
 #[rstest]
