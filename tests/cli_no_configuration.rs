@@ -3,22 +3,11 @@ mod common;
 
 use crate::cli::{ConfiguredTestRepo, cmd, repo};
 use crate::common::MAIN_BRANCH;
-use common::TestRepo;
 use git2::Oid;
-use insta::with_settings;
 use insta_cmd::assert_cmd_snapshot;
 use regex::{Captures, Regex, Replacer};
 use rstest::rstest;
 use std::process::Command;
-
-macro_rules! assert_repo_cmd_snapshot {
-    ($repo:expr, $cmd:expr) => {
-        with_settings!(
-            { description => redacted_graph(&$repo.graph()) },
-            { assert_cmd_snapshot!($cmd); }
-        );
-    };
-}
 
 //noinspection RegExpDuplicateCharacterInClass
 //noinspection RegExpRedundantNestedCharacterClass
@@ -121,7 +110,6 @@ fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
-    let path = repo.inner.path.to_string_lossy().to_string();
     repo.assert_version(
         "0.1.0-alpha.1",
         MAIN_BRANCH,

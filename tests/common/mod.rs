@@ -1,7 +1,5 @@
 use git_versioner::{DefaultConfig, GitVersion, GitVersioner};
 use git2::Oid;
-use insta_cmd::get_cargo_bin;
-use regex::Regex;
 use rstest::fixture;
 use std::path::PathBuf;
 use std::process::{Command, Output};
