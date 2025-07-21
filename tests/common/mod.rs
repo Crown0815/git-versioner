@@ -126,7 +126,17 @@ impl Assertable {
         let actual = &self.result.branch_name;
         assert_eq!(
             actual, expected,
-            "Expected branch: {expected}, found: {actual}\n{}",
+            "Expected branch_name: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
+    }
+
+    pub fn escaped_branch_name(self, expected: &str) -> Self {
+        let actual = &self.result.escaped_branch_name;
+        assert_eq!(
+            actual, expected,
+            "Expected escaped_branch_name: {expected}, found: {actual}\n{}",
             self.context
         );
         self

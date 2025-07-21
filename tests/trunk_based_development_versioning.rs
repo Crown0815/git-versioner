@@ -144,6 +144,22 @@ fn test_full_workflow_with_feature_branches(repo: TestRepo) {
 }
 
 #[rstest]
+fn test_result_on_detached_head_is_no_branch(repo: TestRepo) {
+    let (sha, _) = repo.commit("commit");
+    repo.checkout(&sha);
+
+    repo.assert()
+        .branch_name("(no branch)")
+        .escaped_branch_name("-no-branch-");
+}
+
+#[rstest]
+fn test_branch_name_on_main_branch(repo: TestRepo) {
+    repo.commit("commit");
+    repo.assert().branch_name(MAIN_BRANCH);
+}
+
+#[rstest]
 fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] mut repo: TestRepo) {
     repo.config.main_branch = r"^custom-trunk$".to_string();
 
