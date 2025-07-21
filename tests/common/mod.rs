@@ -137,6 +137,16 @@ impl Assertable {
         self
     }
 
+    pub fn assembly_sem_ver(self, expected: &str) -> Self {
+        let actual = &self.result.assembly_sem_ver;
+        assert_eq!(
+            actual, expected,
+            "Expected assembly_sem_ver: {expected}, found: {actual}\n{}",
+            self.context
+        );
+        self
+    }
+
     pub fn source_id(self, expected: Oid) -> Self {
         self.source_sha(&expected.to_string())
     }

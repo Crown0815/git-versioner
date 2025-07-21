@@ -373,3 +373,15 @@ fn test_weighted_prerelease_number_for_feature_branch_adds_30000(repo: TestRepo)
     repo.commit_and_assert("0.1.0-feature-A.1")
         .weighted_pre_release_number(30001);
 }
+
+#[rstest]
+fn test_assembly_sem_ver_is_major_minor_patch_dot_zero(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1")
+        .assembly_sem_ver("0.1.0.0");
+}
+
+#[rstest]
+fn test_assembly_sem_file_ver_is_major_minor_patch_dot_weighted_pre_release_number(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1")
+        .assembly_sem_ver("0.1.0.55001");
+}
