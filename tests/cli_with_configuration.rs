@@ -9,6 +9,26 @@ use rstest::rstest;
 const CUSTOM_MAIN_BRANCH: &str = "stem";
 const DEFAULT_CONFIG: &str = ".git-versioner";
 
+impl ConfiguredTestRepo {
+    pub fn assert_configured_version<'a, I: IntoIterator<Item = &'a str>>(
+        &mut self,
+        version: &str,
+        branch: &str,
+        args: I,
+        config_name: &str,
+        config_extension: &str,
+        source_id: Oid,
+    ) {
+        self.inner_assert(
+            version,
+            branch,
+            args,
+            Some((config_name, config_extension)),
+            source_id,
+        );
+    }
+}
+
 #[rstest]
 fn test_that_config_file_overrides_default_main_branch_pattern(
     #[with(CUSTOM_MAIN_BRANCH)] mut repo: ConfiguredTestRepo,
