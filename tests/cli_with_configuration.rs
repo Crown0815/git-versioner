@@ -147,7 +147,7 @@ fn test_that_config_file_overrides_default_prerelease_tag(
     mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
-    repo.config_file.prerelease_tag = Some("alpha".to_string());
+    repo.config_file.pre_release_tag = Some("alpha".to_string());
 
     repo.execute_and_assert([], Some((DEFAULT_CONFIG, extension)))
         .version("0.1.0-alpha.1")
@@ -160,10 +160,10 @@ fn test_that_cli_argument_overrides_configuration_of_prerelease_tag(
     mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
-    repo.config_file.prerelease_tag = Some("whatever".to_string());
+    repo.config_file.pre_release_tag = Some("whatever".to_string());
 
     repo.execute_and_assert(
-        ["--prerelease-tag", "alpha"],
+        ["--pre-release-tag", "alpha"],
         Some((DEFAULT_CONFIG, extension)),
     )
     .version("0.1.0-alpha.1")

@@ -214,8 +214,8 @@ jobs:
       - name: List release artifacts
         run: ls -l release-artifacts
 
-      - name: Determine prerelease status
-        id: prerelease
+      - name: Determine pre-release status
+        id: pre-release
         run: |
           TAG=${{ github.ref_name }}
           if [[ $TAG =~ - ]]; then
@@ -229,4 +229,4 @@ jobs:
         with:
           files: release-artifacts/*
           draft: false
-          prerelease: ${{ steps.prerelease.outputs.is_prerelease }}
+          prerelease: ${{ steps.pre-release.outputs.is_prerelease }}

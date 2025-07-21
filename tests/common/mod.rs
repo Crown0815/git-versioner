@@ -131,7 +131,7 @@ impl Assertable {
         let actual = self.result.weighted_pre_release_number;
         assert_eq!(
             actual, expected,
-            "Expected branch: {expected}, found: {actual}\n{}",
+            "Expected weighted_pre_release_number: {expected}, found: {actual}\n{}",
             self.context
         );
         self

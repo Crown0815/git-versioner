@@ -86,7 +86,7 @@ impl GitVersioner {
             release_pattern: Regex::new(config.release_branch())?,
             feature_pattern: Regex::new(config.feature_branch())?,
             version_pattern: Regex::new(config.version_pattern())?,
-            prerelease_tag: config.prerelease_tag().to_string(),
+            prerelease_tag: config.pre_release_tag().to_string(),
         };
 
         if config.verbose() {
@@ -271,11 +271,11 @@ impl GitVersioner {
         let mut version = source.version.clone();
         version.minor += 1;
         version.patch = 0;
-        version.pre = self.prerelease(count)?;
+        version.pre = self.pre_release(count)?;
         Ok((version, source, PRERELEASE_WEIGHT_MAIN))
     }
 
-    fn prerelease(&self, count: i64) -> Result<Prerelease> {
+    fn pre_release(&self, count: i64) -> Result<Prerelease> {
         Ok(Prerelease::new(&format!(
             "{}.{}",
             self.prerelease_tag, count
@@ -304,7 +304,7 @@ impl GitVersioner {
 
             let mut new_version = source.version.clone();
             new_version.patch += 1;
-            new_version.pre = self.prerelease(count)?;
+            new_version.pre = self.pre_release(count)?;
 
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else if let Some(source) = self.find_latest_version_source(true, &previous_version)? {
@@ -321,7 +321,7 @@ impl GitVersioner {
 
             let mut new_version = release_version.clone();
             new_version.patch += 0;
-            new_version.pre = self.prerelease(count)?;
+            new_version.pre = self.pre_release(count)?;
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else {
             let mut found_branches = self.find_all_source_branches(head_id)?;
@@ -332,7 +332,7 @@ impl GitVersioner {
             let count = closest_branch.distance;
 
             let mut version = release_version.clone();
-            version.pre = self.prerelease(count)?;
+            version.pre = self.pre_release(count)?;
             Ok((
                 version.clone(),
                 VersionSource {
@@ -514,6 +514,7 @@ impl GitVersion {
             .parse()
             .unwrap();
 
+        let weighted_pre_release_number = pre_release_number + prerelease_weight;
         Self {
             major: version.major,
             minor: version.minor,
@@ -538,10 +539,14 @@ impl GitVersion {
                 format!("-{}", version.pre.as_str().split('.').next().unwrap_or(""))
             },
             pre_release_number,
-            weighted_pre_release_number: pre_release_number + prerelease_weight,
+            weighted_pre_release_number,
             build_metadata: version.build.to_string(),
             sem_ver: version.to_string(),
-            assembly_sem_ver: format!("{}.{}.{}", version.major, version.minor, version.patch),
+            assembly_sem_ver: format!("{}.{}.{}.0", version.major, version.minor, version.patch),
+            assembly_sem_file_ver: format!(
+                "{}.{}.{}.{}",
+                version.major, version.minor, version.patch, weighted_pre_release_number
+            ),
             full_sem_ver: version.to_string(),
             informational_version: version.to_string(),
             escaped_branch_name: GitVersioner::escaped(&branch_name),
@@ -556,7 +561,6 @@ impl GitVersion {
             commit_date: "".to_string(),
             branch_name,
             full_build_meta_data: "".to_string(),
-            assembly_sem_file_ver: "".to_string(),
             uncommitted_changes: 0,
         }
     }

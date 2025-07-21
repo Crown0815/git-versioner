@@ -8,7 +8,7 @@ pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
 pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>.+)";
-pub const PRERELEASE_TAG: &str = "pre";
+pub const PRE_RELEASE_TAG: &str = "pre";
 
 pub trait Configuration {
     fn repository_path(&self) -> &PathBuf;
@@ -16,7 +16,7 @@ pub trait Configuration {
     fn release_branch(&self) -> &str;
     fn feature_branch(&self) -> &str;
     fn version_pattern(&self) -> &str;
-    fn prerelease_tag(&self) -> &str;
+    fn pre_release_tag(&self) -> &str;
     fn verbose(&self) -> bool {
         false
     }
@@ -29,7 +29,7 @@ pub struct DefaultConfig {
     pub release_branch: String,
     pub feature_branch: String,
     pub version_pattern: String,
-    pub prerelease_tag: String,
+    pub pre_release_tag: String,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -39,7 +39,7 @@ pub struct ConfigurationFile {
     pub release_branch: Option<String>,
     pub feature_branch: Option<String>,
     pub version_pattern: Option<String>,
-    pub prerelease_tag: Option<String>,
+    pub pre_release_tag: Option<String>,
 }
 
 #[derive(Parser, Debug)]
@@ -61,7 +61,7 @@ pub struct Args {
     version_pattern: Option<String>,
 
     #[arg(long, value_parser)]
-    prerelease_tag: Option<String>,
+    pre_release_tag: Option<String>,
 
     #[arg(short, long)]
     verbose: bool,
@@ -86,7 +86,7 @@ impl Default for DefaultConfig {
             release_branch: RELEASE_BRANCH.to_string(),
             feature_branch: FEATURE_BRANCH.to_string(),
             version_pattern: VERSION_PATTERN.to_string(),
-            prerelease_tag: PRERELEASE_TAG.to_string(),
+            pre_release_tag: PRE_RELEASE_TAG.to_string(),
         }
     }
 }
@@ -107,8 +107,8 @@ impl Configuration for DefaultConfig {
     fn version_pattern(&self) -> &str {
         &self.version_pattern
     }
-    fn prerelease_tag(&self) -> &str {
-        &self.prerelease_tag
+    fn pre_release_tag(&self) -> &str {
+        &self.pre_release_tag
     }
 }
 
@@ -214,13 +214,13 @@ impl Configuration for ConfigurationLayers {
         }
     }
 
-    fn prerelease_tag(&self) -> &str {
-        if let Some(branch) = &self.args.prerelease_tag {
+    fn pre_release_tag(&self) -> &str {
+        if let Some(branch) = &self.args.pre_release_tag {
             branch
-        } else if let Some(branch) = &self.file.prerelease_tag {
+        } else if let Some(branch) = &self.file.pre_release_tag {
             branch
         } else {
-            &self.config.prerelease_tag
+            &self.config.pre_release_tag
         }
     }
 

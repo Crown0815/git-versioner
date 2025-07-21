@@ -87,7 +87,7 @@ fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
-    repo.execute_and_assert(["--prerelease-tag", "alpha"], None)
+    repo.execute_and_assert(["--pre-release-tag", "alpha"], None)
         .version("0.1.0-alpha.1")
         .branch_name(MAIN_BRANCH)
         .has_no_source();
