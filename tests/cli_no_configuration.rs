@@ -5,7 +5,6 @@ use crate::cli::{ConfiguredTestRepo, cmd, repo};
 use crate::common::MAIN_BRANCH;
 use git2::Oid;
 use insta_cmd::assert_cmd_snapshot;
-use regex::{Captures, Regex, Replacer};
 use rstest::rstest;
 use std::process::Command;
 
@@ -19,35 +18,6 @@ impl ConfiguredTestRepo {
     ) {
         self.inner_assert(version, branch, args, None, source_id);
     }
-}
-
-//noinspection RegExpDuplicateCharacterInClass
-//noinspection RegExpRedundantNestedCharacterClass
-//noinspection RegExpSimplifiable
-pub fn redacted_graph(graph: &str) -> String {
-    #[derive(Default)]
-    struct ShaReplacer {
-        counter: usize,
-    }
-
-    impl Replacer for ShaReplacer {
-        fn replace_append(&mut self, _caps: &Captures<'_>, dst: &mut String) {
-            self.counter += 1;
-            dst.push_str(&format!("#SHA-{}#", self.counter));
-        }
-    }
-
-    fn reverse_lines(input: &str) -> String {
-        let mut lines: Vec<&str> = input.lines().collect();
-        lines.reverse();
-        lines.join("\n")
-    }
-
-    let re = Regex::new(r"\b[[:xdigit:]]{7}\b").unwrap();
-    reverse_lines(
-        re.replace_all(&reverse_lines(graph), ShaReplacer::default())
-            .as_ref(),
-    )
 }
 
 #[rstest]
