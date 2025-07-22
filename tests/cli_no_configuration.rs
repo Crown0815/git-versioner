@@ -97,3 +97,56 @@ fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
 fn test_help_text(mut cmd: Command) {
     assert_cmd_snapshot!(cmd.current_dir(".").args(["--help"]));
 }
+
+#[rstest]
+fn test_output_from_main_branch(mut repo: ConfiguredTestRepo) {
+    insta::with_settings!({filters => vec![
+        (r"\b[[:xdigit:]]{40}\b", "########################################"),
+        (r"\b[[:xdigit:]]{7}\b", "#######"),
+        (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+    ]}, {
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+    });
+}
+
+#[rstest]
+fn test_output_from_release_branch(mut repo: ConfiguredTestRepo) {
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.branch("release/0.1.0");
+
+    insta::with_settings!({filters => vec![
+        (r"\b[[:xdigit:]]{40}\b", "########################################"),
+        (r"\b[[:xdigit:]]{7}\b", "#######"),
+        (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+    ]}, {
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+    });
+}
+
+#[rstest]
+fn test_output_from_feature_branch(mut repo: ConfiguredTestRepo) {
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.branch("feature/my-feature");
+
+    insta::with_settings!({filters => vec![
+        (r"\b[[:xdigit:]]{40}\b", "########################################"),
+        (r"\b[[:xdigit:]]{7}\b", "#######"),
+        (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+    ]}, {
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+    });
+}
+
+#[rstest]
+fn test_output_from_tag(mut repo: ConfiguredTestRepo) {
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.tag("0.1.0");
+
+    insta::with_settings!({filters => vec![
+        (r"\b[[:xdigit:]]{40}\b", "########################################"),
+        (r"\b[[:xdigit:]]{7}\b", "#######"),
+        (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+    ]}, {
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+    });
+}
