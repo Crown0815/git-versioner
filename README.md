@@ -1,8 +1,223 @@
+<p style="text-align: center;">
+    <a href="https://trunkbaseddevelopment.com/">
+        <img alt="Trunk-Based Development" src="https://img.shields.io/badge/trunk--based-development-blue"></a>
+    <br>
+    <a href="https://github.com/crown0815/git-versioner/releases">
+        <img alt="GitHub Releases" src="https://img.shields.io/github/v/release/crown0815/git-versioner?style=flat&labelColor=1C2C2E&color=C96329&logo=GitHub&logoColor=white"></a>
+    <a href="https://github.com/crown0815/git-versioner/actions/workflows/rust.yml">
+        <img alt="GitHub Action Build" src="https://img.shields.io/github/actions/workflow/status/crown0815/git-versioner/rust.yml?style=flat&labelColor=1C2C2E&color=BEC5C9&logo=GitHub%20Actions&logoColor=BEC5C9"></a>
+    <a href="https://github.com/crown0815/git-versioner/actions/workflows/release.yml">
+        <img alt="GitHub Action Deploy" src="https://img.shields.io/github/actions/workflow/status/crown0815/git-versioner/release.yml?style=flat&labelColor=1C2C2E&color=BEC5C9&logo=GitHub%20Actions&logoColor=BEC5C9&label=deploy"></a>
+    <br>
+    <a href="https://github.com/Crown0815/git-versioner/issues/">
+        <img alt="GitHub Issues" src="https://img.shields.io/github/issues/crown0815/git-versioner"></a>
+    <a href="https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt">
+        <img alt="GitHub License" src="https://img.shields.io/github/license/crown0815/git-versioner"></a>
+    <a href="https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt">
+        <img alt="GitHub Downloads (all assets, all releases)" src="https://img.shields.io/github/downloads/crown0815/git-versioner/total"></a>
+</p>
+
+
 # Git Versioner
 
-A Rust application that automatically calculates version numbers for Git repositories using trunk-based development with release branches.
+A Rust application designed to automatically calculate version numbers for Git repositories employing trunk-based development with release branches.
 
-### Example
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Examples](#examples)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Introduction
+
+Git Versioner is a command-line tool developed in Rust that facilitates automated versioning in Git repositories. 
+It is particularly suited for workflows using trunk-based development, where the primary branch (referred to as "trunk") serves as the main line of integration, and release branches are created to stabilize specific versions.
+The tool analyzes the repository's commit history, branches, and tags to derive semantic version numbers, including pre-release identifiers such as "-pre.X" for development builds.
+
+This project aims to streamline release management by eliminating manual version updates, ensuring consistency, and supporting parallel development on multiple release lines.
+It draws inspiration from established versioning tools while focusing on simplicity and integration with modern Git practices.
+
+## Features
+
+- **Automated Version Calculation**: Derives version numbers based on commit history, branch structure, and existing tags.
+- **Support for Trunk-Based Development**: Recognizes the "trunk" as the main branch and handles release branches (e.g., "release/1.0.0") for patch and minor updates.
+- **Semantic Versioning Compliance**: Generates versions in the format `MAJOR.MINOR.PATCH-pre.X` for pre-releases and `MAJOR.MINOR.PATCH` for stable tags.
+- **Tag Management**: Identifies and applies tags for stable releases (e.g., "v1.0.0").
+- **Configurable Branch Naming**: Allows customization of the main branch name (default: "trunk").
+- **Integration-Friendly**: Suitable for use in continuous integration/continuous deployment (CI/CD) pipelines.
+
+## Installation
+
+To install Git Versioner, ensure you have Rust and Cargo installed on your system.
+Rust can be obtained via [rustup](https://rustup.rs/).
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/Crown0815/git-versioner.git
+   cd git-versioner
+   ```
+
+2. Build the project:
+   ```
+   cargo build --release
+   ```
+
+3. Install the binary (optional, for global access):
+   ```
+   cargo install --path .
+   ```
+
+The executable will be available in the `target/release` directory or in your Cargo bin path if installed globally.
+
+## Usage
+
+Once installed, run Git Versioner from the root of your Git repository to compute the current version:
+
+```
+git-versioner
+```
+
+This command will output the calculated version string based on the repository's state.
+
+### Command-Line Options
+
+- `--config <PATH>`: Specify a custom configuration file (default: none).
+- `--branch <NAME>`: Override the main branch name (default: "trunk").
+- `--help`: Display usage information.
+
+For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
+
+# Git Versioner
+
+A Rust application designed to automatically calculate version numbers for Git repositories employing trunk-based development with release branches.
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Examples](#examples)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Introduction
+
+Git Versioner is a command-line tool developed in Rust that facilitates automated versioning in Git repositories. It is particularly suited for workflows utilizing trunk-based development, where the primary branch (referred to as "trunk") serves as the main line of integration, and release branches are created to stabilize specific versions. The tool analyzes the repository's commit history, branches, and tags to derive semantic version numbers, including pre-release identifiers such as "-pre.X" for development builds.
+
+This project aims to streamline release management by eliminating manual version updates, ensuring consistency, and supporting parallel development on multiple release lines. It draws inspiration from established versioning tools while focusing on simplicity and integration with modern Git practices.
+
+## Features
+
+- **Automated Version Calculation**: Derives version numbers based on commit history, branch structure, and existing tags.
+- **Support for Trunk-Based Development**: Recognizes the "trunk" as the main branch and handles release branches (e.g., "release/1.0.0") for patch and minor updates.
+- **Semantic Versioning Compliance**: Generates versions in the format `MAJOR.MINOR.PATCH-pre.X` for pre-releases and `MAJOR.MINOR.PATCH` for stable tags.
+- **Tag Management**: Identifies and applies tags for stable releases (e.g., "v1.0.0").
+- **Configurable Branch Naming**: Allows customization of the main branch name (default: "trunk").
+- **Integration-Friendly**: Suitable for use in continuous integration/continuous deployment (CI/CD) pipelines.
+
+## Installation
+
+To install Git Versioner, ensure you have Rust and Cargo installed on your system. Rust can be obtained via [rustup](https://rustup.rs/).
+
+1. Clone the repository:
+   ```
+   git clone https://github.com/Crown0815/git-versioner.git
+   cd git-versioner
+   ```
+
+2. Build the project:
+   ```
+   cargo build --release
+   ```
+
+3. Install the binary (optional, for global access):
+   ```
+   cargo install --path .
+   ```
+
+The executable will be available in the `target/release` directory or in your Cargo bin path if installed globally.
+
+## Usage
+
+Once installed, run Git Versioner from the root of your Git repository to compute the current version:
+
+```
+git-versioner
+```
+
+This command will output the calculated version string based on the repository's state.
+
+### Command-Line Options
+
+The command line options allow overwriting of configuration options using (see also [Configuration](#configuration))
+
+```shell
+      --main-branch <MAIN_BRANCH>          
+      --release-branch <RELEASE_BRANCH>    
+      --feature-branch <FEATURE_BRANCH>    
+      --version-pattern <VERSION_PATTERN>  
+      --pre-release-tag <PRE_RELEASE_TAG>  
+```
+
+Additionally, the following options are supported:
+
+```shell
+
+  -p, --path <PATH>                        
+  -v, --verbose                            
+  -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
+  -h, --help                               Print help
+  -V, --version                            Print version
+```
+
+For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
+
+## Configuration
+
+Git Versioner supports a YAML configuration file to customize its behavior. The configuration is deserialized into the following Rust structure:
+
+```rust
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct ConfigurationFile {
+    pub main_branch: Option<String>,
+    pub release_branch: Option<String>,
+    pub feature_branch: Option<String>,
+    pub version_pattern: Option<String>,
+    pub pre_release_tag: Option<String>,
+}
+```
+
+Create a file named `.git-versioner.toml`, `.git-versioner.yaml`, or `.git-versioner.yml` in the repository root. 
+All fields are optional, and will fall back to internal defaults if not specified. An example configuration is as follows:
+
+```yaml
+MainBranch: "^trunk$"
+ReleaseBranch: "^release/(?<BranchName>.+)$"
+FeatureBranch: "feature/(?<BranchName>.+)$"
+VersionPattern: "^v?(?<Version>.+)$"
+PreReleaseTag: "pre"
+```
+
+### Configuration Fields
+- **MainBranch**: Specifies the pattern of the main development branch (default: `^(trunk|main|master)$`).
+- **ReleaseBranch**: Defines the pattern for release branches (default: `^releases?[/-](?<BranchName>.+)$`).
+- **FeatureBranch**: Defines the pattern for feature branches (default: `^features?[/-](?<BranchName>.+)$`).
+- **VersionPattern**: Defines the pattern of versions on tags and release branches' `BranchName` (default: `^[vV]?(?<Version>.+)`).
+- **PreReleaseTag**: The identifier used for pre-release versions (default: `pre`).
+
+Additional options may be added in future releases to support advanced versioning rules.
+
+## Examples
+
+The following Git graph illustrates a typical workflow and how versions are calculated:
 
 ```mermaid
 ---
@@ -46,3 +261,22 @@ gitGraph:
     commit id: "1.3.0-pre.2" tag: "1.3.0"
     commit id: "1.4.0-pre.1"
 ```
+
+## Contributing
+
+Contributions are welcome to enhance Git Versioner.
+To contribute:
+
+1. Fork the repository on GitHub.
+2. Create a new branch for your feature or bug fix: `git checkout -b feature/your-feature`.
+3. Commit your changes with clear messages.
+4. Push to your fork: `git push origin feature/your-feature`.
+5. Open a pull request, describing the changes and referencing any related issues.
+
+Please adhere to Rust's coding standards, include tests for new features, and update documentation as necessary.
+For major changes, discuss them in an issue first.
+
+## License
+
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE.txt) file for details.
