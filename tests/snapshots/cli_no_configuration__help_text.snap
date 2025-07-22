@@ -17,6 +17,7 @@ Options:
       --feature-branch <FEATURE_BRANCH>    
       --version-pattern <VERSION_PATTERN>  
       --pre-release-tag <PRE_RELEASE_TAG>  
+      --show-config                        Outputs effective git-versioner config in toml format
   -v, --verbose                            
   -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
   -h, --help                               Print help

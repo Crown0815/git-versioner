@@ -20,9 +20,13 @@ pub trait Configuration {
     fn verbose(&self) -> bool {
         false
     }
+    fn show_config(&self) -> bool {
+        false
+    }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct DefaultConfig {
     pub path: PathBuf,
     pub main_branch: String,
@@ -62,6 +66,10 @@ pub struct Args {
 
     #[arg(long, value_parser)]
     pre_release_tag: Option<String>,
+
+    /// Outputs effective git-versioner config in toml format
+    #[arg(long)]
+    show_config: bool,
 
     #[arg(short, long)]
     verbose: bool,
@@ -226,5 +234,9 @@ impl Configuration for ConfigurationLayers {
 
     fn verbose(&self) -> bool {
         self.args.verbose
+    }
+
+    fn show_config(&self) -> bool {
+        self.args.show_config
     }
 }

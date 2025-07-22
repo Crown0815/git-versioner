@@ -1,0 +1,20 @@
+---
+source: tests/cli_no_configuration.rs
+info:
+  program: git-versioner
+  args:
+    - "--show-config"
+---
+success: true
+exit_code: 0
+----- stdout -----
+Configuration:
+Path = "<repository_path>"
+MainBranch = "^(trunk|main|master)$"
+ReleaseBranch = "^releases?[/-](?<BranchName>.+)$"
+FeatureBranch = "^features?[/-](?<BranchName>.+)$"
+VersionPattern = "^[vV]?(?<Version>.+)"
+PreReleaseTag = "pre"
+
+
+----- stderr -----

@@ -150,3 +150,12 @@ fn test_output_from_tag(mut repo: ConfiguredTestRepo) {
         assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
     });
 }
+
+#[rstest]
+fn test_output_from_show_config(mut repo: ConfiguredTestRepo) {
+    insta::with_settings!({filters => vec![
+        (r#"".+/.git/""#, r#""<repository_path>""#),
+    ]}, {
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path).args(["--show-config"]));
+    });
+}
