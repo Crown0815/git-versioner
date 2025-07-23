@@ -3,8 +3,11 @@ mod common;
 
 use crate::cli::{ConfiguredTestRepo, cmd, repo};
 use crate::common::MAIN_BRANCH;
+use env::set_var;
+use insta::assert_snapshot;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::rstest;
+use std::env;
 use std::process::Command;
 
 impl ConfiguredTestRepo {}
@@ -157,5 +160,29 @@ fn test_output_from_show_config(mut repo: ConfiguredTestRepo) {
         (r#"".+/.git/""#, r#""<repository_path>""#),
     ]}, {
         assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path).args(["--show-config"]));
+    });
+}
+
+#[rstest]
+fn test_environment_variable_output_in_github_context(mut repo: ConfiguredTestRepo) {
+    let github_output = tempfile::NamedTempFile::new().unwrap();
+
+    let output = repo
+        .cli
+        .current_dir(repo.inner.path)
+        .env("CI", "true")
+        .env("GITHUB_OUTPUT", github_output.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let github_output = std::fs::read_to_string(github_output.path()).unwrap();
+
+    insta::with_settings!({filters => vec![
+        (r"\b[[:xdigit:]]{40}\b", "########################################"),
+        (r"\b[[:xdigit:]]{7}\b", "#######"),
+        (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+    ]}, {
+        assert_snapshot!(github_output);
     });
 }
