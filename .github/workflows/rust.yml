@@ -27,3 +27,7 @@ jobs:
       run: cargo test
     - name: Determine version
       run: cargo run
+    - name: Print GITHUB_OUTPUT Contents
+      run: |
+        echo "Contents of GITHUB_OUTPUT:"
+        cat $GITHUB_OUTPUT
