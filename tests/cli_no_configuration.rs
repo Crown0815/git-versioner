@@ -3,7 +3,6 @@ mod common;
 
 use crate::cli::{ConfiguredTestRepo, cmd, repo};
 use crate::common::MAIN_BRANCH;
-use env::set_var;
 use insta::assert_snapshot;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::rstest;
