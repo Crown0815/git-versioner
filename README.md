@@ -1,3 +1,7 @@
+<div align=center>
+  <img src="logo.png" alt="Description of image" height="256">
+</div>
+
 # Git Versioner
 
 [![](https://img.shields.io/badge/trunk--based-development-blue)](https://trunkbaseddevelopment.com/)
@@ -8,46 +12,43 @@
 [![](https://img.shields.io/github/license/crown0815/git-versioner)](https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt)
 ![](https://img.shields.io/github/downloads/crown0815/git-versioner/total)
 
-
 ```mermaid
 ---
 config:
   theme: default
-  gitGraph:
-    mainBranchName: 'trunk'
 ---
 gitGraph:
     commit id: "0.1.0-pre.0"
     commit id: "0.1.0-pre.1" tag: "v1.0.0"
     branch release/1.0.0
-    checkout trunk
+    checkout main
     commit id: "1.1.0-pre.1"
     checkout release/1.0.0
     commit id: "1.0.1-pre.1"
     commit id: "1.0.1-pre.2 " tag: "v1.0.1"
     commit id: "1.0.2-pre.1"
     commit id: "1.0.2-pre.2" tag: "v1.0.2"
-    checkout trunk
+    checkout main
     commit id: "1.1.0-pre.2"
     branch release/1.1.0
-    checkout trunk
+    checkout main
     commit id: "1.2.0-pre.1"
     checkout release/1.1.0
     commit id: "1.1.0-pre.3"
     commit id: "1.1.0-pre.4" tag: "1.1.0"
     commit id: "1.1.1-pre.1"
     commit id: "1.1.1-pre.2" tag: "1.1.1"
-    checkout trunk
+    checkout main
     commit id: "1.2.0-pre.2"
     branch release/1.2.0
-    checkout trunk
+    checkout main
     commit id: "1.3.0-pre.1"
     checkout release/1.2.0
     commit id: "1.2.0-pre.3"
     commit id: "1.2.0-pre.4" tag: "1.2.0"
     commit id: "1.2.1-pre.1"
     commit id: "1.2.1-pre.2" tag: "1.2.1"
-    checkout trunk
+    checkout main
     commit id: "1.3.0-pre.2" tag: "1.3.0"
     commit id: "1.4.0-pre.1"
 ```
@@ -124,70 +125,6 @@ This command will output the calculated version string based on the repository's
 
 For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
 
-# Git Versioner
-
-A Rust application designed to automatically calculate version numbers for Git repositories employing trunk-based development with release branches.
-
-## Table of Contents
-
-- [Introduction](#introduction)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Configuration](#configuration)
-- [Examples](#examples)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Introduction
-
-Git Versioner is a command-line tool developed in Rust that facilitates automated versioning in Git repositories. It is particularly suited for workflows utilizing trunk-based development, where the primary branch (referred to as "trunk") serves as the main line of integration, and release branches are created to stabilize specific versions. The tool analyzes the repository's commit history, branches, and tags to derive semantic version numbers, including pre-release identifiers such as "-pre.X" for development builds.
-
-This project aims to streamline release management by eliminating manual version updates, ensuring consistency, and supporting parallel development on multiple release lines. It draws inspiration from established versioning tools while focusing on simplicity and integration with modern Git practices.
-
-## Features
-
-- **Automated Version Calculation**: Derives version numbers based on commit history, branch structure, and existing tags.
-- **Support for Trunk-Based Development**: Recognizes the "trunk" as the main branch and handles release branches (e.g., "release/1.0.0") for patch and minor updates.
-- **Semantic Versioning Compliance**: Generates versions in the format `MAJOR.MINOR.PATCH-pre.X` for pre-releases and `MAJOR.MINOR.PATCH` for stable tags.
-- **Tag Management**: Identifies and applies tags for stable releases (e.g., "v1.0.0").
-- **Configurable Branch Naming**: Allows customization of the main branch name (default: "trunk").
-- **Integration-Friendly**: Suitable for use in continuous integration/continuous deployment (CI/CD) pipelines.
-
-## Installation
-
-To install Git Versioner, ensure you have Rust and Cargo installed on your system. Rust can be obtained via [rustup](https://rustup.rs/).
-
-1. Clone the repository:
-   ```
-   git clone https://github.com/Crown0815/git-versioner.git
-   cd git-versioner
-   ```
-
-2. Build the project:
-   ```
-   cargo build --release
-   ```
-
-3. Install the binary (optional, for global access):
-   ```
-   cargo install --path .
-   ```
-
-The executable will be available in the `target/release` directory or in your Cargo bin path if installed globally.
-
-## Usage
-
-Once installed, run Git Versioner from the root of your Git repository to compute the current version:
-
-```
-git-versioner
-```
-
-This command will output the calculated version string based on the repository's state.
-
-### Command-Line Options
-
 The command line options allow overwriting of configuration options using (see also [Configuration](#configuration))
 
 ```shell
@@ -213,22 +150,11 @@ For integration in scripts or CI/CD, capture the output for use in build artifac
 
 ## Configuration
 
-Git Versioner supports a YAML configuration file to customize its behavior. The configuration is deserialized into the following Rust structure:
+Git Versioner supports a YAML or TOML configuration file to customize its behavior. 
+Create a file named `.git-versioner.toml`, `.git-versioner.yaml`, or `.git-versioner.yml` in the repository root.
+All fields are optional and will fall back to internal defaults if not specified. 
 
-```rust
-#[derive(Debug, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
-pub struct ConfigurationFile {
-    pub main_branch: Option<String>,
-    pub release_branch: Option<String>,
-    pub feature_branch: Option<String>,
-    pub version_pattern: Option<String>,
-    pub pre_release_tag: Option<String>,
-}
-```
-
-Create a file named `.git-versioner.toml`, `.git-versioner.yaml`, or `.git-versioner.yml` in the repository root. 
-All fields are optional and will fall back to internal defaults if not specified. An example configuration is as follows:
+An example configuration is as follows:
 
 ```yaml
 MainBranch: "^trunk$"
