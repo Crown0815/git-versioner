@@ -1,24 +1,13 @@
-<p style="text-align: center;">
-    <a href="https://trunkbaseddevelopment.com/">
-        <img alt="Trunk-Based Development" src="https://img.shields.io/badge/trunk--based-development-blue"></a>
-    <br>
-    <a href="https://github.com/crown0815/git-versioner/releases">
-        <img alt="GitHub Releases" src="https://img.shields.io/github/v/release/crown0815/git-versioner?style=flat&labelColor=1C2C2E&color=C96329&logo=GitHub&logoColor=white"></a>
-    <a href="https://github.com/crown0815/git-versioner/actions/workflows/rust.yml">
-        <img alt="GitHub Action Build" src="https://img.shields.io/github/actions/workflow/status/crown0815/git-versioner/rust.yml?style=flat&labelColor=1C2C2E&color=BEC5C9&logo=GitHub%20Actions&logoColor=BEC5C9"></a>
-    <a href="https://github.com/crown0815/git-versioner/actions/workflows/release.yml">
-        <img alt="GitHub Action Deploy" src="https://img.shields.io/github/actions/workflow/status/crown0815/git-versioner/release.yml?style=flat&labelColor=1C2C2E&color=BEC5C9&logo=GitHub%20Actions&logoColor=BEC5C9&label=deploy"></a>
-    <br>
-    <a href="https://github.com/Crown0815/git-versioner/issues/">
-        <img alt="GitHub Issues" src="https://img.shields.io/github/issues/crown0815/git-versioner"></a>
-    <a href="https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt">
-        <img alt="GitHub License" src="https://img.shields.io/github/license/crown0815/git-versioner"></a>
-    <a href="https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt">
-        <img alt="GitHub Downloads (all assets, all releases)" src="https://img.shields.io/github/downloads/crown0815/git-versioner/total"></a>
-</p>
-
-
 # Git Versioner
+
+[![](https://img.shields.io/badge/trunk--based-development-blue)](https://trunkbaseddevelopment.com/)
+[![](https://img.shields.io/github/v/release/crown0815/git-versioner?style=flat&labelColor=1C2C2E&color=C96329&logo=GitHub&logoColor=white)](https://github.com/crown0815/git-versioner/releases)
+[![](https://img.shields.io/github/actions/workflow/status/crown0815/git-versioner/rust.yml?style=flat&labelColor=1C2C2E&color=BEC5C9&logo=GitHub%20Actions&logoColor=BEC5C9)](https://github.com/crown0815/git-versioner/actions/workflows/rust.yml)
+[![](https://img.shields.io/github/actions/workflow/status/crown0815/git-versioner/release.yml?style=flat&labelColor=1C2C2E&color=BEC5C9&logo=GitHub%20Actions&logoColor=BEC5C9&label=deploy)](https://github.com/crown0815/git-versioner/actions/workflows/release.yml)
+[![](https://img.shields.io/github/issues/crown0815/git-versioner)](https://github.com/Crown0815/git-versioner/issues/)
+[![](https://img.shields.io/github/license/crown0815/git-versioner)](https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt)
+![](https://img.shields.io/github/downloads/crown0815/git-versioner/total)
+
 
 ```mermaid
 ---
