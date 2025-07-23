@@ -59,7 +59,7 @@ impl ConfiguredTestRepo {
             Some((name, ext)) => self.write_config(name, ext).unwrap(),
         };
 
-        let output = self.cli.args(args).output().unwrap();
+        let output = self.cli.args(args).env_clear().output().unwrap();
 
         let stdout = str::from_utf8(&output.stdout).unwrap();
         let result: GitVersion = serde_json::from_str(stdout).unwrap();
