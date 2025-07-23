@@ -61,9 +61,9 @@ A Rust application designed to automatically calculate version numbers for Git r
 - [Installation](#installation)
 - [Usage](#usage)
 - [Configuration](#configuration)
-- [Examples](#examples)
 - [Contributing](#contributing)
 - [License](#license)
+- [Inspiration](#inspiration)
 
 ## Introduction
 
