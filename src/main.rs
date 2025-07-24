@@ -30,7 +30,11 @@ fn main() -> Result<()> {
                 .create(true)
                 .open(github_output_file)?;
 
-            for (key, value) in map {
+            for (key, raw_value) in map {
+                let value = match raw_value {
+                    serde_json::Value::String(s) => s.clone(),
+                    _ => raw_value.to_string(),
+                };
                 writeln!(file, "GitVersion_{key}={value}")?;
             }
         }
