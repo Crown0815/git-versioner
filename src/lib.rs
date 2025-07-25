@@ -107,7 +107,7 @@ impl GitVersioner {
 
     fn new<T: Configuration>(config: &T) -> Result<GitVersioner> {
         let versioner = Self {
-            repo: Repository::open(config.repository_path())?,
+            repo: Repository::open(config.path())?,
             trunk_pattern: Regex::new(config.main_branch())?,
             release_pattern: Regex::new(config.release_branch())?,
             feature_pattern: Regex::new(config.feature_branch())?,

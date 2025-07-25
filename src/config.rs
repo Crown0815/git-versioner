@@ -11,7 +11,7 @@ pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
 
 pub trait Configuration {
-    fn repository_path(&self) -> &PathBuf;
+    fn path(&self) -> &PathBuf;
     fn main_branch(&self) -> &str;
     fn release_branch(&self) -> &str;
     fn feature_branch(&self) -> &str;
@@ -26,7 +26,7 @@ pub trait Configuration {
 
     fn print(&self) -> DefaultConfig {
         DefaultConfig {
-            path: fs::canonicalize(self.repository_path()).unwrap(),
+            path: fs::canonicalize(self.path()).unwrap(),
             main_branch: self.main_branch().to_string(),
             release_branch: self.release_branch().to_string(),
             feature_branch: self.feature_branch().to_string(),
@@ -111,7 +111,7 @@ impl Default for DefaultConfig {
 }
 
 impl Configuration for DefaultConfig {
-    fn repository_path(&self) -> &PathBuf {
+    fn path(&self) -> &PathBuf {
         &self.path
     }
     fn main_branch(&self) -> &str {
@@ -186,62 +186,40 @@ pub fn load_configuration() -> anyhow::Result<ConfigurationLayers> {
     Ok(ConfigurationLayers { args, file, config })
 }
 
+macro_rules! config_all {
+    ($name:ident) => {
+        fn $name(&self) -> &str {
+            if let Some(value) = &self.args.$name {
+                value
+            } else if let Some(value) = &self.file.$name {
+                value
+            } else {
+                &self.config.$name
+            }
+        }
+    };
+}
+
+macro_rules! config_args_and_default {
+    ($name:ident, $return:ty) => {
+        fn $name(&self) -> $return {
+            if let Some(value) = &self.args.$name {
+                value
+            } else {
+                &self.config.$name
+            }
+        }
+    };
+}
+
 impl Configuration for ConfigurationLayers {
-    fn repository_path(&self) -> &PathBuf {
-        if let Some(path) = &self.args.path {
-            path
-        } else {
-            &self.config.path
-        }
-    }
-    fn main_branch(&self) -> &str {
-        if let Some(main_branch) = &self.args.main_branch {
-            main_branch
-        } else if let Some(main_branch) = &self.file.main_branch {
-            main_branch
-        } else {
-            &self.config.main_branch
-        }
-    }
-    fn release_branch(&self) -> &str {
-        if let Some(release_branch) = &self.args.release_branch {
-            release_branch
-        } else if let Some(release_branch) = &self.file.release_branch {
-            release_branch
-        } else {
-            &self.config.release_branch
-        }
-    }
+    config_all!(main_branch);
+    config_all!(release_branch);
+    config_all!(feature_branch);
+    config_all!(tag_prefix);
+    config_all!(pre_release_tag);
 
-    fn feature_branch(&self) -> &str {
-        if let Some(feature_branch) = &self.args.feature_branch {
-            feature_branch
-        } else if let Some(feature_branch) = &self.file.feature_branch {
-            feature_branch
-        } else {
-            &self.config.feature_branch
-        }
-    }
-
-    fn tag_prefix(&self) -> &str {
-        if let Some(branch) = &self.args.tag_prefix {
-            branch
-        } else if let Some(tag_prefix) = &self.file.tag_prefix {
-            tag_prefix
-        } else {
-            &self.config.tag_prefix
-        }
-    }
-
-    fn pre_release_tag(&self) -> &str {
-        if let Some(branch) = &self.args.pre_release_tag {
-            branch
-        } else if let Some(branch) = &self.file.pre_release_tag {
-            branch
-        } else {
-            &self.config.pre_release_tag
-        }
-    }
+    config_args_and_default!(path, &PathBuf);
 
     fn verbose(&self) -> bool {
         self.args.verbose
