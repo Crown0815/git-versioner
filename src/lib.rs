@@ -110,7 +110,7 @@ impl GitVersioner {
             trunk_pattern: Regex::new(config.main_branch())?,
             release_pattern: Regex::new(config.release_branch())?,
             feature_pattern: Regex::new(config.feature_branch())?,
-            version_pattern: Regex::new(config.version_pattern())?,
+            version_pattern: Regex::new(&format!("^{}(?<Version>.+)", config.tag_prefix()))?,
             prerelease_tag: config.pre_release_tag().to_string(),
         };
         Ok(versioner)

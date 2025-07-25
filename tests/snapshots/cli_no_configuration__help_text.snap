@@ -15,7 +15,6 @@ Options:
       --main-branch <MAIN_BRANCH>          
       --release-branch <RELEASE_BRANCH>    
       --feature-branch <FEATURE_BRANCH>    
-      --version-pattern <VERSION_PATTERN>  
       --tag-prefix <TAG_PREFIX>            
       --pre-release-tag <PRE_RELEASE_TAG>  
       --show-config                        Outputs effective git-versioner config in toml format

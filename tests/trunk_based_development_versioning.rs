@@ -277,7 +277,7 @@ fn test_release_tags_without_matching_version_tag_prefix_are_ignored(
 
 #[rstest]
 fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: TestRepo) {
-    repo.config.version_pattern = "my/v(?<Version>.+)".to_string();
+    repo.config.tag_prefix = "my/v".to_string();
 
     repo.commit_and_assert("0.1.0-pre.1");
     repo.tag_and_assert("my/v", "1.0.0");

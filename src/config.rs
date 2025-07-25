@@ -7,7 +7,6 @@ use std::path::{Path, PathBuf};
 pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
-pub const VERSION_PATTERN: &str = r"^[vV]?(?<Version>.+)";
 pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
 
@@ -16,7 +15,6 @@ pub trait Configuration {
     fn main_branch(&self) -> &str;
     fn release_branch(&self) -> &str;
     fn feature_branch(&self) -> &str;
-    fn version_pattern(&self) -> &str;
     fn tag_prefix(&self) -> &str;
     fn pre_release_tag(&self) -> &str;
     fn verbose(&self) -> bool {
@@ -32,7 +30,6 @@ pub trait Configuration {
             main_branch: self.main_branch().to_string(),
             release_branch: self.release_branch().to_string(),
             feature_branch: self.feature_branch().to_string(),
-            version_pattern: self.version_pattern().to_string(),
             tag_prefix: self.tag_prefix().to_string(),
             pre_release_tag: self.pre_release_tag().to_string(),
         }
@@ -46,7 +43,6 @@ pub struct DefaultConfig {
     pub main_branch: String,
     pub release_branch: String,
     pub feature_branch: String,
-    pub version_pattern: String,
     pub tag_prefix: String,
     pub pre_release_tag: String,
 }
@@ -57,9 +53,8 @@ pub struct ConfigurationFile {
     pub main_branch: Option<String>,
     pub release_branch: Option<String>,
     pub feature_branch: Option<String>,
-    pub version_pattern: Option<String>,
-    pub pre_release_tag: Option<String>,
     pub tag_prefix: Option<String>,
+    pub pre_release_tag: Option<String>,
 }
 
 #[derive(Parser, Debug)]
@@ -76,9 +71,6 @@ pub struct Args {
 
     #[arg(long, value_parser)]
     feature_branch: Option<String>,
-
-    #[arg(long, value_parser)]
-    version_pattern: Option<String>,
 
     #[arg(long, value_parser)]
     tag_prefix: Option<String>,
@@ -112,7 +104,6 @@ impl Default for DefaultConfig {
             main_branch: MAIN_BRANCH.to_string(),
             release_branch: RELEASE_BRANCH.to_string(),
             feature_branch: FEATURE_BRANCH.to_string(),
-            version_pattern: VERSION_PATTERN.to_string(),
             tag_prefix: TAG_PREFIX.to_string(),
             pre_release_tag: PRE_RELEASE_TAG.to_string(),
         }
@@ -131,9 +122,6 @@ impl Configuration for DefaultConfig {
     }
     fn feature_branch(&self) -> &str {
         &self.feature_branch
-    }
-    fn version_pattern(&self) -> &str {
-        &self.version_pattern
     }
     fn tag_prefix(&self) -> &str {
         &self.tag_prefix
@@ -232,16 +220,6 @@ impl Configuration for ConfigurationLayers {
             feature_branch
         } else {
             &self.config.feature_branch
-        }
-    }
-
-    fn version_pattern(&self) -> &str {
-        if let Some(version_pattern) = &self.args.version_pattern {
-            version_pattern
-        } else if let Some(version_pattern) = &self.file.version_pattern {
-            version_pattern
-        } else {
-            &self.config.version_pattern
         }
     }
 

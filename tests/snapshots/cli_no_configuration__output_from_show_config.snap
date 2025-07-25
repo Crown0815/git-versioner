@@ -13,7 +13,6 @@ Path = "<repository_path>"
 MainBranch = "^(trunk|main|master)$"
 ReleaseBranch = "^releases?[/-](?<BranchName>.+)$"
 FeatureBranch = "^features?[/-](?<BranchName>.+)$"
-VersionPattern = "^[vV]?(?<Version>.+)"
 TagPrefix = "[vV]?"
 PreReleaseTag = "pre"
 

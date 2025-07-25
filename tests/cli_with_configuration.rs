@@ -114,7 +114,7 @@ fn test_that_config_file_overrides_default_version_pattern(
     mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
-    repo.config_file.version_pattern = Some("my/c(?<Version>.*)".to_string());
+    repo.config_file.tag_prefix = Some("my/c".to_string());
     let (source, _) = repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/c1.0.0");
 
@@ -129,17 +129,14 @@ fn test_that_cli_argument_overrides_configuration_of_version_pattern(
     mut repo: ConfiguredTestRepo,
     #[values("toml", "yaml")] extension: &str,
 ) {
-    repo.config_file.version_pattern = Some("my/c(?<Version>.*)".to_string());
+    repo.config_file.tag_prefix = Some("my/c".to_string());
     let (source, _) = repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("my/v1.0.0");
 
-    repo.execute_and_assert(
-        ["--version-pattern", "my/v(?<Version>.*)"],
-        Some((DEFAULT_CONFIG, extension)),
-    )
-    .version("1.0.0")
-    .branch_name(MAIN_BRANCH)
-    .version_source_sha(&source);
+    repo.execute_and_assert(["--tag-prefix", "my/v"], Some((DEFAULT_CONFIG, extension)))
+        .version("1.0.0")
+        .branch_name(MAIN_BRANCH)
+        .version_source_sha(&source);
 }
 
 #[rstest]

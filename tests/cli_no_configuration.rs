@@ -35,7 +35,7 @@ fn test_release_on_main_branch_with_custom_version_pattern(mut repo: ConfiguredT
     let (source, _) = repo.inner.commit("tagged");
     repo.inner.tag("my/v0.1.0");
 
-    repo.execute_and_assert(["--version-pattern", "my/v(?<Version>.*)"], None)
+    repo.execute_and_assert(["--tag-prefix", "my/v"], None)
         .version("0.1.0")
         .branch_name(MAIN_BRANCH)
         .version_source_sha(&source);

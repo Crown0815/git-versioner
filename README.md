@@ -131,7 +131,7 @@ The command line options allow overwriting of configuration options using (see a
       --main-branch <MAIN_BRANCH>          
       --release-branch <RELEASE_BRANCH>    
       --feature-branch <FEATURE_BRANCH>    
-      --version-pattern <VERSION_PATTERN>  
+      --tag-prefix <TAG_PREFIX>            
       --pre-release-tag <PRE_RELEASE_TAG>  
 ```
 
@@ -160,7 +160,7 @@ An example configuration is as follows:
 MainBranch: "^trunk$"
 ReleaseBranch: "^release/(?<BranchName>.+)$"
 FeatureBranch: "feature/(?<BranchName>.+)$"
-VersionPattern: "^v?(?<Version>.+)$"
+TagPrefix: "[vV]?"
 PreReleaseTag: "pre"
 ```
 
@@ -168,7 +168,7 @@ PreReleaseTag: "pre"
 - **MainBranch**: Specifies the pattern of the main development branch (default: `^(trunk|main|master)$`).
 - **ReleaseBranch**: Defines the pattern for release branches (default: `^releases?[/-](?<BranchName>.+)$`).
 - **FeatureBranch**: Defines the pattern for feature branches (default: `^features?[/-](?<BranchName>.+)$`).
-- **VersionPattern**: Defines the pattern of versions on tags and release branches' `BranchName` (default: `^[vV]?(?<Version>.+)`).
+- **TagPrefix**: Defines the prefix of versions on tags and release branches' `BranchName` (default: `^[vV]?`).
 - **PreReleaseTag**: The identifier used for pre-release versions (default: `pre`).
 
 Additional options may be added in future releases to support advanced versioning rules.
