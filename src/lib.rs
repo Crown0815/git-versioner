@@ -1,4 +1,5 @@
 pub mod config;
+mod format_parser;
 
 use crate::config::Configuration;
 use anyhow::{Result, anyhow};
