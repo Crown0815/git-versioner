@@ -7,9 +7,9 @@ use std::io::Write;
 
 fn main() -> Result<()> {
     let config = load_configuration()?;
-    if config.verbose() || config.show_config() {
+    if *config.verbose() || *config.show_config() {
         print(&config);
-        if config.show_config() {
+        if *config.show_config() {
             return Ok(());
         }
     }

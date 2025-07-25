@@ -17,11 +17,11 @@ pub trait Configuration {
     fn feature_branch(&self) -> &str;
     fn tag_prefix(&self) -> &str;
     fn pre_release_tag(&self) -> &str;
-    fn verbose(&self) -> bool {
-        false
+    fn verbose(&self) -> &bool {
+        &false
     }
-    fn show_config(&self) -> bool {
-        false
+    fn show_config(&self) -> &bool {
+        &false
     }
 
     fn print(&self) -> DefaultConfig {
@@ -186,9 +186,9 @@ pub fn load_configuration() -> anyhow::Result<ConfigurationLayers> {
     Ok(ConfigurationLayers { args, file, config })
 }
 
-macro_rules! config_all {
-    ($name:ident) => {
-        fn $name(&self) -> &str {
+macro_rules! config_getter {
+    ($name:ident, $return:ty, arg>file>default) => {
+        fn $name(&self) -> &$return {
             if let Some(value) = &self.args.$name {
                 value
             } else if let Some(value) = &self.file.$name {
@@ -198,11 +198,8 @@ macro_rules! config_all {
             }
         }
     };
-}
-
-macro_rules! config_args_and_default {
-    ($name:ident, $return:ty) => {
-        fn $name(&self) -> $return {
+    ($name:ident, $return:ty, arg>default) => {
+        fn $name(&self) -> &$return {
             if let Some(value) = &self.args.$name {
                 value
             } else {
@@ -210,22 +207,20 @@ macro_rules! config_args_and_default {
             }
         }
     };
+    ($name:ident, $return:ty, arg) => {
+        fn $name(&self) -> &$return {
+            &self.args.$name
+        }
+    };
 }
 
 impl Configuration for ConfigurationLayers {
-    config_all!(main_branch);
-    config_all!(release_branch);
-    config_all!(feature_branch);
-    config_all!(tag_prefix);
-    config_all!(pre_release_tag);
-
-    config_args_and_default!(path, &PathBuf);
-
-    fn verbose(&self) -> bool {
-        self.args.verbose
-    }
-
-    fn show_config(&self) -> bool {
-        self.args.show_config
-    }
+    config_getter!(main_branch, str, arg > file > default);
+    config_getter!(release_branch, str, arg > file > default);
+    config_getter!(feature_branch, str, arg > file > default);
+    config_getter!(tag_prefix, str, arg > file > default);
+    config_getter!(pre_release_tag, str, arg > file > default);
+    config_getter!(path, PathBuf, arg > default);
+    config_getter!(verbose, bool, arg);
+    config_getter!(show_config, bool, arg);
 }
