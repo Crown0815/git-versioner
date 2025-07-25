@@ -7,9 +7,8 @@ use std::io::Write;
 
 fn main() -> Result<()> {
     let config = load_configuration()?;
-    let versioner = GitVersioner::new(&config)?;
     if config.verbose() || config.show_config() {
-        versioner.print_config();
+        print(&config);
         if config.show_config() {
             return Ok(());
         }
@@ -41,4 +40,9 @@ fn main() -> Result<()> {
     }
 
     Ok(())
+}
+
+fn print<T: Configuration>(config: &T) {
+    println!("Configuration:");
+    println!("{}", toml::to_string(&config.print()).unwrap());
 }

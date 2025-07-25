@@ -156,7 +156,7 @@ fn test_output_from_tag(mut repo: ConfiguredTestRepo) {
 #[rstest]
 fn test_output_from_show_config(mut repo: ConfiguredTestRepo) {
     insta::with_settings!({filters => vec![
-        (r#"".+/.git/""#, r#""<repository_path>""#),
+        (r#"Path = ["'][a-zA-Z0-9-_.~+=,:@%/\\]+["']"#, r#"Path = "<repository_path>""#),
     ]}, {
         assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path).args(["--show-config"]));
     });

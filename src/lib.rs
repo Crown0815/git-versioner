@@ -11,7 +11,6 @@ use semver::{Comparator, Op, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fmt::{Debug, Display};
-use std::process::exit;
 use std::time;
 
 const BRANCH_NAME_ID: &str = "BranchName";
@@ -86,13 +85,6 @@ impl GitVersioner {
     pub fn calculate_version<T: Configuration>(config: &T) -> Result<GitVersion> {
         let versioner = Self::new(config)?;
 
-        if config.verbose() || config.show_config() {
-            versioner.print_config();
-            if config.show_config() {
-                exit(0)
-            }
-        }
-
         let head = versioner.head()?;
         let branch_name = Self::branch_name_for(&head)?;
         let branch_type_at_head = versioner.determine_branch_type_by_name(&branch_name);
@@ -112,7 +104,7 @@ impl GitVersioner {
         ))
     }
 
-    pub fn new<T: Configuration>(config: &T) -> Result<GitVersioner> {
+    fn new<T: Configuration>(config: &T) -> Result<GitVersioner> {
         let versioner = Self {
             repo: Repository::open(config.repository_path())?,
             trunk_pattern: Regex::new(config.main_branch())?,
@@ -122,20 +114,6 @@ impl GitVersioner {
             prerelease_tag: config.pre_release_tag().to_string(),
         };
         Ok(versioner)
-    }
-
-    pub fn print_config(&self) {
-        let effective_config = DefaultConfig {
-            path: self.repo.path().to_owned(),
-            main_branch: self.trunk_pattern.to_string(),
-            release_branch: self.release_pattern.to_string(),
-            feature_branch: self.feature_pattern.to_string(),
-            version_pattern: self.version_pattern.to_string(),
-            pre_release_tag: self.prerelease_tag.clone(),
-        };
-
-        println!("Configuration:");
-        println!("{}", toml::to_string(&effective_config).unwrap());
     }
 
     fn head(&self) -> Result<Reference, git2::Error> {
