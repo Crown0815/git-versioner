@@ -9,6 +9,7 @@ pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
 pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
+pub const COMMIT_MESSAGE_INCREMENTING: &str = "Disabled";
 
 pub trait Configuration {
     fn path(&self) -> &PathBuf;
@@ -17,6 +18,7 @@ pub trait Configuration {
     fn feature_branch(&self) -> &str;
     fn tag_prefix(&self) -> &str;
     fn pre_release_tag(&self) -> &str;
+    fn commit_message_incrementing(&self) -> &str;
     fn verbose(&self) -> &bool {
         &false
     }
@@ -32,6 +34,7 @@ pub trait Configuration {
             feature_branch: self.feature_branch().to_string(),
             tag_prefix: self.tag_prefix().to_string(),
             pre_release_tag: self.pre_release_tag().to_string(),
+            commit_message_incrementing: self.commit_message_incrementing().to_string(),
         }
     }
 }
@@ -45,6 +48,7 @@ pub struct DefaultConfig {
     pub feature_branch: String,
     pub tag_prefix: String,
     pub pre_release_tag: String,
+    pub commit_message_incrementing: String,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -55,6 +59,7 @@ pub struct ConfigurationFile {
     pub feature_branch: Option<String>,
     pub tag_prefix: Option<String>,
     pub pre_release_tag: Option<String>,
+    // pub commit_message_incrementing: Option<String>,
 }
 
 #[derive(Parser, Debug)]
@@ -78,6 +83,8 @@ pub struct Args {
     #[arg(long, value_parser)]
     pre_release_tag: Option<String>,
 
+    // #[arg(long, value_parser)]
+    // commit_message_incrementing: Option<String>,
     /// Outputs effective git-versioner config in toml format
     #[arg(long)]
     show_config: bool,
@@ -106,6 +113,7 @@ impl Default for DefaultConfig {
             feature_branch: FEATURE_BRANCH.to_string(),
             tag_prefix: TAG_PREFIX.to_string(),
             pre_release_tag: PRE_RELEASE_TAG.to_string(),
+            commit_message_incrementing: COMMIT_MESSAGE_INCREMENTING.to_string(),
         }
     }
 }
@@ -128,6 +136,9 @@ impl Configuration for DefaultConfig {
     }
     fn pre_release_tag(&self) -> &str {
         &self.pre_release_tag
+    }
+    fn commit_message_incrementing(&self) -> &str {
+        &self.commit_message_incrementing
     }
 }
 
@@ -220,6 +231,9 @@ impl Configuration for ConfigurationLayers {
     config_getter!(feature_branch, str, arg > file > default);
     config_getter!(tag_prefix, str, arg > file > default);
     config_getter!(pre_release_tag, str, arg > file > default);
+    fn commit_message_incrementing(&self) -> &str {
+        &self.config.commit_message_incrementing
+    }
     config_getter!(path, PathBuf, arg > default);
     config_getter!(verbose, bool, arg);
     config_getter!(show_config, bool, arg);

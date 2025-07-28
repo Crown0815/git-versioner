@@ -31,6 +31,11 @@ pub enum BranchType {
     Other(String),    // Feature branch or any other branch type
 }
 
+pub enum CommitBump {
+    Minor,
+    Patch,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct VersionSource {
     version: Version,
@@ -45,6 +50,7 @@ pub struct GitVersioner {
     feature_pattern: Regex,
     version_pattern: Regex,
     prerelease_tag: String,
+    is_commit_message_incrementing: bool,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -113,6 +119,15 @@ impl GitVersioner {
             feature_pattern: Regex::new(config.feature_branch())?,
             version_pattern: Regex::new(&format!("^{}(?<Version>.+)", config.tag_prefix()))?,
             prerelease_tag: config.pre_release_tag().to_string(),
+            is_commit_message_incrementing: match config.commit_message_incrementing() {
+                "Enabled" => true,
+                "Disabled" => false,
+                v => panic!(
+                    r#"Invalid value "{}" for {}. Should be "Enabled" or "Disabled"."#,
+                    v,
+                    stringcase::pascal_case(get_method_name(T::commit_message_incrementing))
+                ),
+            },
         };
         Ok(versioner)
     }
@@ -266,8 +281,16 @@ impl GitVersioner {
         }
 
         let mut version = source.version.clone();
-        version.minor += 1;
-        version.patch = 0;
+
+        if self.is_commit_message_incrementing
+            && let CommitBump::Patch = self.determine_bump_between(head_id, merge_base_oid)?
+        {
+            version.patch += 1;
+        } else {
+            version.minor += 1;
+            version.patch = 0;
+        }
+
         version.pre = self.pre_release(count)?;
         Ok((version, source, PRERELEASE_WEIGHT_MAIN))
     }
@@ -422,13 +445,38 @@ impl GitVersioner {
         revision_walk.set_sorting(git2::Sort::TOPOLOGICAL)?;
         let mut count = 0;
         for oid in revision_walk {
-            if oid? == to {
-                break;
-            } // Stop counting when the specific commit is reached
+            let oid = oid?;
+            if oid == to {
+                break; // Stop counting when the specific commit is reached
+            }
             count += 1;
         }
 
         Ok(count)
+    }
+
+    fn determine_bump_between(&self, from: Oid, to: Oid) -> Result<CommitBump> {
+        let mut revision_walk = self.repo.revwalk()?;
+        revision_walk.push(from)?;
+        revision_walk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+        let mut commit_bump = CommitBump::Patch;
+        for oid in revision_walk {
+            let oid = oid?;
+            if oid == to {
+                break; // Stop counting when the specific commit is reached
+            }
+            if let CommitBump::Patch = commit_bump {
+                if let Ok(commit) = self.repo.find_commit(oid) {
+                    if let Some(message) = commit.message() {
+                        if message.starts_with("feat:") {
+                            commit_bump = CommitBump::Minor;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(commit_bump)
     }
 
     fn find_trunk_version_source(&self) -> Result<Option<VersionSource>> {
@@ -582,4 +630,13 @@ impl Display for GitVersion {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{} ({})", self.full_sem_ver, self.branch_name))
     }
+}
+
+fn get_method_name<R, O, F>(_: F) -> &'static str
+where
+    F: for<'a> Fn(&'a R) -> &'a O,
+    O: ?Sized,
+{
+    let full_name = std::any::type_name::<F>();
+    full_name.rsplit("::").next().unwrap_or(full_name)
 }
