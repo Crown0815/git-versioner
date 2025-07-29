@@ -33,6 +33,7 @@ pub enum BranchType {
 }
 
 pub enum CommitBump {
+    Major,
     Minor,
     Patch,
 }
@@ -283,13 +284,29 @@ impl GitVersioner {
 
         let mut version = source.version.clone();
 
-        if self.is_commit_message_incrementing
-            && let CommitBump::Patch = self.determine_bump_between(head_id, merge_base_oid)?
-        {
-            version.patch += 1;
-        } else {
+        if !self.is_commit_message_incrementing {
             version.minor += 1;
             version.patch = 0;
+        } else {
+            match self.determine_bump_between(head_id, merge_base_oid)? {
+                CommitBump::Major => {
+                    if version.major == 0 {
+                        version.minor += 1;
+                        version.patch = 0;
+                    } else {
+                        version.major += 1;
+                        version.minor = 0;
+                        version.patch = 0;
+                    }
+                }
+                CommitBump::Minor => {
+                    version.minor += 1;
+                    version.patch = 0;
+                }
+                CommitBump::Patch => {
+                    version.patch += 1;
+                }
+            }
         }
 
         version.pre = self.pre_release(count)?;
@@ -471,7 +488,7 @@ impl GitVersioner {
                     if let Some(message) = commit.message() {
                         if let Ok(conventional_commit) = parse(message.trim()) {
                             if conventional_commit.is_breaking_change {
-                                return Ok(CommitBump::Minor);
+                                return Ok(CommitBump::Major);
                             }
                             if let CommitType::Feature = conventional_commit.commit_type {
                                 commit_bump = CommitBump::Minor;

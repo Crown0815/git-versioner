@@ -174,3 +174,23 @@ fn test_on_main_branch_with_major_version_zero_when_encountering_commit_with_bre
     repo.commit("fix: foo\n\nBody\n\nBREAKING CHANGE: bar");
     repo.commit_and_assert("0.1.0-pre.2");
 }
+
+#[rstest]
+fn test_on_main_branch_with_major_version_greater_than_zero_when_encountering_breaking_change_commit_bumps_major_version(
+    repo: TestRepo,
+) {
+    repo.commit_and_assert("0.0.1-pre.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.commit("fix!: foo");
+    repo.commit_and_assert("2.0.0-pre.2");
+}
+
+#[rstest]
+fn test_on_main_branch_with_major_version_greater_than_zero_when_encountering_commit_with_breaking_change_footer_bumps_major_version(
+    repo: TestRepo,
+) {
+    repo.commit_and_assert("0.0.1-pre.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.commit("fix: foo\n\nBody\n\nBREAKING CHANGE: bar");
+    repo.commit_and_assert("2.0.0-pre.2");
+}
