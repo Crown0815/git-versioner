@@ -158,3 +158,19 @@ fn test_after_a_patch_release_when_encountering_feature_commit_on_main_branch_bu
     repo.commit("feat: foo");
     repo.commit_and_assert("1.1.0-pre.2");
 }
+
+#[rstest]
+fn test_on_main_branch_with_major_version_zero_when_encountering_breaking_change_commit_bumps_minor_version(
+    repo: TestRepo,
+) {
+    repo.commit("fix!: foo");
+    repo.commit_and_assert("0.1.0-pre.2");
+}
+
+#[rstest]
+fn test_on_main_branch_with_major_version_zero_when_encountering_commit_with_breaking_change_footer_bumps_minor_version(
+    repo: TestRepo,
+) {
+    repo.commit("fix: foo\n\nBody\n\nBREAKING CHANGE: bar");
+    repo.commit_and_assert("0.1.0-pre.2");
+}

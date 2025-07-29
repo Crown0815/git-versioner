@@ -6,6 +6,7 @@ use anyhow::{Result, anyhow};
 use chrono::DateTime;
 use chrono::offset::Utc;
 pub use config::DefaultConfig;
+use conventional_commit_parser::{commit::CommitType, parse};
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
 use semver::{Comparator, Op, Prerelease, Version};
@@ -468,8 +469,13 @@ impl GitVersioner {
             if let CommitBump::Patch = commit_bump {
                 if let Ok(commit) = self.repo.find_commit(oid) {
                     if let Some(message) = commit.message() {
-                        if message.starts_with("feat:") {
-                            commit_bump = CommitBump::Minor;
+                        if let Ok(conventional_commit) = parse(message.trim()) {
+                            if conventional_commit.is_breaking_change {
+                                return Ok(CommitBump::Minor);
+                            }
+                            if let CommitType::Feature = conventional_commit.commit_type {
+                                commit_bump = CommitBump::Minor;
+                            }
                         }
                     }
                 }
