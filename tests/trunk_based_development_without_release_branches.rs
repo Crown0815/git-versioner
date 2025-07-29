@@ -1,6 +1,6 @@
 mod common;
 
-use common::{Assertable, MAIN_BRANCH, TestRepo};
+use crate::common::{Assertable, MAIN_BRANCH, TestRepo};
 use rstest::{fixture, rstest};
 
 impl TestRepo {
