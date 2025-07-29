@@ -115,31 +115,46 @@ fn test_providing_non_disabled_or_enabled_string_to_commit_message_incrementing_
 }
 
 #[rstest]
-fn test_main_branch_starts_on_version_0_0_1(repo: TestRepo) {
+fn test_on_main_branch_starts_with_version_0_0_1(repo: TestRepo) {
     repo.commit_and_assert("0.0.1-pre.1");
 }
 
 #[rstest]
-fn test_after_release_version_of_main_branch_only_bumps_patch_version(repo: TestRepo) {
+fn test_on_main_branch_when_encountering_feature_commit_bumps_minor_version(repo: TestRepo) {
+    repo.commit("feat: foo");
+    repo.commit_and_assert("0.1.0-pre.2");
+}
+
+#[rstest]
+fn test_after_feature_release_tag_on_main_branch_only_bumps_patch_version(repo: TestRepo) {
     repo.commit_and_assert("0.0.1-pre.1");
     repo.tag_and_assert("v", "1.0.0");
     repo.commit_and_assert("1.0.1-pre.1");
 }
 
 #[rstest]
-fn test_when_encountering_conventional_feature_commit_on_main_branch_bumps_minor_version(
-    repo: TestRepo,
-) {
-    repo.commit("feat: foo");
-    repo.commit_and_assert("0.1.0-pre.2");
-}
-
-#[rstest]
-fn test_after_a_release_when_encountering_conventional_feature_commit_on_main_branch_bumps_minor_version(
+fn test_after_a_feature_release_when_encountering_feature_commit_on_main_branch_bumps_minor_version(
     repo: TestRepo,
 ) {
     repo.commit_and_assert("0.0.1-pre.1");
     repo.tag_and_assert("v", "1.0.0");
+    repo.commit("feat: foo");
+    repo.commit_and_assert("1.1.0-pre.2");
+}
+
+#[rstest]
+fn test_after_patch_release_tag_on_main_branch_only_bumps_patch_version(repo: TestRepo) {
+    repo.commit_and_assert("0.0.1-pre.1");
+    repo.tag_and_assert("v", "1.0.1");
+    repo.commit_and_assert("1.0.2-pre.1");
+}
+
+#[rstest]
+fn test_after_a_patch_release_when_encountering_feature_commit_on_main_branch_bumps_minor_version(
+    repo: TestRepo,
+) {
+    repo.commit_and_assert("0.0.1-pre.1");
+    repo.tag_and_assert("v", "1.0.1");
     repo.commit("feat: foo");
     repo.commit_and_assert("1.1.0-pre.2");
 }
