@@ -107,7 +107,7 @@ fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {
 #[should_panic(
     expected = r#"Invalid value "foo" for CommitMessageIncrementing. Should be "Enabled" or "Disabled"."#
 )]
-fn test_providing_non_disables_or_enabled_string_to_commit_message_incrementing_panics(
+fn test_providing_non_disabled_or_enabled_string_to_commit_message_incrementing_panics(
     mut repo: TestRepo,
 ) {
     repo.config.commit_message_incrementing = "foo".to_string();
