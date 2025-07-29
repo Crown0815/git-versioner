@@ -181,6 +181,14 @@ fn test_release_branches_with_matching_version_tag_prefix_affect_main_branch(
 }
 
 #[rstest]
+fn test_release_branches_may_only_define_partial_semantic_version(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("release/1.0");
+    repo.checkout(MAIN_BRANCH);
+    repo.commit_and_assert("1.1.0-pre.1");
+}
+
+#[rstest]
 fn test_release_branches_matching_initial_trunk_version_continue_release_at_version_root(
     repo: TestRepo,
 ) {

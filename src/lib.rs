@@ -156,7 +156,7 @@ impl GitVersioner {
 
         if let Some(captures) = self.release_pattern.captures(name) {
             if let Some(branch_name) = captures.name(BRANCH_NAME_ID) {
-                if let Some(version) = self.version_in(branch_name.as_str()) {
+                if let Some(version) = self.version_in(Self::loose(branch_name.as_str())) {
                     return BranchType::Release(version);
                 }
             }
@@ -195,8 +195,8 @@ impl GitVersioner {
         Ok(version_tags)
     }
 
-    fn version_in(&self, name: &str) -> Option<Version> {
-        if let Some(captures) = self.version_pattern.captures(name) {
+    fn version_in<S: AsRef<str>>(&self, name: S) -> Option<Version> {
+        if let Some(captures) = self.version_pattern.captures(name.as_ref()) {
             if let Some(version_str) = captures.name(VERSION_ID) {
                 if let Ok(version) = Version::parse(version_str.as_str()) {
                     if version.pre.is_empty() {
@@ -206,6 +206,22 @@ impl GitVersioner {
             }
         }
         None
+    }
+
+    fn loose<S: AsRef<str> + ToString>(semantic_version_string: S) -> String {
+        let version_string = semantic_version_string.as_ref();
+        let meta_start = version_string
+            .find(['-', '+'])
+            .unwrap_or(version_string.len());
+        let base = &version_string[..meta_start];
+        let rest = &version_string[meta_start..];
+
+        let components: Vec<&str> = base.split('.').collect();
+
+        match components.len() {
+            2 => format!("{base}.0{rest}"),
+            _ => semantic_version_string.to_string(),
+        }
     }
 
     fn tag_id_for(&self, name: &str) -> Option<Oid> {
