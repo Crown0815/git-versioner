@@ -138,7 +138,7 @@ impl GitVersioner {
         Ok(versioner)
     }
 
-    fn head(&self) -> Result<Reference, git2::Error> {
+    fn head(&self) -> Result<Reference<'_>, git2::Error> {
         self.repo.head()
     }
 
