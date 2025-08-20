@@ -38,7 +38,9 @@ impl TestRepo {
 
 #[fixture]
 fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {
-    TestRepo::initialize(main_branch)
+    let mut repo = TestRepo::initialize(main_branch);
+    repo.config.commit_message_incrementing = "Disabled".to_string();
+    repo
 }
 
 #[rstest]
