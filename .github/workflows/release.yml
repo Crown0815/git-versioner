@@ -143,9 +143,9 @@ jobs:
         run: cargo clippy -- -D warnings
 
       - name: Set version in Cargo.toml
-        run: | 
-          sed -i "s/version = \"0.0.0\"/version = \"${{ needs.determine-version.outputs.sem-ver }}\"/" Cargo.toml
-          cat Cargo.toml
+        run: |
+          cargo install cargo-edit -f --no-default-features --features "set-version"
+          cargo set-version ${{ needs.determine-version.outputs.sem-ver }}
 
       - name: Create Cross.toml (Linux)
         if: runner.os == 'Linux'
