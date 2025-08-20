@@ -208,8 +208,6 @@ jobs:
               done
             fi
           done
-        env:
-          CLI_NAME: git-versioner
 
       - name: List release artifacts
         run: ls -l release-artifacts
