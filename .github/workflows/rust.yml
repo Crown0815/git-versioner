@@ -17,7 +17,9 @@ jobs:
     - name: Format code
       run: cargo fmt -- --check
     - name: Inspect code
-      run: cargo clippy -- -D warnings
+      run: |
+        cargo clippy --version
+        cargo clippy -- -D warnings
 
   test:
     runs-on: ubuntu-latest
