@@ -97,11 +97,16 @@ impl GitVersioner {
         let branch_name = Self::branch_name_for(&head)?;
         let branch_type_at_head = versioner.determine_branch_type_by_name(&branch_name);
 
-        let (version, source, prerelease_weight) = match branch_type_at_head {
+        let (mut version, source, mut prerelease_weight) = match branch_type_at_head {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
             BranchType::Other(name) => versioner.calculate_version_for_feature(&name),
         }?;
+
+        if *config.as_release() {
+            version.pre = Prerelease::EMPTY;
+            prerelease_weight = PRERELEASE_WEIGHT_TAG;
+        }
 
         Ok(GitVersion::new(
             version,

@@ -31,6 +31,15 @@ fn test_release_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
 }
 
 #[rstest]
+fn test_release_request_on_main_branch(mut repo: ConfiguredTestRepo) {
+    repo.execute_and_assert(["--as-release"], None)
+        .version("0.1.0")
+        .branch_name(MAIN_BRANCH)
+        .version_source_sha("")
+        .weighted_pre_release_number(60000);
+}
+
+#[rstest]
 fn test_release_on_main_branch_with_custom_version_pattern(mut repo: ConfiguredTestRepo) {
     let (source, _) = repo.inner.commit("tagged");
     repo.inner.tag("my/v0.1.0");
