@@ -1,7 +1,12 @@
 [package]
 name = "git-versioner"
-version = "0.1.0"
+version = "0.0.0"
+authors = ["Felix Kröner"]
 edition = "2024"
+readme = "README.md"
+license-file = "LICENSE.txt"
+description = "A tool to manage versions of git repositories"
+repository = "https://github.com/Crown0815/git-versioner"
 
 [dependencies]
 git2 = { version = "0.20.2", default-features = false, features = ["vendored-libgit2"] }
