@@ -20,7 +20,7 @@ fn test_release_candidate_on_main_branch(mut repo: ConfiguredTestRepo) {
 }
 
 #[rstest]
-fn test_release_on_main_branch(mut repo: ConfiguredTestRepo) {
+fn test_release_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
     let (source, _) = repo.inner.commit("tagged");
     repo.inner.tag("0.1.0");
 
