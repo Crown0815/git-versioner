@@ -319,7 +319,12 @@ impl GitVersioner {
                     version.patch = 0;
                 }
                 CommitBump::Patch => {
-                    version.patch += 1;
+                    if version.major == 0 && version.minor == 0 {
+                        version.minor += 1;
+                        version.patch = 0;
+                    } else {
+                        version.patch += 1;
+                    }
                 }
             }
         }
