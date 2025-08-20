@@ -1,15 +1,45 @@
 name: Release Binaries
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-      - 'v[0-9]+.[0-9]+.[0-9]+-[a-zA-Z]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      as-pre-release:
+        description: 'Release as a pre-release'
+        required: false
+        type: boolean
+        default: false
+      as-draft:
+        description: 'Release as a draft'
+        required: false
+        type: boolean
+        default: false
 
 env:
   CLI_NAME: git-versioner
 
 jobs:
+  determine-version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      sem-ver: ${{ steps.determine-version.outputs.GitVersion_SemVer }}
+      pre-release-label: ${{ steps.determine-version.outputs.GitVersion_PreReleaseLabel }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: false
+
+      - name: Install git-versioner
+        run: |
+          curl -L -o git-versioner https://github.com/Crown0815/git-versioner/releases/download/v0.6.0/git-versioner-x86_64-unknown-linux-gnu
+          chmod +x git-versioner
+
+      - name: Determine Version
+        id: determine-version
+        run: ./git-versioner ${{ github.event.inputs.as-pre-release && '' || '--as-release' }}
+
   build:
     strategy:
       fail-fast: false
@@ -88,6 +118,7 @@ jobs:
             target: aarch64-apple-darwin,
           }
     runs-on: ${{ matrix.build.os }}
+    needs: determine-version
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -110,6 +141,11 @@ jobs:
 
       - name: Run clippy
         run: cargo clippy -- -D warnings
+
+      - name: Set version in Cargo.toml
+        run: | 
+          sed -i "s/version = \"0.0.0\"/version = \"${{ needs.determine-version.outputs.sem-ver }}\"/" Cargo.toml
+          cat Cargo.toml
 
       - name: Create Cross.toml (Linux)
         if: runner.os == 'Linux'
@@ -181,7 +217,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: build
+    needs: [build, determine-version]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -212,19 +248,11 @@ jobs:
       - name: List release artifacts
         run: ls -l release-artifacts
 
-      - name: Determine pre-release status
-        id: pre-release
-        run: |
-          TAG=${{ github.ref_name }}
-          if [[ $TAG =~ - ]]; then
-            echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          else
-            echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          fi
-
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           files: release-artifacts/*
-          draft: false
-          prerelease: ${{ steps.pre-release.outputs.is_prerelease }}
+          tag_name: "v${{ needs.determine-version.outputs.sem-ver }}"
+          draft: ${{ github.event.inputs.as-draft }}
+          prerelease: ${{ steps.determine-version.outputs.pre-release-label != '' }}
+          fail_on_unmatched_files: true
