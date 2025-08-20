@@ -97,11 +97,16 @@ impl GitVersioner {
         let branch_name = Self::branch_name_for(&head)?;
         let branch_type_at_head = versioner.determine_branch_type_by_name(&branch_name);
 
-        let (version, source, prerelease_weight) = match branch_type_at_head {
+        let (mut version, source, mut prerelease_weight) = match branch_type_at_head {
             BranchType::Trunk => versioner.calculate_version_for_trunk(),
             BranchType::Release(version) => versioner.calculate_version_for_release(&version),
             BranchType::Other(name) => versioner.calculate_version_for_feature(&name),
         }?;
+
+        if *config.as_release() {
+            version.pre = Prerelease::EMPTY;
+            prerelease_weight = PRERELEASE_WEIGHT_TAG;
+        }
 
         Ok(GitVersion::new(
             version,
@@ -319,7 +324,12 @@ impl GitVersioner {
                     version.patch = 0;
                 }
                 CommitBump::Patch => {
-                    version.patch += 1;
+                    if version.major == 0 && version.minor == 0 {
+                        version.minor += 1;
+                        version.patch = 0;
+                    } else {
+                        version.patch += 1;
+                    }
                 }
             }
         }
@@ -418,7 +428,7 @@ impl GitVersioner {
             0,
         );
 
-        let (mut base_version, source, _) = match closest_branch {
+        let base = match closest_branch {
             None => Ok(fallback.clone()),
             Some(found_branch) => match &found_branch.branch_type {
                 BranchType::Trunk => self.calculate_version_for_trunk(),
@@ -432,6 +442,12 @@ impl GitVersioner {
             None => self.count_commits_between(head_id, Oid::zero())?,
             Some(branch) => branch.distance,
         };
+
+        if distance == 0 {
+            return Ok(base);
+        }
+
+        let (mut base_version, source, _) = base;
 
         base_version.pre = Prerelease::new(&format!("{}.{}", Self::escaped(name), distance))?;
         Ok((base_version, source, PRERELEASE_WEIGHT_FEATURE))

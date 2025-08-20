@@ -22,6 +22,9 @@ pub trait Configuration {
     fn verbose(&self) -> &bool {
         &false
     }
+    fn as_release(&self) -> &bool {
+        &false
+    }
     fn show_config(&self) -> &bool {
         &false
     }
@@ -91,6 +94,10 @@ pub struct Args {
 
     #[arg(short, long)]
     verbose: bool,
+
+    #[arg(short, long)]
+    /// If the version is pre-release, generate release instead
+    as_release: bool,
 
     /// Path to a configuration file (TOML or YAML)
     #[arg(short = 'c', long = "config")]
@@ -235,6 +242,7 @@ impl Configuration for ConfigurationLayers {
         &self.config.commit_message_incrementing
     }
     config_getter!(path, PathBuf, arg > default);
+    config_getter!(as_release, bool, arg);
     config_getter!(verbose, bool, arg);
     config_getter!(show_config, bool, arg);
 }

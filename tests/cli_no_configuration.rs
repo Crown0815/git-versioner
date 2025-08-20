@@ -20,7 +20,7 @@ fn test_release_candidate_on_main_branch(mut repo: ConfiguredTestRepo) {
 }
 
 #[rstest]
-fn test_release_on_main_branch(mut repo: ConfiguredTestRepo) {
+fn test_release_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
     let (source, _) = repo.inner.commit("tagged");
     repo.inner.tag("0.1.0");
 
@@ -28,6 +28,15 @@ fn test_release_on_main_branch(mut repo: ConfiguredTestRepo) {
         .version("0.1.0")
         .branch_name(MAIN_BRANCH)
         .version_source_sha(&source);
+}
+
+#[rstest]
+fn test_release_request_on_main_branch(mut repo: ConfiguredTestRepo) {
+    repo.execute_and_assert(["--as-release"], None)
+        .version("0.1.0")
+        .branch_name(MAIN_BRANCH)
+        .version_source_sha("")
+        .weighted_pre_release_number(60000);
 }
 
 #[rstest]
@@ -127,8 +136,8 @@ fn test_output_from_release_branch(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_output_from_feature_branch(mut repo: ConfiguredTestRepo) {
-    repo.inner.commit("0.1.0-pre.1");
     repo.inner.branch("feature/my-feature");
+    repo.inner.commit("0.1.0-pre.1");
 
     insta::with_settings!({filters => vec![
         (r"\b[[:xdigit:]]{40}\b", "########################################"),
@@ -140,15 +149,48 @@ fn test_output_from_feature_branch(mut repo: ConfiguredTestRepo) {
 }
 
 #[rstest]
-fn test_output_from_tag(mut repo: ConfiguredTestRepo) {
+fn test_output_from_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
     repo.inner.commit("0.1.0-pre.1");
     repo.inner.tag("0.1.0");
 
-    insta::with_settings!({filters => vec![
-        (r"\b[[:xdigit:]]{40}\b", "########################################"),
-        (r"\b[[:xdigit:]]{7}\b", "#######"),
-        (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
-    ]}, {
+    insta::with_settings!({
+        filters => vec![
+            (r"\b[[:xdigit:]]{40}\b", "########################################"),
+            (r"\b[[:xdigit:]]{7}\b", "#######"),
+            (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+        ]}, {
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+    });
+}
+
+#[rstest]
+fn test_output_from_tag_on_release_branch(mut repo: ConfiguredTestRepo) {
+    repo.inner.branch("release/0.1.0");
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.tag("0.1.0");
+
+    insta::with_settings!({
+        filters => vec![
+            (r"\b[[:xdigit:]]{40}\b", "########################################"),
+            (r"\b[[:xdigit:]]{7}\b", "#######"),
+            (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+        ]}, {
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+    });
+}
+
+#[rstest]
+fn test_output_from_tag_checked_out(mut repo: ConfiguredTestRepo) {
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.tag("0.1.0");
+    repo.inner.checkout("tags/0.1.0");
+
+    insta::with_settings!({
+        filters => vec![
+            (r"\b[[:xdigit:]]{40}\b", "########################################"),
+            (r"\b[[:xdigit:]]{7}\b", "#######"),
+            (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
+        ]}, {
         assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
     });
 }
