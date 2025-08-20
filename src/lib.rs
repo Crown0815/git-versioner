@@ -423,7 +423,7 @@ impl GitVersioner {
             0,
         );
 
-        let (mut base_version, source, _) = match closest_branch {
+        let base = match closest_branch {
             None => Ok(fallback.clone()),
             Some(found_branch) => match &found_branch.branch_type {
                 BranchType::Trunk => self.calculate_version_for_trunk(),
@@ -437,6 +437,12 @@ impl GitVersioner {
             None => self.count_commits_between(head_id, Oid::zero())?,
             Some(branch) => branch.distance,
         };
+
+        if distance == 0 {
+            return Ok(base);
+        }
+
+        let (mut base_version, source, _) = base;
 
         base_version.pre = Prerelease::new(&format!("{}.{}", Self::escaped(name), distance))?;
         Ok((base_version, source, PRERELEASE_WEIGHT_FEATURE))

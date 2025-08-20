@@ -156,6 +156,19 @@ fn test_result_on_detached_head_is_no_branch(repo: TestRepo) {
 }
 
 #[rstest]
+fn test_result_on_checked_out_version_tag_is_the_tag_version(repo: TestRepo) {
+    let (sha, _) = repo.commit("commit");
+    repo.tag("v1.0.0");
+    repo.checkout("tags/v1.0.0");
+
+    repo.assert()
+        .version("1.0.0")
+        .version_source_sha(&sha)
+        .branch_name("(no branch)")
+        .escaped_branch_name("-no-branch-");
+}
+
+#[rstest]
 fn test_branch_name_on_main_branch(repo: TestRepo) {
     repo.commit("commit");
     repo.assert().branch_name(MAIN_BRANCH);
@@ -389,6 +402,18 @@ fn test_weighted_prerelease_number_for_release_branch_release_tag_adds_60000(rep
 
     repo.commit_and_assert("0.1.0-pre.2");
     repo.tag_and_assert("v", "0.1.0")
+        .weighted_pre_release_number(60000);
+}
+
+#[rstest]
+fn test_weighted_prerelease_number_for_checked_out_release_tag_adds_60000(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.commit_and_assert("0.1.0-pre.2");
+    repo.tag("v0.1.0");
+    repo.checkout("tags/v0.1.0");
+
+    repo.assert()
+        .version("0.1.0")
         .weighted_pre_release_number(60000);
 }
 
