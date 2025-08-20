@@ -158,18 +158,17 @@ impl GitVersioner {
             return BranchType::Trunk;
         }
 
-        if let Some(captures) = self.release_pattern.captures(name) {
-            if let Some(branch_name) = captures.name(BRANCH_NAME_ID) {
-                if let Some(version) = self.version_in(Self::loose(branch_name.as_str())) {
-                    return BranchType::Release(version);
-                }
-            }
+        if let Some(captures) = self.release_pattern.captures(name)
+            && let Some(branch_name) = captures.name(BRANCH_NAME_ID)
+            && let Some(version) = self.version_in(Self::loose(branch_name.as_str()))
+        {
+            return BranchType::Release(version);
         }
 
-        if let Some(captures) = self.feature_pattern.captures(name) {
-            if let Some(branch_name) = captures.name(BRANCH_NAME_ID) {
-                return BranchType::Other(branch_name.as_str().to_string());
-            }
+        if let Some(captures) = self.feature_pattern.captures(name)
+            && let Some(branch_name) = captures.name(BRANCH_NAME_ID)
+        {
+            return BranchType::Other(branch_name.as_str().to_string());
         }
 
         BranchType::Other(name.to_string())
@@ -185,14 +184,14 @@ impl GitVersioner {
 
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.version_in(tag_name) {
-                if let Some(commit_id) = self.tag_id_for(tag_name) {
-                    version_tags.insert(VersionSource {
-                        version,
-                        commit_id,
-                        is_tag: true,
-                    });
-                }
+            if let Some(version) = self.version_in(tag_name)
+                && let Some(commit_id) = self.tag_id_for(tag_name)
+            {
+                version_tags.insert(VersionSource {
+                    version,
+                    commit_id,
+                    is_tag: true,
+                });
             }
         }
 
@@ -200,14 +199,12 @@ impl GitVersioner {
     }
 
     fn version_in<S: AsRef<str>>(&self, name: S) -> Option<Version> {
-        if let Some(captures) = self.version_pattern.captures(name.as_ref()) {
-            if let Some(version_str) = captures.name(VERSION_ID) {
-                if let Ok(version) = Version::parse(version_str.as_str()) {
-                    if version.pre.is_empty() {
-                        return Some(version);
-                    }
-                }
-            }
+        if let Some(captures) = self.version_pattern.captures(name.as_ref())
+            && let Some(version_str) = captures.name(VERSION_ID)
+            && let Ok(version) = Version::parse(version_str.as_str())
+            && version.pre.is_empty()
+        {
+            return Some(version);
         }
         None
     }
@@ -247,15 +244,15 @@ impl GitVersioner {
         let branches = self.repo.branches(Some(git2::BranchType::Local))?;
         for branch in branches {
             let (branch, _) = branch?;
-            if let Some(name) = branch.name()? {
-                if let BranchType::Release(version) = self.determine_branch_type_by_name(name) {
-                    let commit = branch.get().peel_to_commit()?;
-                    version_branches.insert(VersionSource {
-                        version,
-                        commit_id: commit.id(),
-                        is_tag: false,
-                    });
-                }
+            if let Some(name) = branch.name()?
+                && let BranchType::Release(version) = self.determine_branch_type_by_name(name)
+            {
+                let commit = branch.get().peel_to_commit()?;
+                version_branches.insert(VersionSource {
+                    version,
+                    commit_id: commit.id(),
+                    is_tag: false,
+                });
             }
         }
 
@@ -514,18 +511,16 @@ impl GitVersioner {
             if oid == to {
                 break; // Stop counting when the specific commit is reached
             }
-            if let CommitBump::Patch = commit_bump {
-                if let Ok(commit) = self.repo.find_commit(oid) {
-                    if let Some(message) = commit.message() {
-                        if let Ok(conventional_commit) = parse(message.trim()) {
-                            if conventional_commit.is_breaking_change {
-                                return Ok(CommitBump::Major);
-                            }
-                            if let CommitType::Feature = conventional_commit.commit_type {
-                                commit_bump = CommitBump::Minor;
-                            }
-                        }
-                    }
+            if let CommitBump::Patch = commit_bump
+                && let Ok(commit) = self.repo.find_commit(oid)
+                && let Some(message) = commit.message()
+                && let Ok(conventional_commit) = parse(message.trim())
+            {
+                if conventional_commit.is_breaking_change {
+                    return Ok(CommitBump::Major);
+                }
+                if let CommitType::Feature = conventional_commit.commit_type {
+                    commit_bump = CommitBump::Minor;
                 }
             }
         }
