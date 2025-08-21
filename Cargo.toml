@@ -21,6 +21,7 @@ serde_yaml = "0.9.34"
 chrono = "0.4.41"
 stringcase = "0.4.0"
 conventional_commit_parser = "0.9.4"
+inflection-rs = "0.2.2"
 
 [dev-dependencies]
 tempfile = "3.8.1"

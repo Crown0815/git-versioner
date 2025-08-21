@@ -1,6 +1,7 @@
 use anyhow::Result;
 use git_versioner::config::{Configuration, load_configuration};
 use git_versioner::*;
+use inflection_rs::inflection;
 use std::env;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -36,6 +37,7 @@ fn main() -> Result<()> {
                 _ => raw_value.to_string(),
             };
             writeln!(file, "GitVersion_{key}={value}")?;
+            writeln!(file, "{}={value}", inflection::camelize_upper(key, false))?;
         }
     }
 
