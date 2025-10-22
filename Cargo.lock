@@ -234,6 +234,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "deunicode"
+version = "1.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abd57806937c9cc163efc8ea3910e00a62e2aeb0b8119f1793a978088f8f6b04"
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -365,6 +371,7 @@ dependencies = [
  "clap",
  "conventional_commit_parser",
  "git2",
+ "inflection-rs",
  "insta",
  "insta-cmd",
  "regex",
@@ -551,6 +558,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "inflection-rs"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efd3453ea0e377d900c049e41b515a88e4371afc4aac37bc67d57dd5c112bbd3"
+dependencies = [
+ "deunicode",
+ "lazy_static",
+ "regex",
+]
+
+[[package]]
 name = "insta"
 version = "1.43.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -605,6 +623,12 @@ dependencies = [
  "once_cell",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "lazy_static"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
