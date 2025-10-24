@@ -52,16 +52,7 @@ impl TestRepo {
             &["commit", "--allow-empty", "-m", message],
             &format!("commit {message}"),
         );
-        let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
-        let commit_sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
-
-        let output = self.execute(
-            &["log", "-1", "--format=%cd", "--date=format:%Y-%m-%d"],
-            "get commit date",
-        );
-        let commit_date = String::from_utf8_lossy(&output.stdout).trim().to_string();
-
-        (commit_sha, commit_date)
+        self.read_head_sha_and_date()
     }
 
     pub fn branch(&self, name: &str) {
@@ -73,8 +64,9 @@ impl TestRepo {
         self.execute(&["checkout", name], &format!("checkout {name}"));
     }
 
-    pub fn tag(&self, name: &str) {
+    pub fn tag(&self, name: &str) -> (String, String) {
         self.execute(&["tag", name], &format!("create tag {name}"));
+        self.read_head_sha_and_date()
     }
 
     pub fn graph(&self) -> String {
@@ -103,6 +95,19 @@ impl TestRepo {
         let result = GitVersioner::calculate_version(&self.config).unwrap();
         let context = format!("Git Graph:\n  {}", self.graph());
         Assertable { result, context }
+    }
+
+    fn read_head_sha_and_date(&self) -> (String, String) {
+        let output = self.execute(&["rev-parse", "HEAD"], "get commit hash");
+        let commit_sha = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+        let output = self.execute(
+            &["log", "-1", "--format=%cd", "--date=format:%Y-%m-%d"],
+            "get commit date",
+        );
+        let commit_date = String::from_utf8_lossy(&output.stdout).trim().to_string();
+
+        (commit_sha, commit_date)
     }
 }
 

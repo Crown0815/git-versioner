@@ -51,6 +51,7 @@ pub struct GitVersioner {
     feature_pattern: Regex,
     version_pattern: Regex,
     prerelease_tag: String,
+    continuous_delivery: bool,
     is_commit_message_incrementing: bool,
 }
 
@@ -125,6 +126,7 @@ impl GitVersioner {
             feature_pattern: Regex::new(config.feature_branch())?,
             version_pattern: Regex::new(&format!("^{}(?<Version>.+)", config.tag_prefix()))?,
             prerelease_tag: config.pre_release_tag().to_string(),
+            continuous_delivery: *config.continuous_delivery(),
             is_commit_message_incrementing: match config.commit_message_incrementing() {
                 "Enabled" => true,
                 "Disabled" => false,
@@ -198,11 +200,46 @@ impl GitVersioner {
         Ok(version_tags)
     }
 
+    fn pre_release_version_tags(
+        &self,
+        next_release_version: &Version,
+    ) -> Result<HashSet<VersionSource>> {
+        let mut version_tags = HashSet::new();
+
+        let tag_names = self.repo.tag_names(None)?;
+        for tag_name in tag_names.iter().flatten() {
+            if let Some(version) = self.pre_release_version_in(tag_name)
+                && let Some(commit_id) = self.tag_id_for(tag_name)
+            {
+                if let Some(version) = self.matching_pre_release(version, next_release_version) {
+                    version_tags.insert(VersionSource {
+                        version,
+                        commit_id,
+                        is_tag: true,
+                    });
+                }
+            }
+        }
+
+        Ok(version_tags)
+    }
+
     fn version_in<S: AsRef<str>>(&self, name: S) -> Option<Version> {
         if let Some(captures) = self.version_pattern.captures(name.as_ref())
             && let Some(version_str) = captures.name(VERSION_ID)
             && let Ok(version) = Version::parse(version_str.as_str())
             && version.pre.is_empty()
+        {
+            return Some(version);
+        }
+        None
+    }
+
+    fn pre_release_version_in<S: AsRef<str>>(&self, name: S) -> Option<Version> {
+        if let Some(captures) = self.version_pattern.captures(name.as_ref())
+            && let Some(version_str) = captures.name(VERSION_ID)
+            && let Ok(version) = Version::parse(version_str.as_str())
+            && !version.pre.is_empty()
         {
             return Some(version);
         }
@@ -331,8 +368,45 @@ impl GitVersioner {
             }
         }
 
-        version.pre = self.pre_release(count)?;
+        let (pre_release_number, source) = match self.continuous_delivery {
+            true => {
+                let highest_pre_release = self.find_latest_matching_pre_release(&version)?;
+                let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                (reference_pre_release.0 + 1, reference_pre_release.1)
+            }
+            false => (count, source),
+        };
+
+        version.pre = self.pre_release(pre_release_number)?;
         Ok((version, source, PRERELEASE_WEIGHT_MAIN))
+    }
+
+    fn find_latest_matching_pre_release(
+        &self,
+        version: &Version,
+    ) -> Result<Option<(i64, VersionSource)>> {
+        let pre_release_versions = self.pre_release_version_tags(&version)?;
+
+        let highest_prerelease = pre_release_versions
+            .into_iter()
+            .filter_map(|source| {
+                Self::extract_pre_release_number(&source.version, &self.prerelease_tag)
+                    .map(|number| (number, source))
+            })
+            .max_by_key(|(number, _)| *number);
+        Ok(highest_prerelease)
+    }
+
+    fn extract_pre_release_number(version: &Version, pre_release_tag: &str) -> Option<i64> {
+        let pre = version.pre.as_str();
+
+        let expected_prefix = format!("{}.", pre_release_tag);
+        if !pre.starts_with(&expected_prefix) {
+            return None;
+        }
+
+        let integer_part = &pre[expected_prefix.len()..];
+        integer_part.parse::<i64>().ok()
     }
 
     fn pre_release(&self, count: i64) -> Result<Prerelease> {
@@ -364,7 +438,18 @@ impl GitVersioner {
 
             let mut new_version = source.version.clone();
             new_version.patch += 1;
-            new_version.pre = self.pre_release(count)?;
+
+            let (pre_release_number, source) = match self.continuous_delivery {
+                true => {
+                    let highest_pre_release =
+                        self.find_latest_matching_pre_release(&source.version)?;
+                    let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                    (reference_pre_release.0 + 1, reference_pre_release.1)
+                }
+                false => (count, source),
+            };
+
+            new_version.pre = self.pre_release(pre_release_number)?;
 
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else if let Some(source) = self.find_latest_version_source(true, &previous_version)? {
@@ -379,9 +464,19 @@ impl GitVersioner {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
             }
 
+            let (pre_release_number, source) = match self.continuous_delivery {
+                true => {
+                    let highest_pre_release =
+                        self.find_latest_matching_pre_release(&source.version)?;
+                    let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                    (reference_pre_release.0 + 1, reference_pre_release.1)
+                }
+                false => (count, source),
+            };
+
             let mut new_version = release_version.clone();
             new_version.patch += 0;
-            new_version.pre = self.pre_release(count)?;
+            new_version.pre = self.pre_release(pre_release_number)?;
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else {
             let mut found_branches = self.find_all_source_branches(head_id)?;
@@ -392,16 +487,25 @@ impl GitVersioner {
             let count = closest_branch.distance;
 
             let mut version = release_version.clone();
-            version.pre = self.pre_release(count)?;
-            Ok((
-                version.clone(),
-                VersionSource {
-                    version,
-                    commit_id: Oid::zero(),
-                    is_tag: false,
-                },
-                PRERELEASE_WEIGHT_RELEASE,
-            ))
+            let source = VersionSource {
+                version,
+                commit_id: Oid::zero(),
+                is_tag: false,
+            };
+
+            let (pre_release_number, source) = match self.continuous_delivery {
+                true => {
+                    let highest_pre_release =
+                        self.find_latest_matching_pre_release(&source.version)?;
+                    let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                    (reference_pre_release.0 + 1, reference_pre_release.1)
+                }
+                false => (count, source),
+            };
+
+            let mut version = source.version.clone();
+            version.pre = self.pre_release(pre_release_number)?;
+            Ok((version, source, PRERELEASE_WEIGHT_RELEASE))
         }
     }
 
@@ -568,6 +672,21 @@ impl GitVersioner {
             fallback_weight
         };
         (source.version.clone(), source.clone(), prerelease_weight)
+    }
+
+    fn matching_pre_release(
+        &self,
+        found_prerelease: Version,
+        reference: &Version,
+    ) -> Option<Version> {
+        if found_prerelease.major == reference.major
+            && found_prerelease.minor == reference.minor
+            && found_prerelease.patch == reference.patch
+        {
+            Some(found_prerelease)
+        } else {
+            None
+        }
     }
 }
 

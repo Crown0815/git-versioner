@@ -16,6 +16,7 @@ FeatureBranch = "^features?[/-](?<BranchName>.+)$"
 TagPrefix = "[vV]?"
 PreReleaseTag = "pre"
 CommitMessageIncrementing = "Disabled"
+ContinuousDelivery = false
 
 
 ----- stderr -----
