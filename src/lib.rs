@@ -25,7 +25,7 @@ const PRERELEASE_WEIGHT_TAG: u64 = 60000;
 const PRERELEASE_WEIGHT_FEATURE: u64 = 30000;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BranchType {
+enum BranchType {
     Trunk,            // Main development branch (trunk)
     Release(Version), // Release branch (e.g., release/1.0.0)
     Other(String),    // Feature branch or any other branch type
