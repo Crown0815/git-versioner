@@ -486,7 +486,7 @@ impl GitVersioner {
 
             let count = closest_branch.distance;
 
-            let mut version = release_version.clone();
+            let version = release_version.clone();
             let source = VersionSource {
                 version,
                 commit_id: Oid::zero(),
