@@ -16,7 +16,7 @@ use std::time;
 
 const BRANCH_NAME_ID: &str = "BranchName";
 const VERSION_ID: &str = "Version";
-pub const NO_BRANCH_NAME: &str = "(no branch)";
+const NO_BRANCH_NAME: &str = "(no branch)";
 const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
 
 const PRERELEASE_WEIGHT_MAIN: u64 = 55000;
