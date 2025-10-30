@@ -31,7 +31,7 @@ enum BranchType {
     Other(String),    // Feature branch or any other branch type
 }
 
-pub enum CommitBump {
+enum CommitBump {
     Major,
     Minor,
     Patch,
