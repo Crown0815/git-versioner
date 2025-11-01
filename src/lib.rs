@@ -326,8 +326,6 @@ impl GitVersioner {
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
         let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
-
-        let count = self.count_commits_between(head_id, merge_base_oid)?;
         if head_id == merge_base_oid {
             return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_MAIN));
         }
@@ -370,7 +368,10 @@ impl GitVersioner {
                 let reference_pre_release = highest_pre_release.unwrap_or((0, source));
                 (reference_pre_release.0 + 1, reference_pre_release.1)
             }
-            false => (count, source),
+            false => {
+                let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
+                (commit_count, source)
+            }
         };
 
         version.pre = self.pre_release(pre_release_number)?;
@@ -430,7 +431,6 @@ impl GitVersioner {
             if head_id == merge_base_oid {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
             }
-            let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
 
             let mut new_version = source.version.clone();
             new_version.patch += 1;
@@ -442,7 +442,10 @@ impl GitVersioner {
                     let reference_pre_release = highest_pre_release.unwrap_or((0, source));
                     (reference_pre_release.0 + 1, reference_pre_release.1)
                 }
-                false => (commit_count, source),
+                false => {
+                    let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
+                    (commit_count, source)
+                }
             };
 
             new_version.pre = self.pre_release(pre_release_number)?;
@@ -454,8 +457,6 @@ impl GitVersioner {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
             }
 
-            let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
-
             let (pre_release_number, source) = match self.continuous_delivery {
                 true => {
                     let highest_pre_release =
@@ -463,7 +464,10 @@ impl GitVersioner {
                     let reference_pre_release = highest_pre_release.unwrap_or((0, source));
                     (reference_pre_release.0 + 1, reference_pre_release.1)
                 }
-                false => (commit_count, source),
+                false => {
+                    let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
+                    (commit_count, source)
+                }
             };
 
             let mut new_version = release_version.clone();
@@ -475,8 +479,6 @@ impl GitVersioner {
 
             found_branches.sort_by(|a, b| a.branch_type.cmp(&b.branch_type));
             let closest_branch = found_branches.first().unwrap();
-
-            let commit_count = closest_branch.distance;
 
             let version = release_version.clone();
             let source = VersionSource {
@@ -492,7 +494,10 @@ impl GitVersioner {
                     let reference_pre_release = highest_pre_release.unwrap_or((0, source));
                     (reference_pre_release.0 + 1, reference_pre_release.1)
                 }
-                false => (commit_count, source),
+                false => {
+                    let commit_count = closest_branch.distance;
+                    (commit_count, source)
+                }
             };
 
             let mut version = source.version.clone();
