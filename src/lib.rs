@@ -328,7 +328,7 @@ impl GitVersioner {
         let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
 
         let count = self.count_commits_between(head_id, merge_base_oid)?;
-        if count == 0 {
+        if head_id == merge_base_oid {
             return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_MAIN));
         }
 
@@ -427,10 +427,10 @@ impl GitVersioner {
 
         if let Some(source) = self.find_latest_version_source(false, &current_version)? {
             let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
-            let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
-            if commit_count == 0 {
+            if head_id == merge_base_oid {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
             }
+            let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
 
             let mut new_version = source.version.clone();
             new_version.patch += 1;
@@ -450,11 +450,11 @@ impl GitVersioner {
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else if let Some(source) = self.find_latest_version_source(true, &previous_version)? {
             let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
-
-            let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
-            if commit_count == 0 {
+            if head_id == merge_base_oid {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
             }
+
+            let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
 
             let (pre_release_number, source) = match self.continuous_delivery {
                 true => {
