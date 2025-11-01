@@ -381,7 +381,7 @@ impl GitVersioner {
         &self,
         version: &Version,
     ) -> Result<Option<(i64, VersionSource)>> {
-        let pre_release_versions = self.pre_release_version_tags(&version)?;
+        let pre_release_versions = self.pre_release_version_tags(version)?;
 
         let highest_prerelease = pre_release_versions
             .into_iter()
