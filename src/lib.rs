@@ -325,11 +325,7 @@ impl GitVersioner {
         let source = self.find_trunk_version_source()?.unwrap_or(no_source());
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
-        let merge_base_oid = if source.commit_id.is_zero() {
-            source.commit_id
-        } else {
-            self.repo.merge_base(head_id, source.commit_id)?
-        };
+        let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
 
         let count = self.count_commits_between(head_id, merge_base_oid)?;
         if count == 0 {
@@ -430,7 +426,7 @@ impl GitVersioner {
         };
 
         if let Some(source) = self.find_latest_version_source(false, &current_version)? {
-            let merge_base_oid = self.repo.merge_base(head_id, source.commit_id)?;
+            let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
             let count = self.count_commits_between(head_id, merge_base_oid)?;
             if count == 0 {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
@@ -509,6 +505,14 @@ impl GitVersioner {
         }
     }
 
+    fn merge_base(&self, head_id: Oid, source_id: Oid) -> Result<Oid> {
+        Ok(if source_id.is_zero() {
+            source_id
+        } else {
+            self.repo.merge_base(head_id, source_id)?
+        })
+    }
+
     fn calculate_version_for_feature(&self, name: &str) -> Result<(Version, VersionSource, u64)> {
         let head_id = self.repo.head()?.peel_to_commit()?.id();
         let mut found_branches = self.find_all_source_branches(head_id)?;
@@ -577,7 +581,7 @@ impl GitVersioner {
                 }
 
                 let branch_id = branch.get().peel_to_commit()?.id();
-                let merge_base = self.repo.merge_base(count_reference, branch_id)?;
+                let merge_base = self.merge_base(count_reference, branch_id)?;
                 let distance = self.count_commits_between(count_reference, merge_base)?;
 
                 found_branches.push(FoundBranch {
