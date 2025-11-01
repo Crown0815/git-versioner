@@ -679,16 +679,9 @@ impl GitVersioner {
         (source.version.clone(), source.clone(), prerelease_weight)
     }
 
-    fn matching_pre_release(
-        &self,
-        found_prerelease: Version,
-        reference: &Version,
-    ) -> Option<Version> {
-        if found_prerelease.major == reference.major
-            && found_prerelease.minor == reference.minor
-            && found_prerelease.patch == reference.patch
-        {
-            Some(found_prerelease)
+    fn matching_pre_release(&self, pre: Version, release: &Version) -> Option<Version> {
+        if pre.major == release.major && pre.minor == release.minor && pre.patch == release.patch {
+            Some(pre)
         } else {
             None
         }
