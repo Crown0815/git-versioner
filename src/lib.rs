@@ -208,16 +208,15 @@ impl GitVersioner {
 
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.pre_release_version_in(tag_name)
+            if let Some(pre_version) = self.pre_release_version_in(tag_name)
+                && let Some(version) = self.matching_pre_release(pre_version, next_release_version)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
             {
-                if let Some(version) = self.matching_pre_release(version, next_release_version) {
-                    version_tags.insert(VersionSource {
-                        version,
-                        commit_id,
-                        is_tag: true,
-                    });
-                }
+                version_tags.insert(VersionSource {
+                    version,
+                    commit_id,
+                    is_tag: true,
+                });
             }
         }
 
