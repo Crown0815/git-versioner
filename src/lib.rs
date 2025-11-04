@@ -164,7 +164,7 @@ impl GitVersioner {
         if let Some(captures) = self.release_pattern.captures(name)
             && let Some(branch_name) = captures.name(BRANCH_NAME_ID)
             && let Some(version) =
-                self.version_matching_in(Self::loose(branch_name.as_str()), IS_STABLE_VERSION)
+                self.version_matching_in(Self::loose(branch_name.as_str()), &IS_STABLE_VERSION)
         {
             return BranchType::Release(version);
         }
@@ -183,12 +183,14 @@ impl GitVersioner {
         name.replace(|c: char| !c.is_alphanumeric(), ESCAPE_CHARACTER)
     }
 
-    fn version_tags(&self) -> Result<HashSet<VersionSource>> {
+    fn version_tags_matching<F>(&self, condition: &F) -> Result<HashSet<VersionSource>>
+    where
+        F: Fn(&Version) -> bool,
+    {
         let mut version_tags = HashSet::new();
-
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.version_matching_in(tag_name, IS_STABLE_VERSION)
+            if let Some(version) = self.version_matching_in(tag_name, condition)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
             {
                 version_tags.insert(VersionSource {
@@ -202,36 +204,7 @@ impl GitVersioner {
         Ok(version_tags)
     }
 
-    fn pre_release_version_tags(
-        &self,
-        next_release_version: &Version,
-    ) -> Result<HashSet<VersionSource>> {
-        let mut version_tags = HashSet::new();
-
-        let is_pre_release = |pre: &Version| {
-            !pre.pre.is_empty()
-                && pre.major == next_release_version.major
-                && pre.minor == next_release_version.minor
-                && pre.patch == next_release_version.patch
-        };
-
-        let tag_names = self.repo.tag_names(None)?;
-        for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.version_matching_in(tag_name, is_pre_release)
-                && let Some(commit_id) = self.tag_id_for(tag_name)
-            {
-                version_tags.insert(VersionSource {
-                    version,
-                    commit_id,
-                    is_tag: true,
-                });
-            }
-        }
-
-        Ok(version_tags)
-    }
-
-    fn version_matching_in<T: AsRef<str>, F>(&self, name: T, condition: F) -> Option<Version>
+    fn version_matching_in<T: AsRef<str>, F>(&self, name: T, condition: &F) -> Option<Version>
     where
         F: Fn(&Version) -> bool,
     {
@@ -381,7 +354,14 @@ impl GitVersioner {
         &self,
         version: &Version,
     ) -> Result<Option<(i64, VersionSource)>> {
-        let pre_release_versions = self.pre_release_version_tags(version)?;
+        let is_matching_pre_release = |pre: &Version| {
+            !pre.pre.is_empty()
+                && pre.major == version.major
+                && pre.minor == version.minor
+                && pre.patch == version.patch
+        };
+
+        let pre_release_versions = self.version_tags_matching(&is_matching_pre_release)?;
 
         let highest_prerelease = pre_release_versions
             .into_iter()
@@ -646,13 +626,13 @@ impl GitVersioner {
         comparator: &Comparator,
     ) -> Result<Option<VersionSource>> {
         let sources = if track_release_branches {
-            self.version_tags()?
+            self.version_tags_matching(&IS_STABLE_VERSION)?
                 .into_iter()
                 .chain(self.version_branches()?)
                 .chain(self.remote_version_branches()?)
                 .collect()
         } else {
-            self.version_tags()?
+            self.version_tags_matching(&IS_STABLE_VERSION)?
         };
 
         let mut all_sources = HashSet::from([no_source()]);
@@ -676,14 +656,6 @@ impl GitVersioner {
             fallback_weight
         };
         (source.version.clone(), source.clone(), prerelease_weight)
-    }
-
-    fn matching_pre_release(&self, pre: Version, release: &Version) -> Option<Version> {
-        if pre.major == release.major && pre.minor == release.minor && pre.patch == release.patch {
-            Some(pre)
-        } else {
-            None
-        }
     }
 }
 
