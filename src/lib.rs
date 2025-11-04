@@ -17,7 +17,8 @@ use std::time;
 const BRANCH_NAME_ID: &str = "BranchName";
 const VERSION_ID: &str = "Version";
 const NO_BRANCH_NAME: &str = "(no branch)";
-const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
+const IS_STABLE_VERSION: fn(&Version) -> bool = |version| version.pre.is_empty();
+const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| IS_STABLE_VERSION(&source.version);
 
 const PRERELEASE_WEIGHT_MAIN: u64 = 55000;
 const PRERELEASE_WEIGHT_RELEASE: u64 = PRERELEASE_WEIGHT_MAIN;
@@ -162,7 +163,8 @@ impl GitVersioner {
 
         if let Some(captures) = self.release_pattern.captures(name)
             && let Some(branch_name) = captures.name(BRANCH_NAME_ID)
-            && let Some(version) = self.version_in(Self::loose(branch_name.as_str()))
+            && let Some(version) =
+                self.version_matching_in(Self::loose(branch_name.as_str()), IS_STABLE_VERSION)
         {
             return BranchType::Release(version);
         }
@@ -186,7 +188,7 @@ impl GitVersioner {
 
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.version_in(tag_name)
+            if let Some(version) = self.version_matching_in(tag_name, IS_STABLE_VERSION)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
             {
                 version_tags.insert(VersionSource {
@@ -206,10 +208,16 @@ impl GitVersioner {
     ) -> Result<HashSet<VersionSource>> {
         let mut version_tags = HashSet::new();
 
+        let is_pre_release = |pre: &Version| {
+            !pre.pre.is_empty()
+                && pre.major == next_release_version.major
+                && pre.minor == next_release_version.minor
+                && pre.patch == next_release_version.patch
+        };
+
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(pre_version) = self.pre_release_version_in(tag_name)
-                && let Some(version) = self.matching_pre_release(pre_version, next_release_version)
+            if let Some(version) = self.version_matching_in(tag_name, is_pre_release)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
             {
                 version_tags.insert(VersionSource {
@@ -223,22 +231,14 @@ impl GitVersioner {
         Ok(version_tags)
     }
 
-    fn version_in<S: AsRef<str>>(&self, name: S) -> Option<Version> {
+    fn version_matching_in<T: AsRef<str>, F>(&self, name: T, condition: F) -> Option<Version>
+    where
+        F: Fn(&Version) -> bool,
+    {
         if let Some(captures) = self.version_pattern.captures(name.as_ref())
             && let Some(version_str) = captures.name(VERSION_ID)
             && let Ok(version) = Version::parse(version_str.as_str())
-            && version.pre.is_empty()
-        {
-            return Some(version);
-        }
-        None
-    }
-
-    fn pre_release_version_in<S: AsRef<str>>(&self, name: S) -> Option<Version> {
-        if let Some(captures) = self.version_pattern.captures(name.as_ref())
-            && let Some(version_str) = captures.name(VERSION_ID)
-            && let Ok(version) = Version::parse(version_str.as_str())
-            && !version.pre.is_empty()
+            && condition(&version)
         {
             return Some(version);
         }
