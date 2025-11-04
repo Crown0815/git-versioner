@@ -11,6 +11,12 @@ pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
 pub const COMMIT_MESSAGE_INCREMENTING: &str = "Disabled";
 
+pub const NO_BRANCH_NAME: &str = "(no branch)";
+pub const PRERELEASE_WEIGHT_MAIN: u64 = 55000;
+pub const PRERELEASE_WEIGHT_RELEASE: u64 = PRERELEASE_WEIGHT_MAIN;
+pub const PRERELEASE_WEIGHT_TAG: u64 = 60000;
+pub const PRERELEASE_WEIGHT_FEATURE: u64 = 30000;
+
 pub trait Configuration {
     fn path(&self) -> &PathBuf;
     fn main_branch(&self) -> &str;

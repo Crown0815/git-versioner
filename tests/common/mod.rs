@@ -1,4 +1,5 @@
-use git_versioner::{DefaultConfig, GitVersion, GitVersioner};
+use git_versioner::config::DefaultConfig;
+use git_versioner::{GitVersion, GitVersioner};
 use rstest::fixture;
 use std::path::PathBuf;
 use std::process::{Command, Output};

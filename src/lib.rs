@@ -1,10 +1,12 @@
 pub mod config;
 
-use crate::config::Configuration;
+use crate::config::{
+    Configuration, NO_BRANCH_NAME, PRERELEASE_WEIGHT_FEATURE, PRERELEASE_WEIGHT_MAIN,
+    PRERELEASE_WEIGHT_RELEASE, PRERELEASE_WEIGHT_TAG,
+};
 use anyhow::{Result, anyhow};
 use chrono::DateTime;
 use chrono::offset::Utc;
-pub use config::DefaultConfig;
 use conventional_commit_parser::{commit::CommitType, parse};
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
@@ -16,14 +18,8 @@ use std::time;
 
 const BRANCH_NAME_ID: &str = "BranchName";
 const VERSION_ID: &str = "Version";
-const NO_BRANCH_NAME: &str = "(no branch)";
 const IS_STABLE_VERSION: fn(&Version) -> bool = |version| version.pre.is_empty();
 const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| IS_STABLE_VERSION(&source.version);
-
-const PRERELEASE_WEIGHT_MAIN: u64 = 55000;
-const PRERELEASE_WEIGHT_RELEASE: u64 = PRERELEASE_WEIGHT_MAIN;
-const PRERELEASE_WEIGHT_TAG: u64 = 60000;
-const PRERELEASE_WEIGHT_FEATURE: u64 = 30000;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum BranchType {
