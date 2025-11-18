@@ -11,6 +11,12 @@ pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
 pub const COMMIT_MESSAGE_INCREMENTING: &str = "Disabled";
 
+pub const NO_BRANCH_NAME: &str = "(no branch)";
+pub const PRERELEASE_WEIGHT_MAIN: u64 = 55000;
+pub const PRERELEASE_WEIGHT_RELEASE: u64 = PRERELEASE_WEIGHT_MAIN;
+pub const PRERELEASE_WEIGHT_TAG: u64 = 60000;
+pub const PRERELEASE_WEIGHT_FEATURE: u64 = 30000;
+
 pub trait Configuration {
     fn path(&self) -> &PathBuf;
     fn main_branch(&self) -> &str;
@@ -19,6 +25,9 @@ pub trait Configuration {
     fn tag_prefix(&self) -> &str;
     fn pre_release_tag(&self) -> &str;
     fn commit_message_incrementing(&self) -> &str;
+    fn continuous_delivery(&self) -> &bool {
+        &false
+    }
     fn verbose(&self) -> &bool {
         &false
     }
@@ -38,6 +47,7 @@ pub trait Configuration {
             tag_prefix: self.tag_prefix().to_string(),
             pre_release_tag: self.pre_release_tag().to_string(),
             commit_message_incrementing: self.commit_message_incrementing().to_string(),
+            continuous_delivery: *self.continuous_delivery(),
         }
     }
 }
@@ -52,6 +62,7 @@ pub struct DefaultConfig {
     pub tag_prefix: String,
     pub pre_release_tag: String,
     pub commit_message_incrementing: String,
+    pub continuous_delivery: bool,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -85,6 +96,10 @@ pub struct Args {
 
     #[arg(long, value_parser)]
     pre_release_tag: Option<String>,
+
+    #[arg(long, value_parser)]
+    /// Calculate version using continuous delivery mode
+    continuous_delivery: bool,
 
     // #[arg(long, value_parser)]
     // commit_message_incrementing: Option<String>,
@@ -121,6 +136,7 @@ impl Default for DefaultConfig {
             tag_prefix: TAG_PREFIX.to_string(),
             pre_release_tag: PRE_RELEASE_TAG.to_string(),
             commit_message_incrementing: COMMIT_MESSAGE_INCREMENTING.to_string(),
+            continuous_delivery: false,
         }
     }
 }
@@ -241,6 +257,7 @@ impl Configuration for ConfigurationLayers {
     fn commit_message_incrementing(&self) -> &str {
         &self.config.commit_message_incrementing
     }
+    config_getter!(continuous_delivery, bool, arg);
     config_getter!(path, PathBuf, arg > default);
     config_getter!(as_release, bool, arg);
     config_getter!(verbose, bool, arg);

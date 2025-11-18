@@ -1,6 +1,6 @@
 use anyhow::Result;
+use git_versioner::GitVersioner;
 use git_versioner::config::{Configuration, load_configuration};
-use git_versioner::*;
 use inflection_rs::inflection;
 use std::env;
 use std::fs::OpenOptions;
@@ -8,6 +8,7 @@ use std::io::Write;
 
 fn main() -> Result<()> {
     let config = load_configuration()?;
+
     if *config.verbose() || *config.show_config() {
         print(&config);
         if *config.show_config() {

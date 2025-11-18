@@ -1,10 +1,12 @@
 pub mod config;
 
-use crate::config::Configuration;
+use crate::config::{
+    Configuration, NO_BRANCH_NAME, PRERELEASE_WEIGHT_FEATURE, PRERELEASE_WEIGHT_MAIN,
+    PRERELEASE_WEIGHT_RELEASE, PRERELEASE_WEIGHT_TAG,
+};
 use anyhow::{Result, anyhow};
 use chrono::DateTime;
 use chrono::offset::Utc;
-pub use config::DefaultConfig;
 use conventional_commit_parser::{commit::CommitType, parse};
 use git2::{Oid, Reference, Repository};
 use regex::Regex;
@@ -16,22 +18,17 @@ use std::time;
 
 const BRANCH_NAME_ID: &str = "BranchName";
 const VERSION_ID: &str = "Version";
-pub const NO_BRANCH_NAME: &str = "(no branch)";
-const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| source.version.pre.is_empty();
-
-const PRERELEASE_WEIGHT_MAIN: u64 = 55000;
-const PRERELEASE_WEIGHT_RELEASE: u64 = PRERELEASE_WEIGHT_MAIN;
-const PRERELEASE_WEIGHT_TAG: u64 = 60000;
-const PRERELEASE_WEIGHT_FEATURE: u64 = 30000;
+const IS_STABLE_VERSION: fn(&Version) -> bool = |version| version.pre.is_empty();
+const IS_RELEASE_VERSION: fn(&&VersionSource) -> bool = |source| IS_STABLE_VERSION(&source.version);
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BranchType {
+enum BranchType {
     Trunk,            // Main development branch (trunk)
     Release(Version), // Release branch (e.g., release/1.0.0)
     Other(String),    // Feature branch or any other branch type
 }
 
-pub enum CommitBump {
+enum CommitBump {
     Major,
     Minor,
     Patch,
@@ -51,6 +48,7 @@ pub struct GitVersioner {
     feature_pattern: Regex,
     version_pattern: Regex,
     prerelease_tag: String,
+    continuous_delivery: bool,
     is_commit_message_incrementing: bool,
 }
 
@@ -125,6 +123,7 @@ impl GitVersioner {
             feature_pattern: Regex::new(config.feature_branch())?,
             version_pattern: Regex::new(&format!("^{}(?<Version>.+)", config.tag_prefix()))?,
             prerelease_tag: config.pre_release_tag().to_string(),
+            continuous_delivery: *config.continuous_delivery(),
             is_commit_message_incrementing: match config.commit_message_incrementing() {
                 "Enabled" => true,
                 "Disabled" => false,
@@ -160,7 +159,8 @@ impl GitVersioner {
 
         if let Some(captures) = self.release_pattern.captures(name)
             && let Some(branch_name) = captures.name(BRANCH_NAME_ID)
-            && let Some(version) = self.version_in(Self::loose(branch_name.as_str()))
+            && let Some(version) =
+                self.version_matching_in(Self::loose(branch_name.as_str()), &IS_STABLE_VERSION)
         {
             return BranchType::Release(version);
         }
@@ -179,12 +179,14 @@ impl GitVersioner {
         name.replace(|c: char| !c.is_alphanumeric(), ESCAPE_CHARACTER)
     }
 
-    fn version_tags(&self) -> Result<HashSet<VersionSource>> {
+    fn version_tags_matching<F>(&self, condition: &F) -> Result<HashSet<VersionSource>>
+    where
+        F: Fn(&Version) -> bool,
+    {
         let mut version_tags = HashSet::new();
-
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.version_in(tag_name)
+            if let Some(version) = self.version_matching_in(tag_name, condition)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
             {
                 version_tags.insert(VersionSource {
@@ -198,11 +200,14 @@ impl GitVersioner {
         Ok(version_tags)
     }
 
-    fn version_in<S: AsRef<str>>(&self, name: S) -> Option<Version> {
+    fn version_matching_in<T: AsRef<str>, F>(&self, name: T, condition: &F) -> Option<Version>
+    where
+        F: Fn(&Version) -> bool,
+    {
         if let Some(captures) = self.version_pattern.captures(name.as_ref())
             && let Some(version_str) = captures.name(VERSION_ID)
             && let Ok(version) = Version::parse(version_str.as_str())
-            && version.pre.is_empty()
+            && condition(&version)
         {
             return Some(version);
         }
@@ -288,14 +293,8 @@ impl GitVersioner {
         let source = self.find_trunk_version_source()?.unwrap_or(no_source());
         let head_id = self.repo.head()?.peel_to_commit()?.id();
 
-        let merge_base_oid = if source.commit_id.is_zero() {
-            source.commit_id
-        } else {
-            self.repo.merge_base(head_id, source.commit_id)?
-        };
-
-        let count = self.count_commits_between(head_id, merge_base_oid)?;
-        if count == 0 {
+        let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
+        if head_id == merge_base_oid {
             return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_MAIN));
         }
 
@@ -331,8 +330,55 @@ impl GitVersioner {
             }
         }
 
-        version.pre = self.pre_release(count)?;
+        let (pre_release_number, source) = match self.continuous_delivery {
+            true => {
+                let highest_pre_release = self.find_latest_matching_pre_release(&version)?;
+                let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                (reference_pre_release.0 + 1, reference_pre_release.1)
+            }
+            false => {
+                let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
+                (commit_count, source)
+            }
+        };
+
+        version.pre = self.pre_release(pre_release_number)?;
         Ok((version, source, PRERELEASE_WEIGHT_MAIN))
+    }
+
+    fn find_latest_matching_pre_release(
+        &self,
+        version: &Version,
+    ) -> Result<Option<(i64, VersionSource)>> {
+        let is_matching_pre_release = |pre: &Version| {
+            !pre.pre.is_empty()
+                && pre.major == version.major
+                && pre.minor == version.minor
+                && pre.patch == version.patch
+        };
+
+        let pre_release_versions = self.version_tags_matching(&is_matching_pre_release)?;
+
+        let highest_prerelease = pre_release_versions
+            .into_iter()
+            .filter_map(|source| {
+                Self::extract_pre_release_number(&source.version, &self.prerelease_tag)
+                    .map(|number| (number, source))
+            })
+            .max_by_key(|(number, _)| *number);
+        Ok(highest_prerelease)
+    }
+
+    fn extract_pre_release_number(version: &Version, pre_release_tag: &str) -> Option<i64> {
+        let pre = version.pre.as_str();
+
+        let expected_prefix = format!("{}.", pre_release_tag);
+        if !pre.starts_with(&expected_prefix) {
+            return None;
+        }
+
+        let integer_part = &pre[expected_prefix.len()..];
+        integer_part.parse::<i64>().ok()
     }
 
     fn pre_release(&self, count: i64) -> Result<Prerelease> {
@@ -356,32 +402,52 @@ impl GitVersioner {
         };
 
         if let Some(source) = self.find_latest_version_source(false, &current_version)? {
-            let merge_base_oid = self.repo.merge_base(head_id, source.commit_id)?;
-            let count = self.count_commits_between(head_id, merge_base_oid)?;
-            if count == 0 {
+            let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
+            if head_id == merge_base_oid {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
             }
 
             let mut new_version = source.version.clone();
             new_version.patch += 1;
-            new_version.pre = self.pre_release(count)?;
+
+            let (pre_release_number, source) = match self.continuous_delivery {
+                true => {
+                    let highest_pre_release =
+                        self.find_latest_matching_pre_release(&source.version)?;
+                    let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                    (reference_pre_release.0 + 1, reference_pre_release.1)
+                }
+                false => {
+                    let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
+                    (commit_count, source)
+                }
+            };
+
+            new_version.pre = self.pre_release(pre_release_number)?;
 
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else if let Some(source) = self.find_latest_version_source(true, &previous_version)? {
-            let merge_base_oid = if source.commit_id.is_zero() {
-                source.commit_id
-            } else {
-                self.repo.merge_base(head_id, source.commit_id)?
-            };
-
-            let count = self.count_commits_between(head_id, merge_base_oid)?;
-            if count == 0 {
+            let merge_base_oid = self.merge_base(head_id, source.commit_id)?;
+            if head_id == merge_base_oid {
                 return Ok(Self::version_from(&source, PRERELEASE_WEIGHT_RELEASE));
             }
 
+            let (pre_release_number, source) = match self.continuous_delivery {
+                true => {
+                    let highest_pre_release =
+                        self.find_latest_matching_pre_release(&source.version)?;
+                    let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                    (reference_pre_release.0 + 1, reference_pre_release.1)
+                }
+                false => {
+                    let commit_count = self.count_commits_between(head_id, merge_base_oid)?;
+                    (commit_count, source)
+                }
+            };
+
             let mut new_version = release_version.clone();
             new_version.patch += 0;
-            new_version.pre = self.pre_release(count)?;
+            new_version.pre = self.pre_release(pre_release_number)?;
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else {
             let mut found_branches = self.find_all_source_branches(head_id)?;
@@ -389,20 +455,38 @@ impl GitVersioner {
             found_branches.sort_by(|a, b| a.branch_type.cmp(&b.branch_type));
             let closest_branch = found_branches.first().unwrap();
 
-            let count = closest_branch.distance;
+            let version = release_version.clone();
+            let source = VersionSource {
+                version,
+                commit_id: Oid::zero(),
+                is_tag: false,
+            };
 
-            let mut version = release_version.clone();
-            version.pre = self.pre_release(count)?;
-            Ok((
-                version.clone(),
-                VersionSource {
-                    version,
-                    commit_id: Oid::zero(),
-                    is_tag: false,
-                },
-                PRERELEASE_WEIGHT_RELEASE,
-            ))
+            let (pre_release_number, source) = match self.continuous_delivery {
+                true => {
+                    let highest_pre_release =
+                        self.find_latest_matching_pre_release(&source.version)?;
+                    let reference_pre_release = highest_pre_release.unwrap_or((0, source));
+                    (reference_pre_release.0 + 1, reference_pre_release.1)
+                }
+                false => {
+                    let commit_count = closest_branch.distance;
+                    (commit_count, source)
+                }
+            };
+
+            let mut version = source.version.clone();
+            version.pre = self.pre_release(pre_release_number)?;
+            Ok((version, source, PRERELEASE_WEIGHT_RELEASE))
         }
+    }
+
+    fn merge_base(&self, head_id: Oid, source_id: Oid) -> Result<Oid> {
+        Ok(if source_id.is_zero() {
+            source_id
+        } else {
+            self.repo.merge_base(head_id, source_id)?
+        })
     }
 
     fn calculate_version_for_feature(&self, name: &str) -> Result<(Version, VersionSource, u64)> {
@@ -473,7 +557,7 @@ impl GitVersioner {
                 }
 
                 let branch_id = branch.get().peel_to_commit()?.id();
-                let merge_base = self.repo.merge_base(count_reference, branch_id)?;
+                let merge_base = self.merge_base(count_reference, branch_id)?;
                 let distance = self.count_commits_between(count_reference, merge_base)?;
 
                 found_branches.push(FoundBranch {
@@ -538,13 +622,13 @@ impl GitVersioner {
         comparator: &Comparator,
     ) -> Result<Option<VersionSource>> {
         let sources = if track_release_branches {
-            self.version_tags()?
+            self.version_tags_matching(&IS_STABLE_VERSION)?
                 .into_iter()
                 .chain(self.version_branches()?)
                 .chain(self.remote_version_branches()?)
                 .collect()
         } else {
-            self.version_tags()?
+            self.version_tags_matching(&IS_STABLE_VERSION)?
         };
 
         let mut all_sources = HashSet::from([no_source()]);

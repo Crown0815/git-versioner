@@ -19,6 +19,7 @@ Options:
       --feature-branch <FEATURE_BRANCH>    
       --tag-prefix <TAG_PREFIX>            
       --pre-release-tag <PRE_RELEASE_TAG>  
+      --continuous-delivery                Calculate version using continuous delivery mode
       --show-config                        Outputs effective git-versioner config in toml format
   -v, --verbose                            
   -a, --as-release                         If the version is pre-release, generate release instead
