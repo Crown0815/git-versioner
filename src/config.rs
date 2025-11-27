@@ -206,32 +206,22 @@ impl ConfigurationFile {
         }
     }
 
-    pub fn from_toml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    pub fn from_default_files() -> anyhow::Result<Self> {
+        Self::from_file(".git-versioner.toml")
+            .or_else(|_| Self::from_file(".git-versioner.yaml"))
+            .or_else(|_| Self::from_file(".git-versioner.yml"))
+    }
+
+    fn from_toml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let content = fs::read_to_string(path)?;
         let config: Self = toml::from_str(&content)?;
         Ok(config)
     }
 
-    pub fn from_yaml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
+    fn from_yaml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let content = fs::read_to_string(path)?;
         let config: Self = serde_yaml::from_str(&content)?;
         Ok(config)
-    }
-
-    pub fn from_default_files() -> anyhow::Result<Self> {
-        let toml_path = Path::new(".git-versioner.toml");
-        let yaml_path = Path::new(".git-versioner.yaml");
-        let yml_path = Path::new(".git-versioner.yml");
-
-        if toml_path.exists() {
-            return Self::from_toml_file(toml_path);
-        } else if yaml_path.exists() {
-            return Self::from_yaml_file(yaml_path);
-        } else if yml_path.exists() {
-            return Self::from_yaml_file(yml_path);
-        }
-
-        Err(anyhow!("No configuration file found"))
     }
 }
 
