@@ -89,6 +89,12 @@ impl ConfiguredTestRepo {
             raw.replace("\n", "\n  ").trim_end_matches(' ').to_string()
         }
 
+        let expected = self.inner.assert().result;
+        assert_eq!(
+            &expected, &result,
+            "Expected {expected} does not match actual {result}\n{context}"
+        );
+
         Assertable { result, context }
     }
 }

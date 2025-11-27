@@ -14,7 +14,7 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
 }
 
 pub struct TestRepo {
-    pub path: PathBuf,
+    pub path: PathBuf, //TODO: Remove since duplicate in config
     pub config: TestConfig,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }

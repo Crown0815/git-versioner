@@ -51,7 +51,9 @@ fn test_providing_non_disabled_or_enabled_string_to_commit_message_incrementing_
     mut repo: TestRepo,
 ) {
     repo.config.commit_message_incrementing = "foo".to_string();
-    repo.commit_and_assert("0.0.1-pre.1");
+    repo.commit_and_assert("0.0.1-pre.1")
+        .branch_name(MAIN_BRANCH)
+        .version_source_sha("");
 }
 
 #[rstest]
