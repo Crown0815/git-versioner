@@ -125,18 +125,7 @@ This command will output the calculated version string based on the repository's
 
 For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
 
-The command line options allow overwriting of configuration options using (see also [Configuration](#configuration))
-
-```shell
-      --main-branch <MAIN_BRANCH>          Regex to detect the main branch
-      --release-branch <RELEASE_BRANCH>    Regex to detect the release branch(es)
-      --feature-branch <FEATURE_BRANCH>    Regex to detect the feature branch(es)
-      --tag-prefix <TAG_PREFIX>            Regex to detect version tag(s)
-      --pre-release-tag <PRE_RELEASE_TAG>  Regex to detect pre-release version tag(s)
-      --continuous-delivery                Calculate version using continuous delivery mode
-```
-
-Additionally, the following options are supported:
+The command line options allow overwriting of configuration options using (see also [Configuration](#configuration)) and some additional options:
 
 ```shell
   -p, --path <PATH>
@@ -175,16 +164,17 @@ For integration in scripts or CI/CD, capture the output for use in build artifac
 
 Git Versioner supports a YAML or TOML configuration file to customize its behavior. 
 Create a file named `.git-versioner.toml`, `.git-versioner.yaml`, or `.git-versioner.yml` in the repository root.
-All fields are optional and will fall back to internal defaults if not specified. 
+All fields are optional and will fall back to internal defaults if not specified.
 
-An example configuration is as follows:
+The *default* configuration is as follows:
 
 ```yaml
-MainBranch: "^trunk$"
-ReleaseBranch: "^release/(?<BranchName>.+)$"
-FeatureBranch: "feature/(?<BranchName>.+)$"
-TagPrefix: "[vV]?"
-PreReleaseTag: "pre"
+MainBranch: ^(trunk|main|master)$
+ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
+FeatureBranch: ^features?[/-](?<BranchName>.+)$
+TagPrefix: '[vV]?'
+PreReleaseTag: pre
+CommitMessageIncrementing: Disabled
 ```
 
 ### Configuration Fields
