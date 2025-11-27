@@ -73,7 +73,7 @@ pub struct ConfigurationFile {
     pub feature_branch: Option<String>,
     pub tag_prefix: Option<String>,
     pub pre_release_tag: Option<String>,
-    // pub commit_message_incrementing: Option<String>,
+    pub commit_message_incrementing: Option<String>,
 }
 
 #[derive(Parser, Debug)]
@@ -113,8 +113,21 @@ pub struct Args {
     )]
     continuous_delivery: bool,
 
-    // #[arg(long, value_parser)]
-    // commit_message_incrementing: Option<String>,
+    #[arg(
+        long,
+        value_parser,
+        help = "Increment based on conventional commits ('Disabled' (default) or 'Enabled')",
+        long_help = r#"Increment considering conventional commits (values: 'Disabled' (default) or 'Enabled'):
+- Disabled: Incrementation will be based on tags and release branches only.
+            After a release tag is created on the main branch (e.g. v1.2.0), the main branch will
+            automatically be bumped to the next minor version (e.g. v1.3.0).
+- Enabled:  Incrementation will be based on tags, release branches and commits.
+            Instead of bumping the minor version on the main branch after a feature release tag
+            (e.g. v1.2.0), only the patch version will be incremented (e.g. v1.2.1) until a `feat:`
+            commit is encountered or a release branch is created."#
+    )]
+    commit_message_incrementing: Option<String>,
+
     #[arg(short, long, help = "Forces release generation instead of pre-release")]
     as_release: bool,
 
@@ -267,9 +280,7 @@ impl Configuration for ConfigurationLayers {
     config_getter!(feature_branch, str, arg > file > default);
     config_getter!(tag_prefix, str, arg > file > default);
     config_getter!(pre_release_tag, str, arg > file > default);
-    fn commit_message_incrementing(&self) -> &str {
-        &self.config.commit_message_incrementing
-    }
+    config_getter!(commit_message_incrementing, str, arg > file > default);
     config_getter!(continuous_delivery, bool, arg);
     config_getter!(path, PathBuf, arg > default);
     config_getter!(as_release, bool, arg);

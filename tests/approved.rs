@@ -10,8 +10,13 @@ use std::path::PathBuf;
 use std::process::Command;
 
 #[rstest]
-fn test_help_text(mut cmd: Command) {
+fn test_long_help_text(mut cmd: Command) {
     assert_cmd_snapshot!(cmd.current_dir(".").args(["--help"]));
+}
+
+#[rstest]
+fn test_help_text(mut cmd: Command) {
+    assert_cmd_snapshot!(cmd.current_dir(".").args(["-h"]));
 }
 
 macro_rules! with_masked_unpredictable_values {

@@ -69,3 +69,13 @@ fn test_argument_prerelease_tag(mut repo: ConfiguredTestRepo) {
     repo.inner.config.pre_release_tag = "alpha".to_string();
     repo.execute_and_verify(["--pre-release-tag", "alpha"], None);
 }
+
+#[rstest]
+fn test_commit_message_incrementing(mut repo: ConfiguredTestRepo) {
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.tag("v1.0.1");
+    repo.inner.commit("1.0.2-pre.1");
+
+    repo.inner.config.commit_message_incrementing = "Enabled".to_string();
+    repo.execute_and_verify(["--commit-message-incrementing", "Enabled"], None);
+}

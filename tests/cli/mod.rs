@@ -62,6 +62,7 @@ impl ConfiguredTestRepo {
             None => PathBuf::new(),
             Some((name, ext)) => self.write_config(name, ext).unwrap(),
         };
+        let output = self.cli.args(args).env_clear().output().unwrap();
 
         let context = format!(
             "Git Graph:\n  {}\nConfig ({}):\n  {}\nArgs:\n  {}\n",
@@ -85,11 +86,12 @@ impl ConfiguredTestRepo {
                 .join(" "),
         );
 
-        fn shifted(raw: String) -> String {
-            raw.replace("\n", "\n  ").trim_end_matches(' ').to_string()
-        }
-
-        let output = self.cli.args(args).env_clear().output().unwrap();
+        assert!(
+            output.status.success(),
+            "{context}\n{stderr}",
+            context = context,
+            stderr = String::from_utf8_lossy(&output.stderr)
+        );
         let stdout = str::from_utf8(&output.stdout).unwrap();
         let actual: GitVersion = serde_json::from_str(stdout).unwrap();
 
@@ -98,5 +100,9 @@ impl ConfiguredTestRepo {
             &expected, &actual,
             "Expected {expected} does not match actual {actual}\n{context}"
         );
+
+        fn shifted(raw: String) -> String {
+            raw.replace("\n", "\n  ").trim_end_matches(' ').to_string()
+        }
     }
 }
