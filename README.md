@@ -128,18 +128,20 @@ For integration in scripts or CI/CD, capture the output for use in build artifac
 The command line options allow overwriting of configuration options using (see also [Configuration](#configuration))
 
 ```shell
-      --main-branch <MAIN_BRANCH>          
-      --release-branch <RELEASE_BRANCH>    
-      --feature-branch <FEATURE_BRANCH>    
-      --tag-prefix <TAG_PREFIX>            
-      --pre-release-tag <PRE_RELEASE_TAG>  
+      --main-branch <MAIN_BRANCH>          Regex to detect the main branch
+      --release-branch <RELEASE_BRANCH>    Regex to detect the release branch(es)
+      --feature-branch <FEATURE_BRANCH>    Regex to detect the feature branch(es)
+      --tag-prefix <TAG_PREFIX>            Regex to detect version tag(s)
+      --pre-release-tag <PRE_RELEASE_TAG>  Regex to detect pre-release version tag(s)
+      --continuous-delivery                Calculate version using continuous delivery mode
 ```
 
 Additionally, the following options are supported:
 
 ```shell
-
-  -p, --path <PATH>                        
+  -p, --path <PATH>                        Path to the repository to calculate the version for
+  -a, --as-release                         Forces release generation instead of pre-release
+      --show-config                        Print effective configuration and exit
   -v, --verbose                            
   -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
   -h, --help                               Print help

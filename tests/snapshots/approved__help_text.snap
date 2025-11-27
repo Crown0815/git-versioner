@@ -1,5 +1,5 @@
 ---
-source: tests/cli_no_configuration.rs
+source: tests/approved.rs
 info:
   program: git-versioner
   args:
@@ -13,16 +13,16 @@ A tool to manage versions of git repositories
 Usage: git-versioner [OPTIONS]
 
 Options:
-  -p, --path <PATH>                        
-      --main-branch <MAIN_BRANCH>          
-      --release-branch <RELEASE_BRANCH>    
-      --feature-branch <FEATURE_BRANCH>    
-      --tag-prefix <TAG_PREFIX>            
-      --pre-release-tag <PRE_RELEASE_TAG>  
+  -p, --path <PATH>                        Path to the repository to calculate the version for
+      --main-branch <MAIN_BRANCH>          Regex to detect the main branch
+      --release-branch <RELEASE_BRANCH>    Regex to detect the release branch(es)
+      --feature-branch <FEATURE_BRANCH>    Regex to detect the feature branch(es)
+      --tag-prefix <TAG_PREFIX>            Regex to detect version tag(s)
+      --pre-release-tag <PRE_RELEASE_TAG>  Regex to detect pre-release version tag(s)
       --continuous-delivery                Calculate version using continuous delivery mode
-      --show-config                        Outputs effective git-versioner config in toml format
+  -a, --as-release                         Forces release generation instead of pre-release
+      --show-config                        Print effective configuration and exit
   -v, --verbose                            
-  -a, --as-release                         If the version is pre-release, generate release instead
   -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
   -h, --help                               Print help
   -V, --version                            Print version

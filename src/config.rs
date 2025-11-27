@@ -79,43 +79,56 @@ pub struct ConfigurationFile {
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 pub struct Args {
-    #[arg(short, long, value_parser)]
+    #[arg(
+        short,
+        long,
+        value_parser,
+        help = "Path to the repository to calculate the version for"
+    )]
     path: Option<PathBuf>,
 
-    #[arg(long, value_parser)]
+    #[arg(long, value_parser, help = "Regex to detect the main branch")]
     main_branch: Option<String>,
 
-    #[arg(long, value_parser)]
+    #[arg(long, value_parser, help = "Regex to detect the release branch(es)")]
     release_branch: Option<String>,
 
-    #[arg(long, value_parser)]
+    #[arg(long, value_parser, help = "Regex to detect the feature branch(es)")]
     feature_branch: Option<String>,
 
-    #[arg(long, value_parser)]
+    #[arg(long, value_parser, help = "Regex to detect version tag(s)")]
     tag_prefix: Option<String>,
 
-    #[arg(long, value_parser)]
+    #[arg(
+        long,
+        value_parser,
+        help = "Regex to detect pre-release version tag(s)"
+    )]
     pre_release_tag: Option<String>,
 
-    #[arg(long, value_parser)]
-    /// Calculate version using continuous delivery mode
+    #[arg(
+        long,
+        value_parser,
+        help = "Calculate version using continuous delivery mode"
+    )]
     continuous_delivery: bool,
 
     // #[arg(long, value_parser)]
     // commit_message_incrementing: Option<String>,
-    /// Outputs effective git-versioner config in toml format
-    #[arg(long)]
+    #[arg(short, long, help = "Forces release generation instead of pre-release")]
+    as_release: bool,
+
+    #[arg(long, help = "Print effective configuration and exit")]
     show_config: bool,
 
     #[arg(short, long)]
     verbose: bool,
 
-    #[arg(short, long)]
-    /// If the version is pre-release, generate release instead
-    as_release: bool,
-
-    /// Path to a configuration file (TOML or YAML)
-    #[arg(short = 'c', long = "config")]
+    #[arg(
+        short = 'c',
+        long = "config",
+        help = "Path to a configuration file (TOML or YAML)"
+    )]
     config_file: Option<PathBuf>,
 }
 
