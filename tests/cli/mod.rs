@@ -1,4 +1,4 @@
-use crate::common::{Assertable, MAIN_BRANCH, TestRepo};
+use crate::common::{MAIN_BRANCH, TestRepo};
 use anyhow::anyhow;
 use git_versioner::GitVersion;
 use git_versioner::config::ConfigurationFile;
