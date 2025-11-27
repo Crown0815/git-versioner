@@ -53,7 +53,7 @@ impl ConfiguredTestRepo {
         &mut self,
         args: I,
         config_file: Option<(&str, &str)>,
-    ) -> Assertable {
+    ) {
         let config_path = match config_file {
             None => PathBuf::new(),
             Some((name, ext)) => self.write_config(name, ext).unwrap(),
@@ -94,7 +94,5 @@ impl ConfiguredTestRepo {
             &expected, &result,
             "Expected {expected} does not match actual {result}\n{context}"
         );
-
-        Assertable { result, context }
     }
 }
