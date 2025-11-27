@@ -18,7 +18,7 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str, mut cmd: Command) -> ConfiguredT
     let repo = TestRepo::initialize(main);
     let config_file = ConfigurationFile::default();
     repo.commit("0.1.0-pre.1");
-    cmd.current_dir(&repo.path);
+    cmd.current_dir(&repo.config.path);
 
     ConfiguredTestRepo {
         inner: repo,
@@ -44,7 +44,11 @@ impl ConfiguredTestRepo {
     }
 
     fn write(&self, filename: &str, extension: &str, content: String) -> anyhow::Result<PathBuf> {
-        let file_path = self.inner.path.join(format!("{filename}.{extension}"));
+        let file_path = self
+            .inner
+            .config
+            .path
+            .join(format!("{filename}.{extension}"));
         fs::write(&file_path, content)?;
         Ok(file_path)
     }

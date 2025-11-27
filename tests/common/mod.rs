@@ -14,7 +14,6 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
 }
 
 pub struct TestRepo {
-    pub path: PathBuf, //TODO: Remove since duplicate in config
     pub config: TestConfig,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
 }
@@ -73,14 +72,10 @@ impl TestRepo {
         let _temp_dir = tempfile::tempdir().unwrap();
         let path = _temp_dir.path().to_path_buf();
         let config = TestConfig {
-            path: path.clone(),
+            path,
             ..Default::default()
         };
-        Self {
-            path,
-            config,
-            _temp_dir,
-        }
+        Self { config, _temp_dir }
     }
 
     pub fn initialize(main_branch: &str) -> Self {
@@ -130,7 +125,7 @@ impl TestRepo {
     pub fn execute(&self, command: &[&str], description: &str) -> Output {
         let output = Command::new("git")
             .args(command)
-            .current_dir(&self.path)
+            .current_dir(&self.config.path)
             .output()
             .unwrap_or_else(|_| panic!("Failed to {description}"));
 

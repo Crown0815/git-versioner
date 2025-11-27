@@ -5,7 +5,7 @@ use rstest::{fixture, rstest};
 
 impl TestRepo {
     pub fn path(&self) -> &str {
-        self.path.to_str().unwrap()
+        self.config.path.to_str().unwrap()
     }
 
     pub fn clone(source: TestRepo) -> Self {

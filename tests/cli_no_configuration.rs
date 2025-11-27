@@ -70,9 +70,7 @@ fn test_option_custom_main_branch(#[with("custom-main")] mut repo: ConfiguredTes
 
 #[rstest]
 fn test_option_custom_repository_path(mut repo: ConfiguredTestRepo) {
-    let path = repo.inner.path.to_string_lossy().to_string();
-    // repo.inner.config.path = PathBuf::from(&path);
-
+    let path = repo.inner.config.path.to_string_lossy().to_string();
     repo.execute_and_verify(["--path", &path], None);
 }
 
@@ -89,7 +87,7 @@ fn test_output_from_main_branch(mut repo: ConfiguredTestRepo) {
         (r"\b[[:xdigit:]]{7}\b", "#######"),
         (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
     ]}, {
-        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.config.path));
     });
 }
 
@@ -103,7 +101,7 @@ fn test_output_from_release_branch(mut repo: ConfiguredTestRepo) {
         (r"\b[[:xdigit:]]{7}\b", "#######"),
         (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
     ]}, {
-        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.config.path));
     });
 }
 
@@ -117,7 +115,7 @@ fn test_output_from_feature_branch(mut repo: ConfiguredTestRepo) {
         (r"\b[[:xdigit:]]{7}\b", "#######"),
         (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
     ]}, {
-        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.config.path));
     });
 }
 
@@ -132,7 +130,7 @@ fn test_output_from_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
             (r"\b[[:xdigit:]]{7}\b", "#######"),
             (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
         ]}, {
-        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.config.path));
     });
 }
 
@@ -148,7 +146,7 @@ fn test_output_from_tag_on_release_branch(mut repo: ConfiguredTestRepo) {
             (r"\b[[:xdigit:]]{7}\b", "#######"),
             (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
         ]}, {
-        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.config.path));
     });
 }
 
@@ -164,7 +162,7 @@ fn test_output_from_tag_checked_out(mut repo: ConfiguredTestRepo) {
             (r"\b[[:xdigit:]]{7}\b", "#######"),
             (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"),
         ]}, {
-        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path));
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.config.path));
     });
 }
 
@@ -173,7 +171,7 @@ fn test_output_from_show_config(mut repo: ConfiguredTestRepo) {
     insta::with_settings!({filters => vec![
         (r#"Path = ["'][a-zA-Z0-9-_.~+=,:@%/\\]+["']"#, r#"Path = "<repository_path>""#),
     ]}, {
-        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.path).args(["--show-config"]));
+        assert_cmd_snapshot!(repo.cli.current_dir(repo.inner.config.path).args(["--show-config"]));
     });
 }
 
@@ -183,7 +181,7 @@ fn test_environment_variable_output_in_github_context(mut repo: ConfiguredTestRe
 
     let output = repo
         .cli
-        .current_dir(repo.inner.path)
+        .current_dir(repo.inner.config.path)
         .env_clear()
         .env("CI", "true")
         .env("GITHUB_OUTPUT", github_output.path())
