@@ -3,6 +3,7 @@ mod common;
 
 use crate::cli::{ConfiguredTestRepo, cmd, repo};
 use crate::common::MAIN_BRANCH;
+use git_versioner::config::{ConfigurationFile, DefaultConfig};
 use insta::assert_snapshot;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::rstest;
@@ -17,6 +18,17 @@ fn test_long_help_text(mut cmd: Command) {
 #[rstest]
 fn test_help_text(mut cmd: Command) {
     assert_cmd_snapshot!(cmd.current_dir(".").args(["-h"]));
+}
+
+#[rstest]
+fn test_configuration(mut repo: ConfiguredTestRepo, #[values("toml", "yaml", "yml")] ext: &str) {
+    repo.config_file = map_from(DefaultConfig::default());
+    assert_snapshot!(repo.serialize_config(ext).unwrap());
+
+    fn map_from(original: DefaultConfig) -> ConfigurationFile {
+        // maps from default config to the configuration file to automatically test new fields
+        serde_json::from_value(serde_json::to_value(original).unwrap()).unwrap()
+    }
 }
 
 macro_rules! with_masked_unpredictable_values {

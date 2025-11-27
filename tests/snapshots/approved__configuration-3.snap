@@ -1,0 +1,10 @@
+---
+source: tests/approved.rs
+expression: repo.serialize_config(ext).unwrap()
+---
+MainBranch: ^(trunk|main|master)$
+ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
+FeatureBranch: ^features?[/-](?<BranchName>.+)$
+TagPrefix: '[vV]?'
+PreReleaseTag: pre
+CommitMessageIncrementing: Disabled

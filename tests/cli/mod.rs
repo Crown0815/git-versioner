@@ -35,12 +35,16 @@ pub struct ConfiguredTestRepo {
 
 impl ConfiguredTestRepo {
     pub fn write_config(&self, name: &str, extension: &str) -> anyhow::Result<PathBuf> {
-        let content = match extension {
-            "toml" => toml::to_string(&self.config_file)?,
-            "yaml" | "yml" => serde_yaml::to_string(&self.config_file)?,
-            &_ => return Err(anyhow!("Unsupported file extension {extension}")),
-        };
+        let content = self.serialize_config(extension)?;
         self.write(name, extension, content)
+    }
+
+    pub fn serialize_config(&self, extension: &str) -> anyhow::Result<String> {
+        match extension {
+            "toml" => Ok(toml::to_string(&self.config_file)?),
+            "yaml" | "yml" => Ok(serde_yaml::to_string(&self.config_file)?),
+            &_ => Err(anyhow!("Unsupported file extension {extension}")),
+        }
     }
 
     fn write(&self, filename: &str, extension: &str, content: String) -> anyhow::Result<PathBuf> {
