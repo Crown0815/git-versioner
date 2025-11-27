@@ -37,7 +37,7 @@ impl ConfiguredTestRepo {
     pub fn write_config(&self, name: &str, extension: &str) -> anyhow::Result<PathBuf> {
         let content = match extension {
             "toml" => toml::to_string(&self.config_file)?,
-            "yaml" => serde_yaml::to_string(&self.config_file)?,
+            "yaml" | "yml" => serde_yaml::to_string(&self.config_file)?,
             &_ => return Err(anyhow!("Unsupported file extension {extension}")),
         };
         self.write(name, extension, content)

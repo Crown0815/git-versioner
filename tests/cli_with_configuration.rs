@@ -10,7 +10,7 @@ const DEFAULT_CONFIG: &str = ".git-versioner";
 
 #[template]
 #[rstest]
-fn default(repo: TestRepo, #[values("toml", "yaml")] ext: &str) {}
+fn default(repo: TestRepo, #[values("toml", "yaml", "yml")] ext: &str) {}
 
 #[apply(default)]
 fn test_that_config_file_overrides_default_main_branch_pattern(
