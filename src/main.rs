@@ -8,12 +8,12 @@ use std::io::Write;
 
 fn main() -> Result<()> {
     let config = load_configuration()?;
-
-    if *config.verbose() || *config.show_config() {
+    if *config.show_config() {
         print(&config);
-        if *config.show_config() {
-            return Ok(());
-        }
+        return Ok(());
+    }
+    if *config.verbose() {
+        print(&config);
     }
 
     let version = GitVersioner::calculate_version(&config)?;
