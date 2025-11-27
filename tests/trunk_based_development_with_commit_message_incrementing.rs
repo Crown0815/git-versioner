@@ -43,66 +43,6 @@ fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {
     repo
 }
 
-// #[rstest]
-// fn test_full_workflow(repo: TestRepo) {
-//     repo.commit_and_assert("0.1.0-pre.1");
-//     repo.commit_and_assert("0.1.0-pre.2");
-//     repo.tag("v1.0.0-pre.2"); // ignored
-//     repo.tag_and_assert("v", "1.0.0");
-//     repo.branch("release/1.0.0");
-//
-//     repo.checkout(MAIN_BRANCH);
-//     repo.commit_and_assert("1.1.0-pre.1");
-//
-//     repo.checkout("release/1.0.0");
-//     repo.commit_and_assert("1.0.1-pre.1");
-//     repo.commit_and_assert("1.0.1-pre.2");
-//     repo.tag_and_assert("v", "1.0.1");
-//     repo.commit_and_assert("1.0.2-pre.1");
-//     repo.commit_and_assert("1.0.2-pre.2");
-//     repo.tag_and_assert("v", "1.0.2");
-//
-//     repo.checkout(MAIN_BRANCH);
-//     repo.commit_and_assert("1.1.0-pre.2");
-//     repo.branch("release/1.1.0");
-//     repo.checkout(MAIN_BRANCH);
-//     repo.commit_and_assert("1.2.0-pre.1");
-//
-//     repo.checkout("release/1.1.0");
-//     repo.commit_and_assert("1.1.0-pre.3");
-//     repo.commit_and_assert("1.1.0-pre.4");
-//     repo.tag_annotated_and_assert("v", "1.1.0");
-//     repo.commit_and_assert("1.1.1-pre.1");
-//     repo.commit_and_assert("1.1.1-pre.2");
-//     repo.tag_and_assert("v", "1.1.1");
-//
-//     repo.checkout(MAIN_BRANCH);
-//     repo.commit_and_assert("1.2.0-pre.2");
-//     repo.branch("release/1.2.0");
-//     repo.checkout(MAIN_BRANCH);
-//     repo.commit_and_assert("1.3.0-pre.1");
-//
-//     repo.checkout("release/1.2.0");
-//     repo.commit_and_assert("1.2.0-pre.3");
-//     repo.commit_and_assert("1.2.0-pre.4");
-//     repo.tag_and_assert("v", "1.2.0");
-//     repo.commit_and_assert("1.2.1-pre.1");
-//     repo.commit_and_assert("1.2.1-pre.2");
-//     repo.tag_and_assert("v", "1.2.1");
-//
-//     repo.checkout(MAIN_BRANCH);
-//     repo.commit_and_assert("1.3.0-pre.2");
-//     repo.tag_annotated_and_assert("v", "1.3.0");
-//     repo.commit_and_assert("1.4.0-pre.1");
-//     repo.commit_and_assert("1.4.0-pre.2");
-//
-//     repo.branch("release/2.0.0");
-//     repo.commit_and_assert("2.0.0-pre.1");
-//
-//     repo.checkout(MAIN_BRANCH);
-//     repo.commit_and_assert("2.1.0-pre.1");
-// }
-
 #[rstest]
 #[should_panic(
     expected = r#"Invalid value "foo" for CommitMessageIncrementing. Should be "Enabled" or "Disabled"."#
