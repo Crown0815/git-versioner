@@ -1,4 +1,4 @@
-use crate::common::{Assertable, MAIN_BRANCH, TestRepo};
+use crate::common::{MAIN_BRANCH, TestRepo};
 use anyhow::anyhow;
 use git_versioner::GitVersion;
 use git_versioner::config::ConfigurationFile;
@@ -18,7 +18,7 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str, mut cmd: Command) -> ConfiguredT
     let repo = TestRepo::initialize(main);
     let config_file = ConfigurationFile::default();
     repo.commit("0.1.0-pre.1");
-    cmd.current_dir(&repo.path);
+    cmd.current_dir(&repo.config.path);
 
     ConfiguredTestRepo {
         inner: repo,
@@ -44,25 +44,25 @@ impl ConfiguredTestRepo {
     }
 
     fn write(&self, filename: &str, extension: &str, content: String) -> anyhow::Result<PathBuf> {
-        let file_path = self.inner.path.join(format!("{filename}.{extension}"));
+        let file_path = self
+            .inner
+            .config
+            .path
+            .join(format!("{filename}.{extension}"));
         fs::write(&file_path, content)?;
         Ok(file_path)
     }
 
-    pub fn execute_and_assert<'a, I: IntoIterator<Item = &'a str>>(
+    pub fn execute_and_verify<'a, I: IntoIterator<Item = &'a str>>(
         &mut self,
         args: I,
         config_file: Option<(&str, &str)>,
-    ) -> Assertable {
+    ) {
         let config_path = match config_file {
             None => PathBuf::new(),
             Some((name, ext)) => self.write_config(name, ext).unwrap(),
         };
 
-        let output = self.cli.args(args).env_clear().output().unwrap();
-
-        let stdout = str::from_utf8(&output.stdout).unwrap();
-        let result: GitVersion = serde_json::from_str(stdout).unwrap();
         let context = format!(
             "Git Graph:\n  {}\nConfig ({}):\n  {}\nArgs:\n  {}\n",
             shifted(self.inner.graph()),
@@ -89,6 +89,14 @@ impl ConfiguredTestRepo {
             raw.replace("\n", "\n  ").trim_end_matches(' ').to_string()
         }
 
-        Assertable { result, context }
+        let output = self.cli.args(args).env_clear().output().unwrap();
+        let stdout = str::from_utf8(&output.stdout).unwrap();
+        let actual: GitVersion = serde_json::from_str(stdout).unwrap();
+
+        let expected = self.inner.assert().result;
+        assert_eq!(
+            &expected, &actual,
+            "Expected {expected} does not match actual {actual}\n{context}"
+        );
     }
 }

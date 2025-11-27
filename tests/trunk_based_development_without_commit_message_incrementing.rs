@@ -178,8 +178,9 @@ fn test_branch_name_on_main_branch(repo: TestRepo) {
 fn test_support_of_custom_trunk_pattern(#[with("custom-trunk")] mut repo: TestRepo) {
     repo.config.main_branch = r"^custom-trunk$".to_string();
 
-    repo.commit("Initial commit");
-    repo.assert().version("0.1.0-pre.1");
+    repo.commit_and_assert("0.1.0-pre.1")
+        .branch_name("custom-trunk")
+        .version_source_sha("");
 }
 
 #[rstest]
@@ -243,10 +244,24 @@ fn test_release_branches_matching_release_branch_incremented_trunk_version_conti
 fn test_release_branches_matching_custom_pattern_affect_main_branch(mut repo: TestRepo) {
     repo.config.release_branch = r"^stabilize/my/(?<BranchName>.+)$".to_string();
 
-    repo.commit_and_assert("0.1.0-pre.1");
+    let (source, _) = repo.commit("0.1.0-pre.1");
     repo.branch("stabilize/my/1.0.0");
     repo.checkout(MAIN_BRANCH);
-    repo.commit_and_assert("1.1.0-pre.1");
+    repo.commit_and_assert("1.1.0-pre.1")
+        .branch_name(MAIN_BRANCH)
+        .version_source_sha(&source);
+}
+
+#[rstest]
+fn test_release_branches_matching_custom_pattern_create_expected_prerelease(mut repo: TestRepo) {
+    repo.config.release_branch = r"^stabilize/my/(?<BranchName>.+)$".to_string();
+
+    repo.commit_and_assert("0.1.0-pre.1");
+    let (source, _) = repo.tag("v1.0.0");
+    repo.branch("stabilize/my/1.0.0");
+    repo.commit_and_assert("1.0.1-pre.1")
+        .branch_name("stabilize/my/1.0.0")
+        .version_source_sha(&source);
 }
 
 #[rstest]
@@ -276,7 +291,7 @@ fn test_release_tags_with_matching_version_tag_prefix_are_considered(
     repo: TestRepo,
     #[values("v", "V", "")] prefix: &str,
 ) {
-    let (source_sha, _) = repo.commit("0.1.0-pre.1");
+    let (source_sha, _) = repo.commit("0.1.0+1");
     repo.tag_and_assert(prefix, "1.0.0")
         .version_source_sha(&source_sha);
 }
@@ -303,7 +318,12 @@ fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: Te
     repo.config.tag_prefix = "my/v".to_string();
 
     repo.commit_and_assert("0.1.0-pre.1");
-    repo.tag_and_assert("my/v", "1.0.0");
+    let (sha, _) = repo.tag("my/v1.0.0");
+
+    repo.assert()
+        .version("1.0.0")
+        .branch_name(MAIN_BRANCH)
+        .version_source_sha(&sha);
 }
 
 #[rstest]
@@ -343,9 +363,11 @@ fn test_feature_branches_matching_custom_pattern_inherit_source_branch_base_vers
     repo.config.feature_branch = r"^feat(ure)?/(?<BranchName>.+)$".to_string();
 
     repo.commit_and_assert("0.1.0-pre.1");
-    repo.tag_and_assert("v", "1.0.0");
+    let (source, _) = repo.tag("v1.0.0");
     repo.branch("feat/feature");
-    repo.commit_and_assert("1.1.0-feature.1");
+    repo.commit_and_assert("1.1.0-feature.1")
+        .branch_name("feat/feature")
+        .version_source_sha(&source);
 }
 
 #[rstest]
@@ -387,6 +409,13 @@ fn test_weighted_prerelease_number_for_main_branch_release_tag_adds_60000(repo: 
 }
 
 #[rstest]
+fn test_weighted_prerelease_number_for_main_branch_as_release(mut repo: TestRepo) {
+    repo.config.as_release = true;
+    repo.commit_and_assert("0.1.0")
+        .weighted_pre_release_number(60000);
+}
+
+#[rstest]
 fn test_weighted_prerelease_number_for_release_branch_adds_55000(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("release/0.1.0");
@@ -406,14 +435,25 @@ fn test_weighted_prerelease_number_for_release_branch_release_tag_adds_60000(rep
 }
 
 #[rstest]
+fn test_weighted_prerelease_number_for_release_branch_as_release_adds_60000(mut repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("release/0.1.0");
+
+    repo.config.as_release = true;
+    repo.commit_and_assert("0.1.0")
+        .weighted_pre_release_number(60000);
+}
+
+#[rstest]
 fn test_weighted_prerelease_number_for_checked_out_release_tag_adds_60000(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.commit_and_assert("0.1.0-pre.2");
-    repo.tag("v0.1.0");
+    let (sha, _) = repo.tag("v0.1.0");
     repo.checkout("tags/v0.1.0");
 
     repo.assert()
         .version("0.1.0")
+        .version_source_sha(&sha)
         .weighted_pre_release_number(60000);
 }
 
@@ -440,12 +480,20 @@ fn test_assembly_sem_file_ver_is_major_minor_patch_dot_weighted_pre_release_numb
 
 #[rstest]
 fn test_sha_matches_head(repo: TestRepo) {
-    let (sha, _) = repo.commit("0.1.0-pre.1");
+    let (sha, _) = repo.commit("0.1.0+1");
     repo.assert().sha(&sha);
 }
 
 #[rstest]
 fn test_short_sha_is_first_7_chars_of_sha(repo: TestRepo) {
-    let (sha, _) = repo.commit("0.1.0-pre.1");
+    let (sha, _) = repo.commit("0.1.0+1");
     repo.assert().short_sha(&sha[..7]);
+}
+
+#[rstest]
+fn test_custom_prerelease_tag(mut repo: TestRepo) {
+    repo.config.pre_release_tag = "alpha".to_string();
+    repo.commit_and_assert("0.1.0-alpha.1")
+        .branch_name(MAIN_BRANCH)
+        .version_source_sha("");
 }

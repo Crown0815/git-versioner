@@ -1,4 +1,4 @@
-use git_versioner::config::DefaultConfig;
+use git_versioner::config::{Configuration, DefaultConfig};
 use git_versioner::{GitVersion, GitVersioner};
 use rstest::fixture;
 use std::path::PathBuf;
@@ -14,24 +14,68 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str) -> TestRepo {
 }
 
 pub struct TestRepo {
-    pub path: PathBuf,
-    pub config: DefaultConfig,
+    pub config: TestConfig,
     _temp_dir: tempfile::TempDir, // Keep the temp_dir to prevent it from being deleted
+}
+
+pub struct TestConfig {
+    pub path: PathBuf,
+    pub main_branch: String,
+    pub release_branch: String,
+    pub feature_branch: String,
+    pub tag_prefix: String,
+    pub pre_release_tag: String,
+    pub commit_message_incrementing: String,
+    pub continuous_delivery: bool,
+    pub as_release: bool,
+}
+
+macro_rules! config_getter {
+    ($name:ident, $return:ty) => {
+        fn $name(&self) -> &$return {
+            &self.$name
+        }
+    };
+}
+
+impl Configuration for TestConfig {
+    config_getter!(path, PathBuf);
+    config_getter!(main_branch, str);
+    config_getter!(release_branch, str);
+    config_getter!(feature_branch, str);
+    config_getter!(tag_prefix, str);
+    config_getter!(pre_release_tag, str);
+    config_getter!(commit_message_incrementing, str);
+    config_getter!(continuous_delivery, bool);
+    config_getter!(as_release, bool);
+}
+
+impl Default for TestConfig {
+    fn default() -> Self {
+        let default = DefaultConfig::default();
+        Self {
+            path: default.path,
+            main_branch: default.main_branch,
+            release_branch: default.release_branch,
+            feature_branch: default.feature_branch,
+            tag_prefix: default.tag_prefix,
+            pre_release_tag: default.pre_release_tag,
+            commit_message_incrementing: default.commit_message_incrementing,
+            continuous_delivery: default.continuous_delivery,
+            as_release: false,
+        }
+    }
 }
 
 impl TestRepo {
     pub fn new() -> Self {
         let _temp_dir = tempfile::tempdir().unwrap();
         let path = _temp_dir.path().to_path_buf();
-        let config = DefaultConfig {
-            path: path.clone(),
+        let config = TestConfig {
+            path,
             ..Default::default()
         };
-        Self {
-            path,
-            config,
-            _temp_dir,
-        }
+        Self { config, _temp_dir }
     }
 
     pub fn initialize(main_branch: &str) -> Self {
@@ -81,7 +125,7 @@ impl TestRepo {
     pub fn execute(&self, command: &[&str], description: &str) -> Output {
         let output = Command::new("git")
             .args(command)
-            .current_dir(&self.path)
+            .current_dir(&self.config.path)
             .output()
             .unwrap_or_else(|_| panic!("Failed to {description}"));
 
