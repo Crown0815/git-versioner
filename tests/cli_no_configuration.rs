@@ -6,10 +6,7 @@ use crate::common::MAIN_BRANCH;
 use insta::assert_snapshot;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::rstest;
-// use std::env;
 use std::process::Command;
-
-impl ConfiguredTestRepo {}
 
 #[rstest]
 fn test_release_candidate_on_main_branch(mut repo: ConfiguredTestRepo) {
