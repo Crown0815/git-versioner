@@ -52,7 +52,7 @@ fn test_release_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
     let (source, _) = repo.inner.commit("tagged");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
-    repo.inner.commit("1.0.1-pre.1");
+    repo.inner.commit("1.0.1+1");
 
     repo.execute_and_assert(
         ["--release-branch", "custom-release/(?<BranchName>.*)"],
@@ -65,7 +65,7 @@ fn test_release_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_feature_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
-    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.commit("0.1.0+1");
     repo.inner.branch("my-feature/feature");
     repo.inner.commit("0.1.0-feature.1");
 
@@ -119,7 +119,7 @@ fn test_output_from_main_branch(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_output_from_release_branch(mut repo: ConfiguredTestRepo) {
-    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.commit("0.1.0+1");
     repo.inner.branch("release/0.1.0");
 
     insta::with_settings!({filters => vec![
@@ -134,7 +134,7 @@ fn test_output_from_release_branch(mut repo: ConfiguredTestRepo) {
 #[rstest]
 fn test_output_from_feature_branch(mut repo: ConfiguredTestRepo) {
     repo.inner.branch("feature/my-feature");
-    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.commit("0.1.0+1");
 
     insta::with_settings!({filters => vec![
         (r"\b[[:xdigit:]]{40}\b", "########################################"),
@@ -147,7 +147,7 @@ fn test_output_from_feature_branch(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_output_from_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
-    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.commit("0.1.0+1");
     repo.inner.tag("0.1.0");
 
     insta::with_settings!({
@@ -163,7 +163,7 @@ fn test_output_from_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
 #[rstest]
 fn test_output_from_tag_on_release_branch(mut repo: ConfiguredTestRepo) {
     repo.inner.branch("release/0.1.0");
-    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.commit("0.1.0+1");
     repo.inner.tag("0.1.0");
 
     insta::with_settings!({
@@ -178,7 +178,7 @@ fn test_output_from_tag_on_release_branch(mut repo: ConfiguredTestRepo) {
 
 #[rstest]
 fn test_output_from_tag_checked_out(mut repo: ConfiguredTestRepo) {
-    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.commit("0.1.0+1");
     repo.inner.tag("0.1.0");
     repo.inner.checkout("tags/0.1.0");
 

@@ -276,7 +276,7 @@ fn test_release_tags_with_matching_version_tag_prefix_are_considered(
     repo: TestRepo,
     #[values("v", "V", "")] prefix: &str,
 ) {
-    let (source_sha, _) = repo.commit("0.1.0-pre.1");
+    let (source_sha, _) = repo.commit("0.1.0+1");
     repo.tag_and_assert(prefix, "1.0.0")
         .version_source_sha(&source_sha);
 }
@@ -440,12 +440,12 @@ fn test_assembly_sem_file_ver_is_major_minor_patch_dot_weighted_pre_release_numb
 
 #[rstest]
 fn test_sha_matches_head(repo: TestRepo) {
-    let (sha, _) = repo.commit("0.1.0-pre.1");
+    let (sha, _) = repo.commit("0.1.0+1");
     repo.assert().sha(&sha);
 }
 
 #[rstest]
 fn test_short_sha_is_first_7_chars_of_sha(repo: TestRepo) {
-    let (sha, _) = repo.commit("0.1.0-pre.1");
+    let (sha, _) = repo.commit("0.1.0+1");
     repo.assert().short_sha(&sha[..7]);
 }
