@@ -49,7 +49,7 @@ impl ConfiguredTestRepo {
         Ok(file_path)
     }
 
-    pub fn execute_and_assert<'a, I: IntoIterator<Item = &'a str>>(
+    pub fn execute_and_verify<'a, I: IntoIterator<Item = &'a str>>(
         &mut self,
         args: I,
         config_file: Option<(&str, &str)>,
@@ -59,10 +59,6 @@ impl ConfiguredTestRepo {
             Some((name, ext)) => self.write_config(name, ext).unwrap(),
         };
 
-        let output = self.cli.args(args).env_clear().output().unwrap();
-
-        let stdout = str::from_utf8(&output.stdout).unwrap();
-        let result: GitVersion = serde_json::from_str(stdout).unwrap();
         let context = format!(
             "Git Graph:\n  {}\nConfig ({}):\n  {}\nArgs:\n  {}\n",
             shifted(self.inner.graph()),
@@ -89,10 +85,14 @@ impl ConfiguredTestRepo {
             raw.replace("\n", "\n  ").trim_end_matches(' ').to_string()
         }
 
+        let output = self.cli.args(args).env_clear().output().unwrap();
+        let stdout = str::from_utf8(&output.stdout).unwrap();
+        let actual: GitVersion = serde_json::from_str(stdout).unwrap();
+
         let expected = self.inner.assert().result;
         assert_eq!(
-            &expected, &result,
-            "Expected {expected} does not match actual {result}\n{context}"
+            &expected, &actual,
+            "Expected {expected} does not match actual {actual}\n{context}"
         );
     }
 }
