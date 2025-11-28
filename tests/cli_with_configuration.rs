@@ -1,7 +1,7 @@
 mod cli;
 mod common;
 
-use crate::cli::{ConfiguredTestRepo as TestRepo, repo};
+use crate::cli::{ConfiguredTestRepo as TestRepo, ConfiguredTestRepo, repo};
 use rstest::rstest;
 use rstest_reuse::{apply, template};
 
@@ -10,7 +10,7 @@ const DEFAULT_CONFIG: &str = ".git-versioner";
 
 #[template]
 #[rstest]
-fn default(repo: TestRepo, #[values("toml", "yaml")] ext: &str) {}
+fn default(repo: TestRepo, #[values("toml", "yaml", "yml")] ext: &str) {}
 
 #[apply(default)]
 fn test_that_config_file_overrides_default_main_branch_pattern(
@@ -132,4 +132,32 @@ fn test_that_cli_argument_overrides_configuration_of_prerelease_tag(mut repo: Te
 
     repo.inner.config.pre_release_tag = "alpha".to_string();
     repo.execute_and_verify(["--pre-release-tag", "alpha"], Some((DEFAULT_CONFIG, ext)));
+}
+
+#[apply(default)]
+fn test_commit_message_incrementing(mut repo: TestRepo, ext: &str) {
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.tag("v1.0.1");
+    repo.inner.commit("1.0.2-pre.1");
+
+    repo.config_file.commit_message_incrementing = Some("Enabled".to_string());
+    repo.inner.config.commit_message_incrementing = "Enabled".to_string();
+    repo.execute_and_verify([], Some((DEFAULT_CONFIG, ext)));
+}
+
+#[apply(default)]
+fn test_that_cli_argument_overrides_configuration_of_commit_message_incrementing(
+    mut repo: TestRepo,
+    ext: &str,
+) {
+    repo.inner.commit("0.1.0-pre.1");
+    repo.inner.tag("v1.0.1");
+    repo.inner.commit("1.0.2-pre.1");
+
+    repo.config_file.commit_message_incrementing = Some("Disabled".to_string());
+    repo.inner.config.commit_message_incrementing = "Enabled".to_string();
+    repo.execute_and_verify(
+        ["--commit-message-incrementing", "Enabled"],
+        Some((DEFAULT_CONFIG, ext)),
+    );
 }

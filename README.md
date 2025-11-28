@@ -125,25 +125,37 @@ This command will output the calculated version string based on the repository's
 
 For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
 
-The command line options allow overwriting of configuration options using (see also [Configuration](#configuration))
+The command line options allow overwriting of configuration options using (see also [Configuration](#configuration)) and some additional options:
 
 ```shell
-      --main-branch <MAIN_BRANCH>          
-      --release-branch <RELEASE_BRANCH>    
-      --feature-branch <FEATURE_BRANCH>    
-      --tag-prefix <TAG_PREFIX>            
-      --pre-release-tag <PRE_RELEASE_TAG>  
-```
-
-Additionally, the following options are supported:
-
-```shell
-
-  -p, --path <PATH>                        
-  -v, --verbose                            
-  -c, --config <CONFIG_FILE>               Path to a configuration file (TOML or YAML)
-  -h, --help                               Print help
-  -V, --version                            Print version
+  -p, --path <PATH>
+          Path to the repository to calculate the version for
+      --main-branch <MAIN_BRANCH>
+          Regex to detect the main branch
+      --release-branch <RELEASE_BRANCH>
+          Regex to detect the release branch(es)
+      --feature-branch <FEATURE_BRANCH>
+          Regex to detect the feature branch(es)
+      --tag-prefix <TAG_PREFIX>
+          Regex to detect version tag(s)
+      --pre-release-tag <PRE_RELEASE_TAG>
+          Regex to detect pre-release version tag(s)
+      --continuous-delivery
+          Calculate version using continuous delivery mode
+      --commit-message-incrementing <COMMIT_MESSAGE_INCREMENTING>
+          Increment based on conventional commits (set to 'Enabled' or 'Disabled')
+  -a, --as-release
+          Forces release generation instead of pre-release
+      --show-config
+          Print effective configuration and exit
+  -v, --verbose
+          
+  -c, --config <CONFIG_FILE>
+          Path to a configuration file (TOML or YAML)
+  -h, --help
+          Print help (see more with '--help')
+  -V, --version
+          Print version
 ```
 
 For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
@@ -152,16 +164,17 @@ For integration in scripts or CI/CD, capture the output for use in build artifac
 
 Git Versioner supports a YAML or TOML configuration file to customize its behavior. 
 Create a file named `.git-versioner.toml`, `.git-versioner.yaml`, or `.git-versioner.yml` in the repository root.
-All fields are optional and will fall back to internal defaults if not specified. 
+All fields are optional and will fall back to internal defaults if not specified.
 
-An example configuration is as follows:
+The *default* configuration is as follows:
 
 ```yaml
-MainBranch: "^trunk$"
-ReleaseBranch: "^release/(?<BranchName>.+)$"
-FeatureBranch: "feature/(?<BranchName>.+)$"
-TagPrefix: "[vV]?"
-PreReleaseTag: "pre"
+MainBranch: ^(trunk|main|master)$
+ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
+FeatureBranch: ^features?[/-](?<BranchName>.+)$
+TagPrefix: '[vV]?'
+PreReleaseTag: pre
+CommitMessageIncrementing: Disabled
 ```
 
 ### Configuration Fields

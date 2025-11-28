@@ -24,6 +24,7 @@ jobs:
     outputs:
       sem-ver: ${{ steps.determine-version.outputs.GitVersion_SemVer }}
       pre-release-label: ${{ steps.determine-version.outputs.GitVersion_PreReleaseLabel }}
+      version-source-sha: ${{ steps.determine-version.outputs.GitVersion_VersionSourceSha }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -33,12 +34,39 @@ jobs:
 
       - name: Install git-versioner
         run: |
-          curl -L -o git-versioner https://github.com/Crown0815/git-versioner/releases/download/v0.6.0/git-versioner-x86_64-unknown-linux-gnu
+          curl -L -o git-versioner https://github.com/Crown0815/git-versioner/releases/download/v0.8.0/git-versioner-x86_64-unknown-linux-gnu
           chmod +x git-versioner
 
       - name: Determine Version
         id: determine-version
         run: ./git-versioner ${{ github.event.inputs.as-pre-release && '' || '--as-release' }}
+
+  determine-changelog:
+    name: Determine Changelog
+    runs-on: ubuntu-latest
+    outputs:
+      changelog: ${{ steps.determine-changelog.outputs.changelog }}
+    needs:
+      determine-version
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Changelog
+        id: determine-changelog
+        run: |-
+          export PATH="$PATH:/root/.dotnet/tools"
+          dotnet tool install --global ConventionalChangelog --version 0.11.0
+          CHANGELOG=$(changelog --skip-title --show-hash --reference-commit ${{ needs.determine-version.outputs.version-source-sha }} "${{ github.workspace }}")
+
+          echo "changelog<<EOF_STEFFIMAXMAGDALENA" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG" >> "$GITHUB_OUTPUT"
+          echo "EOF_STEFFIMAXMAGDALENA" >> "$GITHUB_OUTPUT"
+
+      - name: Print Changelog
+        run: echo "${{ steps.determine-changelog.outputs.changelog }}"
 
   build:
     strategy:
@@ -217,7 +245,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    needs: [build, determine-version]
+    needs: [build, determine-version, determine-changelog]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
@@ -255,4 +283,6 @@ jobs:
           tag_name: "v${{ needs.determine-version.outputs.sem-ver }}"
           draft: ${{ github.event.inputs.as-draft }}
           prerelease: ${{ steps.determine-version.outputs.pre-release-label != '' }}
+          body: |
+            ${{ needs.determine-changelog.outputs.changelog }}
           fail_on_unmatched_files: true

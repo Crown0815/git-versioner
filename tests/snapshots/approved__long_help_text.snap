@@ -1,0 +1,65 @@
+---
+source: tests/approved.rs
+info:
+  program: git-versioner
+  args:
+    - "--help"
+---
+success: true
+exit_code: 0
+----- stdout -----
+A tool to manage versions of git repositories
+
+Usage: git-versioner [OPTIONS]
+
+Options:
+  -p, --path <PATH>
+          Path to the repository to calculate the version for
+
+      --main-branch <MAIN_BRANCH>
+          Regex to detect the main branch
+
+      --release-branch <RELEASE_BRANCH>
+          Regex to detect the release branch(es)
+
+      --feature-branch <FEATURE_BRANCH>
+          Regex to detect the feature branch(es)
+
+      --tag-prefix <TAG_PREFIX>
+          Regex to detect version tag(s)
+
+      --pre-release-tag <PRE_RELEASE_TAG>
+          Regex to detect pre-release version tag(s)
+
+      --continuous-delivery
+          Calculate version using continuous delivery mode
+
+      --commit-message-incrementing <COMMIT_MESSAGE_INCREMENTING>
+          Increment considering conventional commits (values: 'Disabled' (default) or 'Enabled'):
+          - Disabled: Incrementation will be based on tags and release branches only.
+                      After a release tag is created on the main branch (e.g. v1.2.0), the main branch will
+                      automatically be bumped to the next minor version (e.g. v1.3.0).
+          - Enabled:  Incrementation will be based on tags, release branches and commits.
+                      Instead of bumping the minor version on the main branch after a feature release tag
+                      (e.g. v1.2.0), only the patch version will be incremented (e.g. v1.2.1) until a `feat:`
+                      commit is encountered or a release branch is created.
+
+  -a, --as-release
+          Forces release generation instead of pre-release
+
+      --show-config
+          Print effective configuration and exit
+
+  -v, --verbose
+          
+
+  -c, --config <CONFIG_FILE>
+          Path to a configuration file (TOML or YAML)
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+  -V, --version
+          Print version
+
+----- stderr -----
