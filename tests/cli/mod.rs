@@ -23,14 +23,14 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str, mut cmd: Command) -> ConfiguredT
     ConfiguredTestRepo {
         inner: repo,
         config_file,
-        cli: cmd,
+        cmd,
     }
 }
 
 pub struct ConfiguredTestRepo {
     pub inner: TestRepo,
     pub config_file: ConfigurationFile,
-    pub cli: Command,
+    pub cmd: Command,
 }
 
 impl ConfiguredTestRepo {
@@ -66,7 +66,7 @@ impl ConfiguredTestRepo {
             None => PathBuf::new(),
             Some((name, ext)) => self.write_config(name, ext).unwrap(),
         };
-        let output = self.cli.args(args).env_clear().output().unwrap();
+        let output = self.cmd.args(args).env_clear().output().unwrap();
 
         let context = format!(
             "Git Graph:\n  {}\nConfig ({}):\n  {}\nArgs:\n  {}\n",
@@ -76,7 +76,7 @@ impl ConfiguredTestRepo {
                 .unwrap_or_default()
                 .to_string_lossy(),
             shifted(fs::read_to_string(&config_path).unwrap_or_default()),
-            self.cli
+            self.cmd
                 .get_args()
                 .map(|s| {
                     let arg = s.to_string_lossy();
