@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+const DEFAULT_CONFIG_FILE_NAME: &str = ".git-versioner";
+const CONFIG_FILE_EXTENSIONS: [&str; 3] = ["toml", "yaml", "yml"];
+
 pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
@@ -192,6 +195,19 @@ impl Configuration for DefaultConfig {
 }
 
 impl ConfigurationFile {
+    pub fn from_default_file() -> anyhow::Result<Self> {
+        let mut last_error: Option<anyhow::Error> = None;
+
+        for &ext in CONFIG_FILE_EXTENSIONS.iter() {
+            match Self::from_file(format!("{}.{}", DEFAULT_CONFIG_FILE_NAME, ext)) {
+                Ok(config) => return Ok(config),
+                Err(err) => last_error = Some(err),
+            }
+        }
+
+        Err(last_error.unwrap())
+    }
+
     pub fn from_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let path = path.as_ref();
         let extension = path
@@ -204,12 +220,6 @@ impl ConfigurationFile {
             "yaml" | "yml" => Self::from_yaml_file(path),
             _ => Err(anyhow!("Unsupported file format: {}", extension)),
         }
-    }
-
-    pub fn from_default_files() -> anyhow::Result<Self> {
-        Self::from_file(".git-versioner.toml")
-            .or_else(|_| Self::from_file(".git-versioner.yaml"))
-            .or_else(|_| Self::from_file(".git-versioner.yml"))
     }
 
     fn from_toml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
@@ -229,7 +239,7 @@ pub fn load_configuration() -> anyhow::Result<ConfigurationLayers> {
     let args = Args::parse();
     let config = DefaultConfig::default();
     let file = match &args.config_file {
-        None => ConfigurationFile::from_default_files(),
+        None => ConfigurationFile::from_default_file(),
         Some(path) => ConfigurationFile::from_file(path),
     }
     .unwrap_or_default();

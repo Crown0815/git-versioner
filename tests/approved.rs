@@ -23,10 +23,15 @@ fn test_help_text(mut cmd: Command) {
 #[rstest]
 fn test_configuration(mut repo: ConfiguredTestRepo, #[values("toml", "yaml", "yml")] ext: &str) {
     repo.config_file = map_from(DefaultConfig::default());
-    assert_snapshot!(repo.serialize_config(ext).unwrap());
+    let default_config_file_content = repo.serialize_config(ext).unwrap();
 
+    assert_snapshot!(
+        format!("configuration_{}", ext),
+        default_config_file_content
+    );
+
+    // sets default config values to the configuration file
     fn map_from(original: DefaultConfig) -> ConfigurationFile {
-        // maps from default config to the configuration file to automatically test new fields
         serde_json::from_value(serde_json::to_value(original).unwrap()).unwrap()
     }
 }

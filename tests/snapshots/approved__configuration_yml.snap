@@ -1,6 +1,7 @@
 ---
 source: tests/approved.rs
-expression: repo.serialize_config(ext).unwrap()
+assertion_line: 27
+expression: default_config_file_content
 ---
 MainBranch: ^(trunk|main|master)$
 ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
