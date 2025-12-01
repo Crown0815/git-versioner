@@ -18,7 +18,7 @@ pub fn repo(#[default(MAIN_BRANCH)] main: &str, mut cmd: Command) -> ConfiguredT
     let repo = TestRepo::initialize(main);
     let config_file = ConfigurationFile::default();
     repo.commit("0.1.0-pre.1");
-    cmd.current_dir(&repo.config.path);
+    cmd.current_dir(&repo.config.path).env_clear();
 
     ConfiguredTestRepo {
         inner: repo,

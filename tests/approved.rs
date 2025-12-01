@@ -116,7 +116,6 @@ fn test_environment_variable_output_in_github_context(mut repo: ConfiguredTestRe
     let output = repo
         .cmd
         .current_dir(repo.inner.config.path)
-        .env_clear()
         .env("CI", "true")
         .env("GITHUB_OUTPUT", github_output.path())
         .output()
