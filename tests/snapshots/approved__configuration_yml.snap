@@ -1,0 +1,11 @@
+---
+source: tests/approved.rs
+assertion_line: 27
+expression: default_config_file_content
+---
+MainBranch: ^(trunk|main|master)$
+ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
+FeatureBranch: ^features?[/-](?<BranchName>.+)$
+TagPrefix: '[vV]?'
+PreReleaseTag: pre
+CommitMessageIncrementing: Disabled

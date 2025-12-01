@@ -1,0 +1,45 @@
+---
+source: tests/approved.rs
+info:
+  program: git-versioner
+  args:
+    - "-h"
+---
+success: true
+exit_code: 0
+----- stdout -----
+A tool to manage versions of git repositories
+
+Usage: git-versioner [OPTIONS]
+
+Options:
+  -p, --path <PATH>
+          Path to the repository to calculate the version for
+      --main-branch <MAIN_BRANCH>
+          Regex to detect the main branch
+      --release-branch <RELEASE_BRANCH>
+          Regex to detect the release branch(es)
+      --feature-branch <FEATURE_BRANCH>
+          Regex to detect the feature branch(es)
+      --tag-prefix <TAG_PREFIX>
+          Regex to detect version tag(s)
+      --pre-release-tag <PRE_RELEASE_TAG>
+          Regex to detect pre-release version tag(s)
+      --continuous-delivery
+          Calculate version using continuous delivery mode
+      --commit-message-incrementing <COMMIT_MESSAGE_INCREMENTING>
+          Increment based on conventional commits ('Disabled' (default) or 'Enabled')
+  -a, --as-release
+          Forces release generation instead of pre-release
+      --show-config
+          Print effective configuration and exit
+  -v, --verbose
+          
+  -c, --config <CONFIG_FILE>
+          Path to a configuration file (TOML or YAML)
+  -h, --help
+          Print help (see more with '--help')
+  -V, --version
+          Print version
+
+----- stderr -----
