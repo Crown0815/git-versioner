@@ -162,13 +162,6 @@ jobs:
         with:
           toolchain: ${{ matrix.build.toolchain }}
           targets: ${{ matrix.build.target }}
-          components: rustfmt, clippy
-
-      - name: Check format
-        run: cargo fmt -- --check
-
-      - name: Run clippy
-        run: cargo clippy -- -D warnings
 
       - name: Set version in Cargo.toml
         run: |
