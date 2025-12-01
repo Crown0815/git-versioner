@@ -53,7 +53,7 @@ macro_rules! with_masked_unpredictable_values {
 #[rstest]
 fn test_output_from_main_branch(mut repo: ConfiguredTestRepo) {
     with_masked_unpredictable_values! {
-        assert_cmd_snapshot!(repo.cmd.current_dir(repo.inner.config.path));
+        assert_cmd_snapshot!(repo.cmd);
     }
 }
 
@@ -63,7 +63,7 @@ fn test_output_from_release_branch(mut repo: ConfiguredTestRepo) {
     repo.inner.branch("release/0.1.0");
 
     with_masked_unpredictable_values! {
-        assert_cmd_snapshot!(repo.cmd.current_dir(repo.inner.config.path));
+        assert_cmd_snapshot!(repo.cmd);
     }
 }
 
@@ -73,7 +73,7 @@ fn test_output_from_feature_branch(mut repo: ConfiguredTestRepo) {
     repo.inner.commit("0.1.0+1");
 
     with_masked_unpredictable_values! {
-        assert_cmd_snapshot!(repo.cmd.current_dir(repo.inner.config.path));
+        assert_cmd_snapshot!(repo.cmd);
     }
 }
 
@@ -83,7 +83,7 @@ fn test_output_from_tag_on_main_branch(mut repo: ConfiguredTestRepo) {
     repo.inner.tag("0.1.0");
 
     with_masked_unpredictable_values! {
-        assert_cmd_snapshot!(repo.cmd.current_dir(repo.inner.config.path));
+        assert_cmd_snapshot!(repo.cmd);
     }
 }
 
@@ -94,7 +94,7 @@ fn test_output_from_tag_on_release_branch(mut repo: ConfiguredTestRepo) {
     repo.inner.tag("0.1.0");
 
     with_masked_unpredictable_values! {
-        assert_cmd_snapshot!(repo.cmd.current_dir(repo.inner.config.path));
+        assert_cmd_snapshot!(repo.cmd);
     }
 }
 
@@ -105,7 +105,7 @@ fn test_output_from_tag_checked_out(mut repo: ConfiguredTestRepo) {
     repo.inner.checkout("tags/0.1.0");
 
     with_masked_unpredictable_values! {
-        assert_cmd_snapshot!(repo.cmd.current_dir(repo.inner.config.path));
+        assert_cmd_snapshot!(repo.cmd);
     }
 }
 
@@ -115,7 +115,6 @@ fn test_environment_variable_output_in_github_context(mut repo: ConfiguredTestRe
 
     let output = repo
         .cmd
-        .current_dir(repo.inner.config.path)
         .env("CI", "true")
         .env("GITHUB_OUTPUT", github_output.path())
         .output()
@@ -134,6 +133,6 @@ fn test_output_from_show_config(mut repo: ConfiguredTestRepo) {
     insta::with_settings!({filters => vec![
         (r#"Path = ["'][a-zA-Z0-9-_.~+=,:@%/\\]+["']"#, r#"Path = "<repository_path>""#),
     ]}, {
-        assert_cmd_snapshot!(repo.cmd.current_dir(repo.inner.config.path).args(["--show-config"]));
+        assert_cmd_snapshot!(repo.cmd.args(["--show-config"]));
     });
 }
