@@ -413,7 +413,7 @@ impl GitVersioner {
             let (pre_release_number, source) = match self.continuous_delivery {
                 true => {
                     let highest_pre_release =
-                        self.find_latest_matching_pre_release(&source.version)?;
+                        self.find_latest_matching_pre_release(&new_version)?;
                     let reference_pre_release = highest_pre_release.unwrap_or((0, source));
                     (reference_pre_release.0 + 1, reference_pre_release.1)
                 }
@@ -435,7 +435,7 @@ impl GitVersioner {
             let (pre_release_number, source) = match self.continuous_delivery {
                 true => {
                     let highest_pre_release =
-                        self.find_latest_matching_pre_release(&source.version)?;
+                        self.find_latest_matching_pre_release(release_version)?;
                     let reference_pre_release = highest_pre_release.unwrap_or((0, source));
                     (reference_pre_release.0 + 1, reference_pre_release.1)
                 }
@@ -450,11 +450,6 @@ impl GitVersioner {
             new_version.pre = self.pre_release(pre_release_number)?;
             Ok((new_version, source, PRERELEASE_WEIGHT_RELEASE))
         } else {
-            let mut found_branches = self.find_all_source_branches(head_id)?;
-
-            found_branches.sort_by(|a, b| a.branch_type.cmp(&b.branch_type));
-            let closest_branch = found_branches.first().unwrap();
-
             let version = release_version.clone();
             let source = VersionSource {
                 version,
@@ -470,6 +465,9 @@ impl GitVersioner {
                     (reference_pre_release.0 + 1, reference_pre_release.1)
                 }
                 false => {
+                    let mut found_branches = self.find_all_source_branches(head_id)?;
+                    found_branches.sort_by(|a, b| a.branch_type.cmp(&b.branch_type));
+                    let closest_branch = found_branches.first().unwrap();
                     let commit_count = closest_branch.distance;
                     (commit_count, source)
                 }
