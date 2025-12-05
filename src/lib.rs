@@ -435,7 +435,7 @@ impl GitVersioner {
             let (pre_release_number, source) = match self.continuous_delivery {
                 true => {
                     let highest_pre_release =
-                        self.find_latest_matching_pre_release(&release_version)?;
+                        self.find_latest_matching_pre_release(release_version)?;
                     let reference_pre_release = highest_pre_release.unwrap_or((0, source));
                     (reference_pre_release.0 + 1, reference_pre_release.1)
                 }
