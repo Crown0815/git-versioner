@@ -430,6 +430,7 @@ fn test_weighted_prerelease_number_for_checked_out_release_tag_adds_60000(repo: 
     repo.assert()
         .full_sem_ver("0.1.0")
         .version_source_sha(&sha)
+        .pre_release_label_with_dash("")
         .weighted_pre_release_number(60000);
 }
 
