@@ -19,7 +19,7 @@ jobs:
     - name: Inspect code
       run: |
         cargo clippy --version
-        cargo clippy -- -D warnings
+        cargo clippy --all-targets -- -D warnings
 
   test:
     runs-on: ubuntu-latest
