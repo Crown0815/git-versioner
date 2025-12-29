@@ -132,7 +132,7 @@ fn test_result_on_checked_out_version_tag_is_the_tag_version(repo: TestRepo) {
     repo.checkout("tags/v1.0.0");
 
     repo.assert()
-        .version("1.0.0")
+        .full_sem_ver("1.0.0")
         .version_source_sha(&sha)
         .branch_name("(no branch)")
         .escaped_branch_name("-no-branch-");
@@ -270,7 +270,7 @@ fn test_release_tags_with_matching_version_tag_prefix_are_considered(
 fn test_prerelease_tags_with_matching_version_tag_prefix_are_ignored(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.tag("v1.0.0-pre.1");
-    repo.assert().version("0.1.0-pre.1");
+    repo.assert().full_sem_ver("0.1.0-pre.1");
 }
 
 #[rstest]
@@ -280,7 +280,7 @@ fn test_release_tags_without_matching_version_tag_prefix_are_ignored(
 ) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.tag(&format!("{prefix}1.0.0"));
-    repo.assert().version("0.1.0-pre.1");
+    repo.assert().full_sem_ver("0.1.0-pre.1");
 }
 
 #[rstest]
@@ -291,7 +291,7 @@ fn test_tags_with_matching_custom_version_tag_prefix_are_considered(mut repo: Te
     let (sha, _) = repo.tag("my/v1.0.0");
 
     repo.assert()
-        .version("1.0.0")
+        .full_sem_ver("1.0.0")
         .branch_name(MAIN_BRANCH)
         .version_source_sha(&sha);
 }
@@ -422,7 +422,7 @@ fn test_weighted_prerelease_number_for_checked_out_release_tag_adds_60000(repo: 
     repo.checkout("tags/v0.1.0");
 
     repo.assert()
-        .version("0.1.0")
+        .full_sem_ver("0.1.0")
         .version_source_sha(&sha)
         .weighted_pre_release_number(60000);
 }

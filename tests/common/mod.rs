@@ -126,22 +126,22 @@ impl TestRepo {
 
     pub fn commit_and_assert(&self, expected: &str) -> Assertable {
         self.commit(expected);
-        self.assert().version(expected)
+        self.assert().full_sem_ver(expected)
     }
 
     pub fn tag_and_assert(&self, prefix: &str, expected: &str) -> Assertable {
         self.tag(&format!("{prefix}{expected}"));
-        self.assert().version(expected)
+        self.assert().full_sem_ver(expected)
     }
 
     pub fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) -> Assertable {
         self.tag_annotated(&format!("{prefix}{expected_version}"));
-        self.assert().version(expected_version)
+        self.assert().full_sem_ver(expected_version)
     }
 
     pub fn merge_and_assert(&self, branch_name: &str, expected_version: &str) -> Assertable {
         self.merge(branch_name);
-        self.assert().version(expected_version)
+        self.assert().full_sem_ver(expected_version)
     }
 
     pub fn path(&self) -> &str {
@@ -277,94 +277,42 @@ pub struct Assertable {
     pub context: String,
 }
 
+
+macro_rules! config_assertion {
+    ($name:ident, &$expected:ty) => {
+        pub fn $name(self, expected: &$expected) -> Self {
+            let actual = &self.result.$name;
+            let context = &self.context;
+            let name = stringify!($name);
+            assert_eq!(
+                actual, expected,
+                "Expected {name}: {expected}, found: {actual}\n{context}",
+            );
+            self
+        }
+    };
+    ($name:ident, $expected:ty) => {
+        pub fn $name(self, expected: $expected) -> Self {
+            let actual = self.result.$name;
+            let context = &self.context;
+            let name = stringify!($name);
+            assert_eq!(
+                actual, expected,
+                "Expected {name}: {expected}, found: {actual}\n{context}",
+            );
+            self
+        }
+    };
+}
+
 impl Assertable {
-    pub fn version(self, expected: &str) -> Self {
-        let actual = &self.result.full_sem_ver;
-        assert_eq!(
-            actual, expected,
-            "Expected version: {expected}, found: {actual}\n{}",
-            self.result,
-        );
-        self
-    }
-
-    pub fn branch_name(self, expected: &str) -> Self {
-        let actual = &self.result.branch_name;
-        assert_eq!(
-            actual, expected,
-            "Expected branch_name: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn escaped_branch_name(self, expected: &str) -> Self {
-        let actual = &self.result.escaped_branch_name;
-        assert_eq!(
-            actual, expected,
-            "Expected escaped_branch_name: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn weighted_pre_release_number(self, expected: u64) -> Self {
-        let actual = self.result.weighted_pre_release_number;
-        assert_eq!(
-            actual, expected,
-            "Expected weighted_pre_release_number: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn assembly_sem_ver(self, expected: &str) -> Self {
-        let actual = &self.result.assembly_sem_ver;
-        assert_eq!(
-            actual, expected,
-            "Expected assembly_sem_ver: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn assembly_sem_file_ver(self, expected: &str) -> Self {
-        let actual = &self.result.assembly_sem_file_ver;
-        assert_eq!(
-            actual, expected,
-            "Expected assembly_sem_file_ver: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn sha(self, expected: &str) -> Self {
-        let actual = &self.result.sha;
-        assert_eq!(
-            actual, expected,
-            "Expected sha: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn short_sha(self, expected: &str) -> Self {
-        let actual = &self.result.short_sha;
-        assert_eq!(
-            actual, expected,
-            "Expected short_sha: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
-
-    pub fn version_source_sha(self, expected: &str) -> Self {
-        let actual = &self.result.version_source_sha;
-        assert_eq!(
-            actual, expected,
-            "Expected version_source_sha: {expected}, found: {actual}\n{}",
-            self.context
-        );
-        self
-    }
+    config_assertion!(full_sem_ver, &str);
+    config_assertion!(branch_name, &str);
+    config_assertion!(escaped_branch_name, &str);
+    config_assertion!(weighted_pre_release_number, u64);
+    config_assertion!(assembly_sem_ver, &str);
+    config_assertion!(assembly_sem_file_ver, &str);
+    config_assertion!(sha, &str);
+    config_assertion!(short_sha, &str);
+    config_assertion!(version_source_sha, &str);
 }
