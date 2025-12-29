@@ -40,7 +40,7 @@ fn test_that_cli_argument_overrides_configuration_of_main_branch_pattern(
 #[apply(default)]
 fn test_that_config_file_overrides_default_release_branch_pattern(mut repo: TestRepo, ext: &str) {
     repo.config_file.release_branch = Some("custom-release/(?<BranchName>.*)".to_string());
-    let (source, _) = repo.inner.commit("0.1.0+2");
+    repo.inner.commit("0.1.0+2");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1+1");
@@ -55,7 +55,7 @@ fn test_that_cli_argument_overrides_configuration_of_release_branch_pattern(
     ext: &str,
 ) {
     repo.config_file.release_branch = Some("whatever-release/(?<BranchName>.*)".to_string());
-    let (source, _) = repo.inner.commit("0.1.0+1");
+    repo.inner.commit("0.1.0+1");
     repo.inner.tag("v1.0.0");
     repo.inner.branch("custom-release/1.0.0");
     repo.inner.commit("1.0.1+1");
