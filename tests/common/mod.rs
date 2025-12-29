@@ -255,7 +255,8 @@ gitGraph:
     }
 
     pub fn merge_and_assert(&self, name: &str, expected_version: &str) -> Assertable {
-        self.mermaid.borrow_mut().push(format!("   merge \"{name}\""));
+        self.mermaid.borrow_mut().push(format!("   merge \"{name}\" id: \"{}\"",
+                                               expected_version.replace('"', "'")));
         self.test_repo.merge_and_assert(name, expected_version)
     }
 
