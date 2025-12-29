@@ -2,12 +2,10 @@ mod cli;
 mod common;
 
 use crate::cli::{ConfiguredTestRepo, cmd, repo};
-use crate::common::MAIN_BRANCH;
 use git_versioner::config::{ConfigurationFile, DefaultConfig};
 use insta::assert_snapshot;
 use insta_cmd::assert_cmd_snapshot;
 use rstest::rstest;
-use std::path::PathBuf;
 use std::process::Command;
 
 #[rstest]
