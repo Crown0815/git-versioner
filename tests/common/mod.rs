@@ -305,6 +305,8 @@ macro_rules! config_assertion {
     };
 }
 
+
+#[allow(dead_code)]
 impl Assertable {
     config_assertion!(full_sem_ver, &str);
     config_assertion!(branch_name, &str);

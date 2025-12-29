@@ -33,6 +33,7 @@ pub struct ConfiguredTestRepo {
     pub cmd: Command,
 }
 
+#[allow(dead_code)]
 impl ConfiguredTestRepo {
     pub fn write_config(&self, name: &str, extension: &str) -> anyhow::Result<PathBuf> {
         let content = self.serialize_config(extension)?;
