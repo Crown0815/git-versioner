@@ -17,6 +17,9 @@ fn mermaid_repo(#[default(MAIN_BRANCH)] main_branch: &str) -> VisualizableRepo {
     repo
 }
 
+/// # Trunk-based Development
+///
+/// %%MERMAID%%
 #[rstest]
 fn test_full_workflow(mermaid_repo: VisualizableRepo) {
     let repo = mermaid_repo;
@@ -68,9 +71,12 @@ fn test_full_workflow(mermaid_repo: VisualizableRepo) {
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("2.1.0-pre.1");
 
-    println!("{}", repo.draw());
+    repo.write_markdown(file!(), "test_full_workflow");
 }
 
+/// # Trunk-based Development with Feature Branches
+///
+/// %%MERMAID%%
 #[rstest]
 fn test_full_workflow_with_feature_branches(mermaid_repo: VisualizableRepo) {
     let repo = mermaid_repo;
@@ -112,7 +118,7 @@ fn test_full_workflow_with_feature_branches(mermaid_repo: VisualizableRepo) {
     repo.merge_and_assert("feature/feature3-2", "1.1.0-pre.6");
     repo.merge_and_assert("feature/feature3-1", "1.1.0-pre.9");
 
-    println!("{}", repo.draw());
+    repo.write_markdown(file!(), "test_full_workflow_with_feature_branches");
 }
 
 #[rstest]

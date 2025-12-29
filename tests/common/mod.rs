@@ -213,9 +213,10 @@ impl VisualizableRepo {
 config:
   theme: default
   gitGraph:
-    mainBranchName: {main_branch}
+    mainBranchName: "{main_branch}"
 ---
-gitGraph:"#)]),
+gitGraph:
+   checkout "{main_branch}""#)]),
         }
     }
     
@@ -242,24 +243,24 @@ gitGraph:"#)]),
     }
 
     pub fn branch(&self, name: &str) {
-        self.mermaid.borrow_mut().push(format!("   branch {name}"));
+        self.mermaid.borrow_mut().push(format!("   branch \"{name}\""));
         self.test_repo.branch(name);
     }
 
     pub fn checkout(&self, name: &str) {
         self.mermaid
             .borrow_mut()
-            .push(format!("   checkout {name}"));
+            .push(format!("   checkout \"{name}\""));
         self.test_repo.checkout(name);
     }
 
     pub fn merge_and_assert(&self, name: &str, expected_version: &str) -> Assertable {
-        self.mermaid.borrow_mut().push(format!("   merge {name}"));
+        self.mermaid.borrow_mut().push(format!("   merge \"{name}\""));
         self.test_repo.merge_and_assert(name, expected_version)
     }
 
     pub fn merge_with_tag_and_assert(&self, name: &str, expected_version: &str, prefix: &str, expected: &str) -> Assertable {
-        self.mermaid.borrow_mut().push(format!("   merge {name} id: \"{}\" tag: \"{}{}\"",
+        self.mermaid.borrow_mut().push(format!("   merge \"{name}\" id: \"{}\" tag: \"{}{}\"",
                                                expected_version.replace('"', "'"),
                                                prefix.replace('"', "'"),
                                                expected.replace('"', "'")));
@@ -269,6 +270,42 @@ gitGraph:"#)]),
 
     pub fn draw(&self) -> String {
         self.mermaid.borrow().join("\n")
+    }
+
+    pub fn write_markdown(&self, file: &str, function: &str) {
+        let path = std::path::Path::new(file);
+        let file_name = path.file_stem().unwrap().to_str().unwrap();
+        let content = std::fs::read_to_string(path).unwrap();
+        let lines: Vec<&str> = content.lines().collect();
+
+        let mut doc_comment = Vec::new();
+        for i in 0..lines.len() {
+            if lines[i].contains(&format!("fn {function}(")) {
+                for j in (0..i).rev() {
+                    let line = lines[j].trim();
+                    if line.starts_with("///") {
+                        doc_comment.push(line[3..].trim());
+                    } else if line.starts_with("#[") {
+                        continue;
+                    } else {
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        doc_comment.reverse();
+        let doc_comment = doc_comment.join("\n");
+        let mermaid = self.draw();
+        let markdown = doc_comment.replace("%%MERMAID%%", &format!("```mermaid\n{}\n```", mermaid));
+
+        let docs_dir = std::path::Path::new("docs");
+        if !docs_dir.exists() {
+            std::fs::create_dir_all(docs_dir).unwrap();
+        }
+
+        let output_file = docs_dir.join(format!("{}_{}.md", file_name, function));
+        std::fs::write(output_file, markdown).unwrap();
     }
 }
 
