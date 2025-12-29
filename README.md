@@ -12,7 +12,7 @@
 [![](https://img.shields.io/github/license/crown0815/git-versioner)](https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt)
 ![](https://img.shields.io/github/downloads/crown0815/git-versioner/total)
 
-````mermaid
+```mermaid
 ---
 config:
   theme: default
