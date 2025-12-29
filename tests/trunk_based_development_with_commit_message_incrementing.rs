@@ -1,40 +1,7 @@
 mod common;
 
-use crate::common::{Assertable, MAIN_BRANCH, TestRepo};
+use crate::common::{MAIN_BRANCH, TestRepo};
 use rstest::{fixture, rstest};
-
-impl TestRepo {
-    fn commit_and_assert(&self, expected: &str) -> Assertable {
-        self.commit(expected);
-        self.assert().version(expected)
-    }
-
-    fn tag_and_assert(&self, prefix: &str, expected: &str) -> Assertable {
-        self.tag(&format!("{prefix}{expected}"));
-        self.assert().version(expected)
-    }
-
-    pub fn tag_annotated(&self, name: &str) {
-        self.execute(
-            &["tag", "-a", name, "-m", name],
-            &format!("create tag {name}"),
-        );
-    }
-
-    fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) -> Assertable {
-        self.tag_annotated(&format!("{prefix}{expected_version}"));
-        self.assert().version(expected_version)
-    }
-
-    pub fn merge(&self, name: &str) {
-        self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
-    }
-
-    fn merge_and_assert(&self, branch_name: &str, expected_version: &str) -> Assertable {
-        self.merge(branch_name);
-        self.assert().version(expected_version)
-    }
-}
 
 #[fixture]
 fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {

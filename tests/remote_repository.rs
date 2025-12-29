@@ -3,21 +3,6 @@ mod common;
 use crate::common::{MAIN_BRANCH, TestRepo};
 use rstest::{fixture, rstest};
 
-impl TestRepo {
-    pub fn path(&self) -> &str {
-        self.config.path.to_str().unwrap()
-    }
-
-    pub fn clone(source: TestRepo) -> Self {
-        let repo = TestRepo::new();
-        repo.execute(
-            &["clone", &format!(r"file://{}", source.path()), repo.path()],
-            &format!("clone {}", source.path()),
-        );
-        repo
-    }
-}
-
 #[fixture]
 fn repo() -> TestRepo {
     TestRepo::initialize(MAIN_BRANCH)
@@ -30,7 +15,7 @@ fn test_feature_branch_inherits_remote_main_branch_base_version(repo: TestRepo) 
     repo.branch("feature/feature");
     repo.commit("1.1.0-feature.1");
 
-    let clone = TestRepo::clone(repo);
+    let clone = TestRepo::clone(&repo);
     clone.checkout("feature/feature");
     clone.assert().version("1.1.0-feature.1");
 }
@@ -43,7 +28,7 @@ fn test_feature_branch_inherits_remote_release_branch_base_version(repo: TestRep
     repo.branch("feature/feature");
     repo.commit("1.0.0-feature.1");
 
-    let clone = TestRepo::clone(repo);
+    let clone = TestRepo::clone(&repo);
     clone.checkout("feature/feature");
     clone.assert().version("1.0.0-feature.1");
 }
@@ -56,7 +41,7 @@ fn test_main_branch_considers_remote_release_branches_as_base_version(repo: Test
     repo.checkout(MAIN_BRANCH);
     repo.commit("1.1.0+1");
 
-    let clone = TestRepo::clone(repo);
+    let clone = TestRepo::clone(&repo);
     clone.checkout(MAIN_BRANCH);
     clone.assert().version("1.1.0-pre.1");
 }

@@ -67,6 +67,7 @@ impl Default for TestConfig {
     }
 }
 
+#[allow(dead_code)]
 impl TestRepo {
     pub fn new() -> Self {
         let _temp_dir = tempfile::tempdir().unwrap();
@@ -112,6 +113,47 @@ impl TestRepo {
     pub fn tag(&self, name: &str) -> (String, String) {
         self.execute(&["tag", name], &format!("create tag {name}"));
         self.read_head_sha_and_date()
+    }
+
+    pub fn merge(&self, name: &str) {
+        self.execute(&["merge", "--no-ff", name], &format!("merge {name}"));
+    }
+
+    pub fn tag_annotated(&self, name: &str) {
+        self.execute(&["tag", "-a", name, "-m", name],&format!("create tag {name}"));
+    }
+
+    pub fn commit_and_assert(&self, expected: &str) -> Assertable {
+        self.commit(expected);
+        self.assert().version(expected)
+    }
+
+    pub fn tag_and_assert(&self, prefix: &str, expected: &str) -> Assertable {
+        self.tag(&format!("{prefix}{expected}"));
+        self.assert().version(expected)
+    }
+
+    pub fn tag_annotated_and_assert(&self, prefix: &str, expected_version: &str) -> Assertable {
+        self.tag_annotated(&format!("{prefix}{expected_version}"));
+        self.assert().version(expected_version)
+    }
+
+    pub fn merge_and_assert(&self, branch_name: &str, expected_version: &str) -> Assertable {
+        self.merge(branch_name);
+        self.assert().version(expected_version)
+    }
+
+    pub fn path(&self) -> &str {
+        self.config.path.to_str().unwrap()
+    }
+
+    pub fn clone(source: &TestRepo) -> Self {
+        let repo = TestRepo::new();
+        repo.execute(
+            &["clone", &format!(r"file://{}", source.path()), repo.path()],
+            &format!("clone {}", source.path()),
+        );
+        repo
     }
 
     pub fn graph(&self) -> String {
