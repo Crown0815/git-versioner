@@ -90,7 +90,7 @@ fn test_that_after_release_when_matching_tags_exist_produces_next_pre_release_ta
 }
 
 #[rstest]
-fn test_that_on_release_branch_when_no_tags_exist_produces_pre_release_tag_1(mut repo: TestRepo) {
+fn test_that_on_release_branch_when_no_tags_exist_produces_pre_release_tag_1(repo: TestRepo) {
     repo.branch("release/1.0.0");
     repo.commit("1.0.0+1");
     repo.commit("1.0.0+2");
