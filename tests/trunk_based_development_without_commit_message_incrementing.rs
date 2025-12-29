@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{TestRepo, MAIN_BRANCH};
+use crate::common::{TestRepo, VisualizableRepo, MAIN_BRANCH};
 use rstest::{fixture, rstest};
 
 #[fixture]
@@ -10,12 +10,18 @@ fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {
     repo
 }
 
+#[fixture]
+fn mermaid_repo(#[default(MAIN_BRANCH)] main_branch: &str) -> VisualizableRepo {
+    let mut repo = VisualizableRepo::initialize(main_branch);
+    repo.config().commit_message_incrementing = "Disabled".to_string();
+    repo
+}
+
 #[rstest]
-fn test_full_workflow(repo: TestRepo) {
+fn test_full_workflow(mermaid_repo: VisualizableRepo) {
+    let repo = mermaid_repo;
     repo.commit_and_assert("0.1.0-pre.1");
-    repo.commit_and_assert("0.1.0-pre.2");
-    repo.tag("v1.0.0-pre.2"); // ignored
-    repo.tag_and_assert("v", "1.0.0");
+    repo.commit_with_tag_and_assert("0.1.0-pre.2", "v", "1.0.0");
     repo.branch("release/1.0.0");
 
     repo.checkout(MAIN_BRANCH);
@@ -23,11 +29,9 @@ fn test_full_workflow(repo: TestRepo) {
 
     repo.checkout("release/1.0.0");
     repo.commit_and_assert("1.0.1-pre.1");
-    repo.commit_and_assert("1.0.1-pre.2");
-    repo.tag_and_assert("v", "1.0.1");
+    repo.commit_with_tag_and_assert("1.0.1-pre.2", "v", "1.0.1");
     repo.commit_and_assert("1.0.2-pre.1");
-    repo.commit_and_assert("1.0.2-pre.2");
-    repo.tag_and_assert("v", "1.0.2");
+    repo.commit_with_tag_and_assert("1.0.2-pre.2", "v", "1.0.2");
 
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.1.0-pre.2");
@@ -37,11 +41,9 @@ fn test_full_workflow(repo: TestRepo) {
 
     repo.checkout("release/1.1.0");
     repo.commit_and_assert("1.1.0-pre.3");
-    repo.commit_and_assert("1.1.0-pre.4");
-    repo.tag_annotated_and_assert("v", "1.1.0");
+    repo.commit_with_tag_and_assert("1.1.0-pre.4", "v", "1.1.0");
     repo.commit_and_assert("1.1.1-pre.1");
-    repo.commit_and_assert("1.1.1-pre.2");
-    repo.tag_and_assert("v", "1.1.1");
+    repo.commit_with_tag_and_assert("1.1.1-pre.2", "v", "1.1.1");
 
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("1.2.0-pre.2");
@@ -51,15 +53,12 @@ fn test_full_workflow(repo: TestRepo) {
 
     repo.checkout("release/1.2.0");
     repo.commit_and_assert("1.2.0-pre.3");
-    repo.commit_and_assert("1.2.0-pre.4");
-    repo.tag_and_assert("v", "1.2.0");
+    repo.commit_with_tag_and_assert("1.2.0-pre.4", "v", "1.2.0");
     repo.commit_and_assert("1.2.1-pre.1");
-    repo.commit_and_assert("1.2.1-pre.2");
-    repo.tag_and_assert("v", "1.2.1");
+    repo.commit_with_tag_and_assert("1.2.1-pre.2", "v", "1.2.1");
 
     repo.checkout(MAIN_BRANCH);
-    repo.commit_and_assert("1.3.0-pre.2");
-    repo.tag_annotated_and_assert("v", "1.3.0");
+    repo.commit_with_tag_and_assert("1.3.0-pre.2", "v", "1.3.0");
     repo.commit_and_assert("1.4.0-pre.1");
     repo.commit_and_assert("1.4.0-pre.2");
 
@@ -68,17 +67,19 @@ fn test_full_workflow(repo: TestRepo) {
 
     repo.checkout(MAIN_BRANCH);
     repo.commit_and_assert("2.1.0-pre.1");
+
+    println!("{}", repo.draw());
 }
 
 #[rstest]
-fn test_full_workflow_with_feature_branches(repo: TestRepo) {
+fn test_full_workflow_with_feature_branches(mermaid_repo: VisualizableRepo) {
+    let repo = mermaid_repo;
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("feature/feature1");
     repo.commit_and_assert("0.1.0-feature1.1");
 
     repo.checkout(MAIN_BRANCH);
-    repo.merge_and_assert("feature/feature1", "0.1.0-pre.3");
-    repo.tag_and_assert("v", "1.0.0");
+    repo.merge_with_tag_and_assert("feature/feature1", "0.1.0-pre.3", "v", "1.0.0");
     repo.branch("release/1.0.0");
 
     repo.checkout(MAIN_BRANCH);
@@ -110,6 +111,8 @@ fn test_full_workflow_with_feature_branches(repo: TestRepo) {
     repo.checkout(MAIN_BRANCH);
     repo.merge_and_assert("feature/feature3-2", "1.1.0-pre.6");
     repo.merge_and_assert("feature/feature3-1", "1.1.0-pre.9");
+
+    println!("{}", repo.draw());
 }
 
 #[rstest]
