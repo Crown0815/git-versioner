@@ -8,7 +8,7 @@ info:
 success: true
 exit_code: 0
 ----- stdout -----
-A tool to manage versions of git repositories
+A tool to manage versions of git repositories using conventional commits and semantic versioning
 
 Usage: git-versioner [OPTIONS]
 
