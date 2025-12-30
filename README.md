@@ -105,6 +105,43 @@ You can install Git Versioner directly from [crates.io](https://crates.io/crates
 cargo install git-versioner
 ```
 
+### GitHub Action
+
+Git Versioner can be used directly as a GitHub Action. 
+It will automatically export the calculated version components to `GITHUB_OUTPUT`.
+Outputs are available with a `GitVersion_` prefix (e.g., `GitVersion_SemVer`) and also in `PascalCase` without prefix (e.g., `SemVer`).
+
+```yaml
+- name: Determine Version
+  uses: crown0815/git-versioner@v1
+  id: versioner
+  with:
+    # Optional configuration (see below for available inputs)
+    as-release: true
+```
+
+#### Example workflow
+
+```yaml
+name: CI
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to see all tags and history
+
+      - name: Determine Version
+        id: versioner
+        uses: crown0815/git-versioner@v1
+
+      - name: Use Version
+        run: echo "The version is ${{ steps.versioner.outputs.SemVer }}"
+```
+
 ### From Source
 
 1. Clone the repository:

@@ -1,0 +1,42 @@
+name: 'Git Versioner'
+description: 'Automatically calculate version numbers for Git repositories'
+branding:
+  icon: 'tag'
+  color: 'blue'
+inputs:
+  path:
+    description: 'Path to the repository to calculate the version for'
+    required: false
+    default: '.'
+  main-branch:
+    description: 'Regex to detect the main branch'
+    required: false
+  release-branch:
+    description: 'Regex to detect the release branch(es)'
+    required: false
+  feature-branch:
+    description: 'Regex to detect the feature branch(es)'
+    required: false
+  tag-prefix:
+    description: 'Regex to detect version tag(s)'
+    required: false
+  pre-release-tag:
+    description: 'Regex to detect pre-release version tag(s)'
+    required: false
+  continuous-delivery:
+    description: 'Calculate version using continuous delivery mode'
+    required: false
+    default: 'false'
+  commit-message-incrementing:
+    description: "Increment based on conventional commits (set to 'Enabled' or 'Disabled')"
+    required: false
+  as-release:
+    description: 'Forces release generation instead of pre-release'
+    required: false
+    default: 'false'
+  config:
+    description: 'Path to a configuration file (TOML or YAML)'
+    required: false
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
