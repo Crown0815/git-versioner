@@ -97,19 +97,24 @@ It draws inspiration from established versioning tools while focusing on simplic
 To install Git Versioner, ensure you have Rust and Cargo installed on your system.
 Rust can be obtained via [rustup](https://rustup.rs/).
 
+### From Cargo (Recommended)
+
+You can install Git Versioner directly from [crates.io](https://crates.io/crates/git-versioner):
+
+```bash
+cargo install git-versioner
+```
+
+### From Source
+
 1. Clone the repository:
-   ```
+   ```bash
    git clone https://github.com/Crown0815/git-versioner.git
    cd git-versioner
    ```
 
-2. Build the project:
-   ```
-   cargo build --release
-   ```
-
-3. Install the binary (optional, for global access):
-   ```
+2. Build and install:
+   ```bash
    cargo install --path .
    ```
 
