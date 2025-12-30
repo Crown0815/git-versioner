@@ -237,8 +237,31 @@ jobs:
           path: target/${{ matrix.build.target }}/release/${{ env.CLI_NAME }}${{ runner.os == 'Windows' && '.exe' || '' }}
           if-no-files-found: error
 
+  publish:
+    name: Publish to crates.io
+    needs: [build, determine-version]
+    runs-on: ubuntu-latest
+    if: github.event.inputs.as-draft == 'false'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Set version in Cargo.toml
+        run: |
+          cargo install cargo-edit -f --no-default-features --features "set-version"
+          cargo set-version ${{ needs.determine-version.outputs.sem-ver }}
+
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CRATES_IO_TOKEN }} --allow-dirty
+
   release:
-    needs: [build, determine-version, determine-changelog]
+    needs: [build, determine-version, determine-changelog, publish]
+    if: always() && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
