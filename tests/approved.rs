@@ -114,6 +114,7 @@ fn test_environment_variable_output_in_github_context(mut repo: ConfiguredTestRe
     let output = repo
         .cmd
         .env("CI", "true")
+        .env("GITHUB_ACTIONS", "true")
         .env("GITHUB_OUTPUT", github_output.path())
         .output()
         .unwrap();
@@ -123,6 +124,48 @@ fn test_environment_variable_output_in_github_context(mut repo: ConfiguredTestRe
 
     with_masked_unpredictable_values! {
         assert_snapshot!(github_output);
+    }
+}
+
+#[rstest]
+fn test_environment_variable_output_in_gitlab_context(mut repo: ConfiguredTestRepo) {
+    let gitlab_env = tempfile::NamedTempFile::new().unwrap();
+
+    let output = repo
+        .cmd
+        .env("CI", "true")
+        .env("GITLAB_CI", "true")
+        .env("GITLAB_ENV", gitlab_env.path())
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let gitlab_env = std::fs::read_to_string(gitlab_env.path()).unwrap();
+
+    with_masked_unpredictable_values! {
+        assert_snapshot!(gitlab_env);
+    }
+}
+
+#[rstest]
+fn test_environment_variable_output_in_teamcity_context(mut repo: ConfiguredTestRepo) {
+    let output = repo
+        .cmd
+        .env("CI", "true")
+        .env("TEAMCITY_VERSION", "2024.1")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let teamcity_output = stdout
+        .lines()
+        .filter(|line| line.starts_with("##teamcity"))
+        .collect::<Vec<_>>()
+        .join("\n");
+
+    with_masked_unpredictable_values! {
+        assert_snapshot!(teamcity_output);
     }
 }
 

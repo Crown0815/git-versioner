@@ -1,4 +1,5 @@
 pub mod config;
+pub mod exporter;
 
 use crate::config::{
     Configuration, NO_BRANCH_NAME, PRERELEASE_WEIGHT_FEATURE, PRERELEASE_WEIGHT_MAIN,
