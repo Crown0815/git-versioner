@@ -306,8 +306,8 @@ gitGraph:
             if lines[i].contains(&format!("fn {function}(")) {
                 for j in (0..i).rev() {
                     let line = lines[j].trim();
-                    if line.starts_with("///") {
-                        doc_comment.push(line[3..].trim());
+                    if let Some(stripped) = line.strip_prefix("///") {
+                        doc_comment.push(stripped.trim());
                     } else if line.starts_with("#[") {
                         continue;
                     } else {
