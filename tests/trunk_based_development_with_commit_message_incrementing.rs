@@ -18,7 +18,7 @@ fn test_providing_non_disabled_or_enabled_string_to_commit_message_incrementing_
     mut repo: TestRepo,
 ) {
     repo.config.commit_message_incrementing = "foo".to_string();
-    repo.assert();  // panics
+    repo.assert(); // panics
 }
 
 #[rstest]

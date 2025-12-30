@@ -1,6 +1,6 @@
 mod common;
 
-use crate::common::{TestRepo, VisualizableRepo, MAIN_BRANCH};
+use crate::common::{MAIN_BRANCH, TestRepo, VisualizableRepo};
 use rstest::{fixture, rstest};
 
 #[fixture]

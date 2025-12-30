@@ -1,7 +1,7 @@
 mod cli;
 mod common;
 
-use crate::cli::{repo, ConfiguredTestRepo as TestRepo};
+use crate::cli::{ConfiguredTestRepo as TestRepo, repo};
 use rstest::rstest;
 use rstest_reuse::{apply, template};
 

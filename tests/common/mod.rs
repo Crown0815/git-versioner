@@ -121,7 +121,10 @@ impl TestRepo {
     }
 
     pub fn tag_annotated(&self, name: &str) {
-        self.execute(&["tag", "-a", name, "-m", name],&format!("create tag {name}"));
+        self.execute(
+            &["tag", "-a", name, "-m", name],
+            &format!("create tag {name}"),
+        );
     }
 
     pub fn commit_and_assert(&self, expected: &str) -> Assertable {
@@ -209,17 +212,19 @@ impl VisualizableRepo {
     pub fn initialize(main_branch: &str) -> Self {
         Self {
             test_repo: TestRepo::initialize(main_branch),
-            mermaid: RefCell::new(vec![format!(r#"---
+            mermaid: RefCell::new(vec![format!(
+                r#"---
 config:
   theme: default
   gitGraph:
     mainBranchName: "{main_branch}"
 ---
 gitGraph:
-   checkout "{main_branch}""#)]),
+   checkout "{main_branch}""#
+            )]),
         }
     }
-    
+
     pub fn config(&mut self) -> &mut TestConfig {
         &mut self.test_repo.config
     }
@@ -231,19 +236,26 @@ gitGraph:
         self.test_repo.commit_and_assert(message)
     }
 
-    pub fn commit_with_tag_and_assert(&self, message: &str, prefix: &str, expected: &str) -> Assertable {
-        self.mermaid
-            .borrow_mut()
-            .push(format!("   commit id: \"{}\" tag: \"{}{}\"",
-                          message.replace('"', "'"),
-                          prefix.replace('"', "'"),
-                          expected.replace('"', "'")));
+    pub fn commit_with_tag_and_assert(
+        &self,
+        message: &str,
+        prefix: &str,
+        expected: &str,
+    ) -> Assertable {
+        self.mermaid.borrow_mut().push(format!(
+            "   commit id: \"{}\" tag: \"{}{}\"",
+            message.replace('"', "'"),
+            prefix.replace('"', "'"),
+            expected.replace('"', "'")
+        ));
         self.test_repo.commit_and_assert(message);
         self.test_repo.tag_and_assert(prefix, expected)
     }
 
     pub fn branch(&self, name: &str) {
-        self.mermaid.borrow_mut().push(format!("   branch \"{name}\""));
+        self.mermaid
+            .borrow_mut()
+            .push(format!("   branch \"{name}\""));
         self.test_repo.branch(name);
     }
 
@@ -255,16 +267,26 @@ gitGraph:
     }
 
     pub fn merge_and_assert(&self, name: &str, expected_version: &str) -> Assertable {
-        self.mermaid.borrow_mut().push(format!("   merge \"{name}\" id: \"{}\"",
-                                               expected_version.replace('"', "'")));
+        self.mermaid.borrow_mut().push(format!(
+            "   merge \"{name}\" id: \"{}\"",
+            expected_version.replace('"', "'")
+        ));
         self.test_repo.merge_and_assert(name, expected_version)
     }
 
-    pub fn merge_with_tag_and_assert(&self, name: &str, expected_version: &str, prefix: &str, expected: &str) -> Assertable {
-        self.mermaid.borrow_mut().push(format!("   merge \"{name}\" id: \"{}\" tag: \"{}{}\"",
-                                               expected_version.replace('"', "'"),
-                                               prefix.replace('"', "'"),
-                                               expected.replace('"', "'")));
+    pub fn merge_with_tag_and_assert(
+        &self,
+        name: &str,
+        expected_version: &str,
+        prefix: &str,
+        expected: &str,
+    ) -> Assertable {
+        self.mermaid.borrow_mut().push(format!(
+            "   merge \"{name}\" id: \"{}\" tag: \"{}{}\"",
+            expected_version.replace('"', "'"),
+            prefix.replace('"', "'"),
+            expected.replace('"', "'")
+        ));
         self.test_repo.merge_and_assert(name, expected_version);
         self.test_repo.tag_and_assert(prefix, expected)
     }
@@ -315,7 +337,6 @@ pub struct Assertable {
     pub context: String,
 }
 
-
 macro_rules! config_assertion {
     ($name:ident, &$expected:ty) => {
         pub fn $name(self, expected: &$expected) -> Self {
@@ -342,7 +363,6 @@ macro_rules! config_assertion {
         }
     };
 }
-
 
 #[allow(dead_code)]
 impl Assertable {

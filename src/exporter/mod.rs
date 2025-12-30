@@ -1,5 +1,5 @@
-use anyhow::Result;
 use crate::GitVersion;
+use anyhow::Result;
 use inflection_rs::inflection;
 use std::env;
 use std::fs::OpenOptions;
@@ -73,15 +73,16 @@ impl Exporter for TeamCityExporter {
                 _ => raw_value.to_string(),
             };
             println!("##teamcity[setParameter name='GitVersion.{key}' value='{value}']");
-            println!("##teamcity[setParameter name='system.GitVersion.{key}' value='{value}']"
-            );
+            println!("##teamcity[setParameter name='system.GitVersion.{key}' value='{value}']");
         }
         Ok(())
     }
 }
 
 pub fn export_to_build_agent(version: &GitVersion) -> Result<()> {
-    if !env::var_os("CI").is_some_and(|value| value.to_string_lossy().parse::<bool>().unwrap_or(false)) {
+    if !env::var_os("CI")
+        .is_some_and(|value| value.to_string_lossy().parse::<bool>().unwrap_or(false))
+    {
         return Ok(());
     }
 
