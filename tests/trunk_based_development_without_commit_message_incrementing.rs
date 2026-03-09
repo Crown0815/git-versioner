@@ -456,6 +456,17 @@ fn test_assembly_sem_file_ver_is_major_minor_patch_dot_weighted_pre_release_numb
 }
 
 #[rstest]
+fn test_informational_version_can_be_formatted_using_assembly_informational_format(
+    mut repo: TestRepo,
+) {
+    repo.config.assembly_informational_format = "{InformationalVersion}-custom".to_string();
+
+    repo.commit("0.1.0-pre.1");
+    let actual = repo.assert().result.informational_version;
+    assert_eq!("0.1.0-pre.1-custom", actual);
+}
+
+#[rstest]
 fn test_sha_matches_head(repo: TestRepo) {
     let (sha, _) = repo.commit("0.1.0+1");
     repo.assert().sha(&sha);

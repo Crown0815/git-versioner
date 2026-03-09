@@ -113,6 +113,7 @@ impl GitVersioner {
             source.commit_id,
             prerelease_weight,
             head,
+            config.assembly_informational_format(),
         ))
     }
 
@@ -687,6 +688,7 @@ impl GitVersion {
         source: Oid,
         prerelease_weight: u64,
         head: Reference,
+        assembly_informational_format: &str,
     ) -> Self {
         let pre_release_number = version
             .pre
@@ -711,7 +713,7 @@ impl GitVersion {
         } else {
             source.to_string()
         };
-        Self {
+        let mut result = Self {
             major: version.major,
             minor: version.minor,
             patch: version.patch,
@@ -754,7 +756,26 @@ impl GitVersion {
             branch_name,
             full_build_meta_data: "".to_string(),
             uncommitted_changes: 0,
+        };
+        result.informational_version = result.format(assembly_informational_format);
+        result
+    }
+
+    fn format(&self, format: &str) -> String {
+        let mut result = format.to_string();
+        if let Ok(serialized) = serde_json::to_value(self)
+            && let Some(entries) = serialized.as_object()
+        {
+            for (key, raw_value) in entries {
+                let value = match raw_value {
+                    serde_json::Value::String(value) => value.clone(),
+                    _ => raw_value.to_string(),
+                };
+                result = result.replace(&format!("{{{key}}}"), &value);
+            }
         }
+
+        result
     }
 }
 
