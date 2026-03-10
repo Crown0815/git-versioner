@@ -13,6 +13,7 @@ pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
 pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
 pub const COMMIT_MESSAGE_INCREMENTING: &str = "Disabled";
+pub const ASSEMBLY_INFORMATIONAL_FORMAT: &str = "{InformationalVersion}";
 
 pub const NO_BRANCH_NAME: &str = "(no branch)";
 pub const PRERELEASE_WEIGHT_MAIN: u64 = 55000;
@@ -28,6 +29,9 @@ pub trait Configuration {
     fn tag_prefix(&self) -> &str;
     fn pre_release_tag(&self) -> &str;
     fn commit_message_incrementing(&self) -> &str;
+    fn assembly_informational_format(&self) -> &str {
+        ASSEMBLY_INFORMATIONAL_FORMAT
+    }
     fn continuous_delivery(&self) -> &bool {
         &false
     }
@@ -50,6 +54,7 @@ pub trait Configuration {
             tag_prefix: self.tag_prefix().to_string(),
             pre_release_tag: self.pre_release_tag().to_string(),
             commit_message_incrementing: self.commit_message_incrementing().to_string(),
+            assembly_informational_format: self.assembly_informational_format().to_string(),
             continuous_delivery: *self.continuous_delivery(),
         }
     }
@@ -65,6 +70,7 @@ pub struct DefaultConfig {
     pub tag_prefix: String,
     pub pre_release_tag: String,
     pub commit_message_incrementing: String,
+    pub assembly_informational_format: String,
     pub continuous_delivery: bool,
 }
 
@@ -77,6 +83,8 @@ pub struct ConfigurationFile {
     pub tag_prefix: Option<String>,
     pub pre_release_tag: Option<String>,
     pub commit_message_incrementing: Option<String>,
+    #[serde(alias = "assembly-informational-format")]
+    pub assembly_informational_format: Option<String>,
 }
 
 #[derive(Parser, Debug)]
@@ -131,6 +139,13 @@ pub struct Args {
     )]
     commit_message_incrementing: Option<String>,
 
+    #[arg(
+        long,
+        value_parser,
+        help = "Format string for InformationalVersion output"
+    )]
+    assembly_informational_format: Option<String>,
+
     #[arg(short, long, help = "Forces release generation instead of pre-release")]
     as_release: bool,
 
@@ -165,6 +180,7 @@ impl Default for DefaultConfig {
             tag_prefix: TAG_PREFIX.to_string(),
             pre_release_tag: PRE_RELEASE_TAG.to_string(),
             commit_message_incrementing: COMMIT_MESSAGE_INCREMENTING.to_string(),
+            assembly_informational_format: ASSEMBLY_INFORMATIONAL_FORMAT.to_string(),
             continuous_delivery: false,
         }
     }
@@ -191,6 +207,9 @@ impl Configuration for DefaultConfig {
     }
     fn commit_message_incrementing(&self) -> &str {
         &self.commit_message_incrementing
+    }
+    fn assembly_informational_format(&self) -> &str {
+        &self.assembly_informational_format
     }
 }
 
@@ -281,6 +300,7 @@ impl Configuration for ConfigurationLayers {
     config_getter!(tag_prefix, str, arg > file > default);
     config_getter!(pre_release_tag, str, arg > file > default);
     config_getter!(commit_message_incrementing, str, arg > file > default);
+    config_getter!(assembly_informational_format, str, arg > file > default);
     config_getter!(continuous_delivery, bool, arg);
     config_getter!(path, PathBuf, arg > default);
     config_getter!(as_release, bool, arg);

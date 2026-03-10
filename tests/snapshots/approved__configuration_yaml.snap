@@ -1,6 +1,5 @@
 ---
 source: tests/approved.rs
-assertion_line: 27
 expression: default_config_file_content
 ---
 MainBranch: ^(trunk|main|master)$
@@ -9,3 +8,4 @@ FeatureBranch: ^features?[/-](?<BranchName>.+)$
 TagPrefix: '[vV]?'
 PreReleaseTag: pre
 CommitMessageIncrementing: Disabled
+AssemblyInformationalFormat: '{InformationalVersion}'

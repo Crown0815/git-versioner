@@ -1,5 +1,5 @@
 ---
-source: tests/cli_no_configuration.rs
+source: tests/approved.rs
 info:
   program: git-versioner
   args:
@@ -16,6 +16,7 @@ FeatureBranch = "^features?[/-](?<BranchName>.+)$"
 TagPrefix = "[vV]?"
 PreReleaseTag = "pre"
 CommitMessageIncrementing = "Disabled"
+AssemblyInformationalFormat = "{InformationalVersion}"
 ContinuousDelivery = false
 
 

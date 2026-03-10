@@ -3,6 +3,48 @@ mod common;
 use crate::common::{MAIN_BRANCH, TestRepo, VisualizableRepo};
 use rstest::{fixture, rstest};
 
+struct ScopedEnvVar {
+    key: String,
+    previous: Option<String>,
+}
+
+impl ScopedEnvVar {
+    fn set(key: &str, value: &str) -> Self {
+        let previous = std::env::var(key).ok();
+        // SAFETY: Tests run in-process; this guard restores original state in Drop.
+        unsafe { std::env::set_var(key, value) };
+        Self {
+            key: key.to_string(),
+            previous,
+        }
+    }
+
+    fn remove(key: &str) -> Self {
+        let previous = std::env::var(key).ok();
+        // SAFETY: Tests run in-process; this guard restores original state in Drop.
+        unsafe { std::env::remove_var(key) };
+        Self {
+            key: key.to_string(),
+            previous,
+        }
+    }
+}
+
+impl Drop for ScopedEnvVar {
+    fn drop(&mut self) {
+        match &self.previous {
+            Some(value) => {
+                // SAFETY: Reverts test-scoped mutation performed by this guard.
+                unsafe { std::env::set_var(&self.key, value) }
+            }
+            None => {
+                // SAFETY: Reverts test-scoped mutation performed by this guard.
+                unsafe { std::env::remove_var(&self.key) }
+            }
+        }
+    }
+}
+
 #[fixture]
 fn repo(#[default(MAIN_BRANCH)] main_branch: &str) -> TestRepo {
     let mut repo = TestRepo::initialize(main_branch);
@@ -430,6 +472,7 @@ fn test_weighted_prerelease_number_for_checked_out_release_tag_adds_60000(repo: 
     repo.assert()
         .full_sem_ver("0.1.0")
         .version_source_sha(&sha)
+        .pre_release_label_with_dash("")
         .weighted_pre_release_number(60000);
 }
 
@@ -452,6 +495,47 @@ fn test_assembly_sem_ver_is_major_minor_patch_dot_zero(repo: TestRepo) {
 fn test_assembly_sem_file_ver_is_major_minor_patch_dot_weighted_pre_release_number(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1")
         .assembly_sem_file_ver("0.1.0.55001");
+}
+
+#[rstest]
+fn test_informational_version_can_be_formatted_using_assembly_informational_format(
+    mut repo: TestRepo,
+) {
+    repo.config.assembly_informational_format = "{InformationalVersion}-custom".to_string();
+
+    repo.commit_and_assert("0.1.0-pre.1")
+        .informational_version("0.1.0-pre.1-custom");
+}
+
+#[rstest]
+fn test_informational_version_template_supports_default_for_known_variable(mut repo: TestRepo) {
+    repo.config.assembly_informational_format =
+        "{Major}.{Minor}.{Patch}.{WeightedPreReleaseNumber ?? 0}".to_string();
+
+    repo.commit_and_assert("0.1.0-pre.1")
+        .informational_version("0.1.0.55001");
+}
+
+#[rstest]
+fn test_informational_version_template_supports_process_env_variable(mut repo: TestRepo) {
+    let _guard = ScopedEnvVar::set("GIT_VERSIONER_TEST_BUILD_NUMBER_SET", "123");
+    repo.config.assembly_informational_format =
+        "{Major}.{Minor}.{Patch}.{env:GIT_VERSIONER_TEST_BUILD_NUMBER_SET}".to_string();
+
+    repo.commit_and_assert("0.1.0-pre.1")
+        .informational_version("0.1.0.123");
+}
+
+#[rstest]
+fn test_informational_version_template_supports_default_for_missing_env_variable(
+    mut repo: TestRepo,
+) {
+    let _guard = ScopedEnvVar::remove("GIT_VERSIONER_TEST_BUILD_NUMBER_MISSING");
+    repo.config.assembly_informational_format =
+        "{Major}.{Minor}.{Patch}.{env:GIT_VERSIONER_TEST_BUILD_NUMBER_MISSING ?? 42}".to_string();
+
+    repo.commit_and_assert("0.1.0-pre.1")
+        .informational_version("0.1.0.42");
 }
 
 #[rstest]
