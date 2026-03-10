@@ -170,7 +170,8 @@ This command will output the calculated version string based on the repository's
 ### Command-Line Options
 
 - `--config <PATH>`: Specify a custom configuration file (default: none).
-- `--branch <NAME>`: Override the main branch name (default: "trunk").
+- `--main-branch <PATTERN>`: Override the main branch pattern.
+- `--assembly-informational-format <FORMAT>`: Override `InformationalVersion` output using a template.
 - `--help`: Display usage information.
 
 For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
@@ -194,6 +195,8 @@ The command line options allow overwriting of configuration options using (see a
           Calculate version using continuous delivery mode
       --commit-message-incrementing <COMMIT_MESSAGE_INCREMENTING>
           Increment based on conventional commits (set to 'Enabled' or 'Disabled')
+      --assembly-informational-format <ASSEMBLY_INFORMATIONAL_FORMAT>
+          Format string for InformationalVersion output
   -a, --as-release
           Forces release generation instead of pre-release
       --show-config
@@ -225,6 +228,7 @@ FeatureBranch: ^features?[/-](?<BranchName>.+)$
 TagPrefix: '[vV]?'
 PreReleaseTag: pre
 CommitMessageIncrementing: Disabled
+AssemblyInformationalFormat: '{InformationalVersion}'
 ```
 
 ### Configuration Fields
@@ -233,6 +237,21 @@ CommitMessageIncrementing: Disabled
 - **FeatureBranch**: Defines the pattern for feature branches (default: `^features?[/-](?<BranchName>.+)$`).
 - **TagPrefix**: Defines the prefix of versions on tags and release branches' `BranchName` (default: `^[vV]?`).
 - **PreReleaseTag**: The identifier used for pre-release versions (default: `pre`).
+- **AssemblyInformationalFormat**: Template for `InformationalVersion` output (default: `{InformationalVersion}`).
+  - Supports GitVersion-style placeholders in `{...}`.
+  - Supports environment variables via `env:` prefix, e.g. `{env:BUILD_NUMBER}`.
+  - Supports fallback with `??`, e.g. `{env:BUILD_NUMBER ?? 42}`.
+
+The same option can also be set in kebab-case for TOML/YAML compatibility:
+- `assembly-informational-format: "{InformationalVersion}"`
+
+Example templates:
+
+```text
+{Major}.{Minor}.{Patch}.{WeightedPreReleaseNumber ?? 0}
+{Major}.{Minor}.{Patch}.{env:BUILD_NUMBER}
+{Major}.{Minor}.{Patch}.{env:BUILD_NUMBER ?? 42}
+```
 
 Additional options may be added in future releases to support advanced versioning rules.
 
