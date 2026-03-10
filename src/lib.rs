@@ -14,6 +14,7 @@ use regex::Regex;
 use semver::{Comparator, Op, Prerelease, Version};
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::env;
 use std::fmt::{Debug, Display};
 use std::time;
 
@@ -762,7 +763,7 @@ impl GitVersion {
     }
 
     fn format(&self, format: &str) -> String {
-        let mut result = format.to_string();
+        let mut values = std::collections::HashMap::new();
         if let Ok(serialized) = serde_json::to_value(self)
             && let Some(entries) = serialized.as_object()
         {
@@ -771,11 +772,49 @@ impl GitVersion {
                     serde_json::Value::String(value) => value.clone(),
                     _ => raw_value.to_string(),
                 };
-                result = result.replace(&format!("{{{key}}}"), &value);
+                values.insert(key.clone(), value);
             }
         }
 
-        result
+        let expression_pattern = Regex::new(r"\{([^{}]+)\}").unwrap();
+        expression_pattern
+            .replace_all(format, |captures: &regex::Captures<'_>| {
+                let whole = captures.get(0).map(|m| m.as_str()).unwrap_or_default();
+                let expression = captures.get(1).map(|m| m.as_str()).unwrap_or_default();
+                Self::resolve_expression(expression, &values).unwrap_or_else(|| whole.to_string())
+            })
+            .into_owned()
+    }
+
+    fn resolve_expression(
+        expression: &str,
+        values: &std::collections::HashMap<String, String>,
+    ) -> Option<String> {
+        let (name, fallback) = match expression.split_once("??") {
+            Some((name, fallback)) => (name.trim(), Some(fallback.trim())),
+            None => (expression.trim(), None),
+        };
+
+        Self::resolve_atom(name, values).or_else(|| {
+            fallback.and_then(|fallback| {
+                Self::resolve_atom(fallback, values).or_else(|| Some(fallback.to_string()))
+            })
+        })
+    }
+
+    fn resolve_atom(
+        atom: &str,
+        values: &std::collections::HashMap<String, String>,
+    ) -> Option<String> {
+        if let Some(env_name) = atom.strip_prefix("env:") {
+            let env_name = env_name.trim();
+            if env_name.is_empty() {
+                return None;
+            }
+            return env::var(env_name).ok();
+        }
+
+        values.get(atom).cloned()
     }
 }
 
