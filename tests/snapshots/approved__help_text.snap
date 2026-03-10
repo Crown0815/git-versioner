@@ -29,6 +29,8 @@ Options:
           Calculate version using continuous delivery mode
       --commit-message-incrementing <COMMIT_MESSAGE_INCREMENTING>
           Increment based on conventional commits ('Disabled' (default) or 'Enabled')
+      --assembly-informational-format <ASSEMBLY_INFORMATIONAL_FORMAT>
+          Format string for InformationalVersion output
   -a, --as-release
           Forces release generation instead of pre-release
       --show-config

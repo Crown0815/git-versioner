@@ -161,3 +161,34 @@ fn test_that_cli_argument_overrides_configuration_of_commit_message_incrementing
         Some((DEFAULT_CONFIG, ext)),
     );
 }
+
+#[apply(default)]
+fn test_that_config_file_overrides_default_assembly_informational_format(
+    mut repo: TestRepo,
+    ext: &str,
+) {
+    repo.config_file.assembly_informational_format =
+        Some("{InformationalVersion}-custom".to_string());
+
+    repo.inner.config.assembly_informational_format = "{InformationalVersion}-custom".to_string();
+    repo.execute_and_verify([], Some((DEFAULT_CONFIG, ext)));
+}
+
+#[apply(default)]
+fn test_that_cli_argument_overrides_configuration_of_assembly_informational_format(
+    mut repo: TestRepo,
+    ext: &str,
+) {
+    repo.config_file.assembly_informational_format =
+        Some("{InformationalVersion}-from-config".to_string());
+
+    repo.inner.config.assembly_informational_format =
+        "{InformationalVersion}-from-args".to_string();
+    repo.execute_and_verify(
+        [
+            "--assembly-informational-format",
+            "{InformationalVersion}-from-args",
+        ],
+        Some((DEFAULT_CONFIG, ext)),
+    );
+}

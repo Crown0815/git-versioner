@@ -79,3 +79,15 @@ fn test_commit_message_incrementing(mut repo: ConfiguredTestRepo) {
     repo.inner.config.commit_message_incrementing = "Enabled".to_string();
     repo.execute_and_verify(["--commit-message-incrementing", "Enabled"], None);
 }
+
+#[rstest]
+fn test_argument_assembly_informational_format(mut repo: ConfiguredTestRepo) {
+    repo.inner.config.assembly_informational_format = "{InformationalVersion}-custom".to_string();
+    repo.execute_and_verify(
+        [
+            "--assembly-informational-format",
+            "{InformationalVersion}-custom",
+        ],
+        None,
+    );
+}

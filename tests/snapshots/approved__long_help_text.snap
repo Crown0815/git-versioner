@@ -44,6 +44,9 @@ Options:
                       (e.g. v1.2.0), only the patch version will be incremented (e.g. v1.2.1) until a `feat:`
                       commit is encountered or a release branch is created.
 
+      --assembly-informational-format <ASSEMBLY_INFORMATIONAL_FORMAT>
+          Format string for InformationalVersion output
+
   -a, --as-release
           Forces release generation instead of pre-release
 
