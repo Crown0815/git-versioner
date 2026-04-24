@@ -378,6 +378,7 @@ impl Assertable {
     config_assertion!(sha, &str);
     config_assertion!(short_sha, &str);
     config_assertion!(version_source_sha, &str);
+    config_assertion!(major_minor_patch_version_source_sha, &str);
     config_assertion!(pre_release_label_with_dash, &str);
     config_assertion!(informational_version, &str);
 }

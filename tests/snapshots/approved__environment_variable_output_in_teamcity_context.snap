@@ -1,5 +1,6 @@
 ---
 source: tests/approved.rs
+assertion_line: 168
 expression: teamcity_output
 ---
 ##teamcity[setParameter name='GitVersion.AssemblySemFileVer' value='0.1.0.55001']
@@ -26,6 +27,8 @@ expression: teamcity_output
 ##teamcity[setParameter name='system.GitVersion.Major' value='0']
 ##teamcity[setParameter name='GitVersion.MajorMinorPatch' value='0.1.0']
 ##teamcity[setParameter name='system.GitVersion.MajorMinorPatch' value='0.1.0']
+##teamcity[setParameter name='GitVersion.MajorMinorPatchVersionSourceSha' value='']
+##teamcity[setParameter name='system.GitVersion.MajorMinorPatchVersionSourceSha' value='']
 ##teamcity[setParameter name='GitVersion.Minor' value='1']
 ##teamcity[setParameter name='system.GitVersion.Minor' value='1']
 ##teamcity[setParameter name='GitVersion.Patch' value='0']

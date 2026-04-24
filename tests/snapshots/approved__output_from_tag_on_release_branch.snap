@@ -1,5 +1,6 @@
 ---
-source: tests/cli_no_configuration.rs
+source: tests/approved.rs
+assertion_line: 95
 info:
   program: git-versioner
   args: []
@@ -30,6 +31,7 @@ exit_code: 0
   "Sha": "########################################",
   "ShortSha": "#######",
   "VersionSourceSha": "########################################",
+  "MajorMinorPatchVersionSourceSha": "########################################",
   "CommitsSinceVersionSource": 0,
   "CommitDate": "####-##-##",
   "UncommittedChanges": 0

@@ -66,7 +66,8 @@ fn test_that_when_matching_tags_exist_produces_next_pre_release_tag(repo: TestRe
 
     repo.assert()
         .full_sem_ver("0.1.0-pre.2")
-        .version_source_sha(&sha);
+        .version_source_sha(&sha)
+        .major_minor_patch_version_source_sha("");
 }
 
 #[rstest]
@@ -77,12 +78,13 @@ fn test_that_after_release_when_no_matching_tags_exist_produces_pre_release_tag_
 
     repo.assert()
         .full_sem_ver("1.1.0-pre.1")
-        .version_source_sha(&sha);
+        .version_source_sha(&sha)
+        .major_minor_patch_version_source_sha(&sha);
 }
 
 #[rstest]
 fn test_that_after_release_when_matching_tags_exist_produces_next_pre_release_tag(repo: TestRepo) {
-    repo.tag("v1.0.0");
+    let (stable_sha, _) = repo.tag("v1.0.0");
     repo.commit("1.1.0+1");
     let (sha, _) = repo.tag("v1.1.0-pre.1");
     repo.commit("1.1.0+2");
@@ -90,7 +92,8 @@ fn test_that_after_release_when_matching_tags_exist_produces_next_pre_release_ta
 
     repo.assert()
         .full_sem_ver("1.1.0-pre.2")
-        .version_source_sha(&sha);
+        .version_source_sha(&sha)
+        .major_minor_patch_version_source_sha(&stable_sha);
 }
 
 #[rstest]
@@ -131,7 +134,8 @@ fn test_that_on_release_branch_when_previous_release_branches_exist_produces_pre
 
     repo.assert()
         .full_sem_ver("1.1.0-pre.1")
-        .version_source_sha(&sha);
+        .version_source_sha(&sha)
+        .major_minor_patch_version_source_sha(&sha);
 }
 
 #[rstest]

@@ -1,5 +1,6 @@
 ---
 source: tests/approved.rs
+assertion_line: 146
 expression: gitlab_env
 ---
 GitVersion_AssemblySemFileVer=0.1.0.55001
@@ -14,6 +15,7 @@ GitVersion_FullSemVer=0.1.0-pre.1
 GitVersion_InformationalVersion=0.1.0-pre.1
 GitVersion_Major=0
 GitVersion_MajorMinorPatch=0.1.0
+GitVersion_MajorMinorPatchVersionSourceSha=
 GitVersion_Minor=1
 GitVersion_Patch=0
 GitVersion_PreReleaseLabel=pre

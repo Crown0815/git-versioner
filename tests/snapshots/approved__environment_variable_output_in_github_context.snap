@@ -1,5 +1,6 @@
 ---
-source: tests/cli_no_configuration.rs
+source: tests/approved.rs
+assertion_line: 126
 expression: github_output
 ---
 GitVersion_AssemblySemFileVer=0.1.0.55001
@@ -26,6 +27,8 @@ GitVersion_Major=0
 major=0
 GitVersion_MajorMinorPatch=0.1.0
 majorMinorPatch=0.1.0
+GitVersion_MajorMinorPatchVersionSourceSha=
+majorMinorPatchVersionSourceSha=
 GitVersion_Minor=1
 minor=1
 GitVersion_Patch=0
