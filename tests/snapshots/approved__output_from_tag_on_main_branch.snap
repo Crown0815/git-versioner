@@ -1,6 +1,5 @@
 ---
 source: tests/approved.rs
-assertion_line: 84
 info:
   program: git-versioner
   args: []
@@ -37,7 +36,7 @@ exit_code: 0
   "CommitYear": "2024",
   "CommitMonth": "03",
   "CommitDay": "09",
-  "YearMinor": 1,
+  "YearMinor": 2,
   "UncommittedChanges": 0
 }
 

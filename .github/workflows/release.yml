@@ -34,7 +34,7 @@ jobs:
 
       - name: Install git-versioner
         run: |
-          curl -L -o git-versioner https://github.com/Crown0815/git-versioner/releases/download/v0.8.0/git-versioner-x86_64-unknown-linux-gnu
+          curl -L -o git-versioner https://github.com/Crown0815/git-versioner/releases/download/v0.15.0/git-versioner-x86_64-unknown-linux-gnu
           chmod +x git-versioner
 
       - name: Determine Version

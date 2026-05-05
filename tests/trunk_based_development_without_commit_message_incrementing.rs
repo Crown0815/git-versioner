@@ -533,9 +533,9 @@ fn test_year_minor_is_one_plus_the_count_of_unique_major_minor_releases_within_c
     repo: TestRepo,
 ) {
     repo.commit_at("0.9.0-pre.1", "2023-12-31T12:00:00Z");
-    repo.assert().year_minor(2);
-    repo.tag("v0.9.0");
     repo.assert().year_minor(1);
+    repo.tag("v0.9.0");
+    repo.assert().year_minor(2);
 
     repo.commit_at("1.0.0-pre.1", "2024-01-10T12:00:00Z");
     repo.assert().year_minor(1);
@@ -564,7 +564,7 @@ fn test_year_minor_is_available_for_assembly_informational_format(mut repo: Test
 
     repo.commit_at("1.2.0-pre.1", "2024-03-10T12:00:00Z");
 
-    repo.assert().informational_version("2024.2.0-pre.1");
+    repo.assert().informational_version("2024.3.0-pre.1");
 }
 
 #[rstest]

@@ -1,6 +1,5 @@
 ---
 source: tests/approved.rs
-assertion_line: 126
 expression: github_output
 ---
 GitVersion_AssemblySemFileVer=0.1.0.55001
@@ -61,5 +60,5 @@ GitVersion_VersionSourceSha=
 versionSourceSha=
 GitVersion_WeightedPreReleaseNumber=55001
 weightedPreReleaseNumber=55001
-GitVersion_YearMinor=0
-yearMinor=0
+GitVersion_YearMinor=1
+yearMinor=1

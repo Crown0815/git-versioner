@@ -1,6 +1,5 @@
 ---
 source: tests/approved.rs
-assertion_line: 146
 expression: gitlab_env
 ---
 GitVersion_AssemblySemFileVer=0.1.0.55001
@@ -32,4 +31,4 @@ GitVersion_ShortSha=#######
 GitVersion_UncommittedChanges=0
 GitVersion_VersionSourceSha=
 GitVersion_WeightedPreReleaseNumber=55001
-GitVersion_YearMinor=0
+GitVersion_YearMinor=1

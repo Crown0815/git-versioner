@@ -1,6 +1,5 @@
 ---
 source: tests/approved.rs
-assertion_line: 168
 expression: teamcity_output
 ---
 ##teamcity[setParameter name='GitVersion.AssemblySemFileVer' value='0.1.0.55001']
@@ -61,5 +60,5 @@ expression: teamcity_output
 ##teamcity[setParameter name='system.GitVersion.VersionSourceSha' value='']
 ##teamcity[setParameter name='GitVersion.WeightedPreReleaseNumber' value='55001']
 ##teamcity[setParameter name='system.GitVersion.WeightedPreReleaseNumber' value='55001']
-##teamcity[setParameter name='GitVersion.YearMinor' value='0']
-##teamcity[setParameter name='system.GitVersion.YearMinor' value='0']
+##teamcity[setParameter name='GitVersion.YearMinor' value='1']
+##teamcity[setParameter name='system.GitVersion.YearMinor' value='1']
