@@ -271,7 +271,7 @@ impl GitVersioner {
             }
         }
 
-        Ok(releases.len() as u64)
+        Ok((releases.len() + 1) as u64)
     }
 
     fn commit_year_for(commit: &git2::Commit) -> String {

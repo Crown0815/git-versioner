@@ -529,20 +529,27 @@ fn test_commit_date_parts_are_available_for_assembly_informational_format(mut re
 }
 
 #[rstest]
-fn test_year_minor_counts_unique_major_minor_releases_within_commit_year(repo: TestRepo) {
+fn test_year_minor_is_one_plus_the_count_of_unique_major_minor_releases_within_commit_year(
+    repo: TestRepo,
+) {
     repo.commit_at("0.9.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.assert().year_minor(2);
     repo.tag("v0.9.0");
+    repo.assert().year_minor(1);
 
     repo.commit_at("1.0.0-pre.1", "2024-01-10T12:00:00Z");
+    repo.assert().year_minor(1);
     repo.tag("v1.0.0");
-    repo.commit_at("1.0.1-pre.1", "2024-02-10T12:00:00Z");
+    repo.assert().year_minor(2);
+    repo.commit_at("1.1.0-pre.1", "2024-01-10T12:00:00Z");
     repo.tag("v1.0.1");
-    repo.commit_at("1.1.0-pre.1", "2024-03-10T12:00:00Z");
+    repo.assert().year_minor(2);
+    repo.commit_at("1.1.0-pre.1", "2024-01-10T12:00:00Z");
     repo.tag("v1.1.0");
 
-    repo.commit_at("1.2.0-pre.1", "2024-04-10T12:00:00Z");
+    repo.commit_at("1.1.0-pre.1", "2024-04-10T12:00:00Z");
 
-    repo.assert().year_minor(2);
+    repo.assert().year_minor(3);
 }
 
 #[rstest]
