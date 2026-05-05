@@ -535,21 +535,24 @@ fn test_year_minor_is_one_plus_the_count_of_unique_major_minor_releases_within_c
     repo.commit_at("0.9.0-pre.1", "2023-12-31T12:00:00Z");
     repo.assert().year_minor(1);
     repo.tag("v0.9.0");
+    repo.assert().year_minor(1);
+    repo.commit_at("0.10.0-pre.1", "2023-12-31T12:00:00Z");
     repo.assert().year_minor(2);
 
     repo.commit_at("1.0.0-pre.1", "2024-01-10T12:00:00Z");
     repo.assert().year_minor(1);
     repo.tag("v1.0.0");
-    repo.assert().year_minor(2);
+    repo.assert().year_minor(1);
     repo.commit_at("1.1.0-pre.1", "2024-01-10T12:00:00Z");
-    repo.tag("v1.0.1");
     repo.assert().year_minor(2);
-    repo.commit_at("1.1.0-pre.1", "2024-01-10T12:00:00Z");
     repo.tag("v1.1.0");
-
-    repo.commit_at("1.1.0-pre.1", "2024-04-10T12:00:00Z");
-
+    repo.assert().year_minor(2);
+    repo.commit_at("1.2.0-pre.1", "2024-01-10T12:00:00Z");
     repo.assert().year_minor(3);
+    repo.tag("v1.2.0");
+    repo.assert().year_minor(3);
+    repo.commit_at("1.3.0-pre.1", "2024-04-10T12:00:00Z");
+    repo.assert().year_minor(4);
 }
 
 #[rstest]

@@ -101,3 +101,17 @@ fn test_on_main_branch_with_major_version_greater_than_zero_when_encountering_co
     repo.commit("fix: foo\n\nBody\n\nBREAKING CHANGE: bar");
     repo.commit_and_assert("2.0.0-pre.2");
 }
+
+#[rstest]
+fn test_year_minor_is_one_plus_the_count_of_unique_major_minor_releases_within_commit_year(
+    repo: TestRepo,
+) {
+    repo.commit_at("feat: 0.1.0-pre.1", "2024-01-10T12:00:00Z");
+    repo.assert().year_minor(1);
+    repo.tag("v0.1.0");
+    repo.assert().year_minor(1);
+    repo.commit_at("fix: 0.1.1-pre.1", "2024-01-10T12:00:00Z");
+    repo.assert().year_minor(1);
+    repo.commit_at("feat: 0.2.0-pre.1", "2024-01-10T12:00:00Z");
+    repo.assert().year_minor(2);
+}
