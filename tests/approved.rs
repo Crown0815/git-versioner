@@ -41,6 +41,18 @@ macro_rules! with_masked_unpredictable_values {
                 (r"\b[[:xdigit:]]{40}\b", "########################################"), // SHA1
                 (r"\b[[:xdigit:]]{7}\b", "#######"), // Short SHA1
                 (r"\b\d{4}-\d{2}-\d{2}\b", "####-##-##"), // Date
+                (r#""CommitYear": "\d{4}""#, "\"CommitYear\": \"####\""),
+                (r#""CommitMonth": "\d{2}""#, "\"CommitMonth\": \"##\""),
+                (r#""CommitDay": "\d{2}""#, "\"CommitDay\": \"##\""),
+                (r#"GitVersion_CommitYear=\d{4}"#, "GitVersion_CommitYear=####"),
+                (r#"GitVersion_CommitMonth=\d{2}"#, "GitVersion_CommitMonth=##"),
+                (r#"GitVersion_CommitDay=\d{2}"#, "GitVersion_CommitDay=##"),
+                (r#"commitYear=\d{4}"#, "commitYear=####"),
+                (r#"commitMonth=\d{2}"#, "commitMonth=##"),
+                (r#"commitDay=\d{2}"#, "commitDay=##"),
+                (r#"GitVersion\.CommitYear' value='\d{4}"#, "GitVersion.CommitYear' value='####"),
+                (r#"GitVersion\.CommitMonth' value='\d{2}"#, "GitVersion.CommitMonth' value='##"),
+                (r#"GitVersion\.CommitDay' value='\d{2}"#, "GitVersion.CommitDay' value='##"),
             ]
         }, {
             $($block)*

@@ -82,6 +82,10 @@ pub struct GitVersion {
     pub major_minor_patch_version_source_sha: String,
     pub commits_since_version_source: u64,
     pub commit_date: String,
+    pub commit_year: String,
+    pub commit_month: String,
+    pub commit_day: String,
+    pub year_minor: u64,
     pub uncommitted_changes: u64,
 }
 
@@ -110,6 +114,9 @@ impl GitVersioner {
             prerelease_weight = PRERELEASE_WEIGHT_TAG;
         }
 
+        let commit_year = Self::commit_year_for(&head.peel_to_commit()?);
+        let year_minor = versioner.count_unique_major_minor_releases_in_year(&commit_year)?;
+
         Ok(GitVersion::new(
             version,
             branch_name,
@@ -117,6 +124,7 @@ impl GitVersioner {
             major_minor_patch_source.commit_id,
             prerelease_weight,
             head,
+            year_minor,
             config.assembly_informational_format(),
         ))
     }
@@ -247,6 +255,32 @@ impl GitVersioner {
             }
             Err(_) => None,
         }
+    }
+
+    fn count_unique_major_minor_releases_in_year(&self, year: &str) -> Result<u64> {
+        let mut releases = HashSet::new();
+        let tag_names = self.repo.tag_names(None)?;
+
+        for tag_name in tag_names.iter().flatten() {
+            if let Some(version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+                && let Some(commit_id) = self.tag_id_for(tag_name)
+                && let Ok(commit) = self.repo.find_commit(commit_id)
+                && Self::commit_year_for(&commit) == year
+            {
+                releases.insert((version.major, version.minor));
+            }
+        }
+
+        Ok(releases.len() as u64)
+    }
+
+    fn commit_year_for(commit: &git2::Commit) -> String {
+        Self::commit_date_time_for(commit).format("%Y").to_string()
+    }
+
+    fn commit_date_time_for(commit: &git2::Commit) -> DateTime<Utc> {
+        let seconds_since_epoch = time::Duration::from_secs(commit.time().seconds() as u64);
+        (time::UNIX_EPOCH + seconds_since_epoch).into()
     }
 
     fn version_branches(&self) -> Result<HashSet<VersionSource>> {
@@ -731,6 +765,7 @@ fn major_minor_comparator(major: u64, minor: u64) -> Comparator {
 }
 
 impl GitVersion {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         version: Version,
         branch_name: String,
@@ -738,6 +773,7 @@ impl GitVersion {
         major_minor_patch_source: Oid,
         prerelease_weight: u64,
         head: Reference,
+        year_minor: u64,
         assembly_informational_format: &str,
     ) -> Self {
         let pre_release_number = version
@@ -754,9 +790,11 @@ impl GitVersion {
         let commit = head.peel_to_commit().unwrap();
         let sha = commit.id().to_string();
         let short_sha = sha[..7].to_string();
-        let seconds_since_epoch = time::Duration::from_secs(commit.time().seconds() as u64);
-        let commit_date_time: DateTime<Utc> = (time::UNIX_EPOCH + seconds_since_epoch).into();
+        let commit_date_time = GitVersioner::commit_date_time_for(&commit);
         let commit_date = commit_date_time.format("%Y-%m-%d").to_string();
+        let commit_year = commit_date_time.format("%Y").to_string();
+        let commit_month = commit_date_time.format("%m").to_string();
+        let commit_day = commit_date_time.format("%d").to_string();
 
         let version_source_sha = if source.is_zero() {
             "".to_string()
@@ -809,6 +847,10 @@ impl GitVersion {
             major_minor_patch_version_source_sha,
             commits_since_version_source: 0,
             commit_date,
+            commit_year,
+            commit_month,
+            commit_day,
+            year_minor,
             branch_name,
             full_build_meta_data: "".to_string(),
             uncommitted_changes: 0,
@@ -831,7 +873,7 @@ impl GitVersion {
             }
         }
 
-        let expression_pattern = Regex::new(r"\{([^{}]+)\}").unwrap();
+        let expression_pattern = Regex::new(r"\{([^{}]+)}").unwrap();
         expression_pattern
             .replace_all(format, |captures: &regex::Captures<'_>| {
                 let whole = captures.get(0).map(|m| m.as_str()).unwrap_or_default();

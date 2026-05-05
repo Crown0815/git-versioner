@@ -105,6 +105,15 @@ impl TestRepo {
         self.read_head_sha_and_date()
     }
 
+    pub fn commit_at(&self, message: &str, date: &str) -> (String, String) {
+        self.execute_with_env(
+            &["commit", "--allow-empty", "-m", message, "--date", date],
+            &[("GIT_COMMITTER_DATE", date)],
+            &format!("commit {message} at {date}"),
+        );
+        self.read_head_sha_and_date()
+    }
+
     pub fn branch(&self, name: &str) {
         self.execute(&["branch", name], &format!("branch {name}"));
         self.checkout(name);
@@ -172,8 +181,18 @@ impl TestRepo {
     }
 
     pub fn execute(&self, command: &[&str], description: &str) -> Output {
+        self.execute_with_env(command, &[], description)
+    }
+
+    pub fn execute_with_env(
+        &self,
+        command: &[&str],
+        env: &[(&str, &str)],
+        description: &str,
+    ) -> Output {
         let output = Command::new("git")
             .args(command)
+            .envs(env.iter().copied())
             .current_dir(&self.config.path)
             .output()
             .unwrap_or_else(|_| panic!("Failed to {description}"));
@@ -381,4 +400,8 @@ impl Assertable {
     config_assertion!(major_minor_patch_version_source_sha, &str);
     config_assertion!(pre_release_label_with_dash, &str);
     config_assertion!(informational_version, &str);
+    config_assertion!(commit_year, &str);
+    config_assertion!(commit_month, &str);
+    config_assertion!(commit_day, &str);
+    config_assertion!(year_minor, u64);
 }

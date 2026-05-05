@@ -34,6 +34,10 @@ exit_code: 0
   "MajorMinorPatchVersionSourceSha": "",
   "CommitsSinceVersionSource": 0,
   "CommitDate": "####-##-##",
+  "CommitYear": "####",
+  "CommitMonth": "##",
+  "CommitDay": "##",
+  "YearMinor": 0,
   "UncommittedChanges": 0
 }
 

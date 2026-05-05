@@ -32,6 +32,10 @@ exit_code: 0
   "VersionSourceSha": "########################################",
   "CommitsSinceVersionSource": 0,
   "CommitDate": "####-##-##",
+  "CommitYear": "####",
+  "CommitMonth": "##",
+  "CommitDay": "##",
+  "YearMinor": 1,
   "UncommittedChanges": 0
 }
 

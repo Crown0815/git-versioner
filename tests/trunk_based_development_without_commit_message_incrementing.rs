@@ -508,6 +508,59 @@ fn test_informational_version_can_be_formatted_using_assembly_informational_form
 }
 
 #[rstest]
+fn test_commit_date_parts_are_available_as_outputs(repo: TestRepo) {
+    repo.commit_at("0.1.0-pre.1", "2024-03-09T12:34:56Z");
+
+    repo.assert()
+        .commit_year("2024")
+        .commit_month("03")
+        .commit_day("09");
+}
+
+#[rstest]
+fn test_commit_date_parts_are_available_for_assembly_informational_format(mut repo: TestRepo) {
+    repo.config.assembly_informational_format =
+        "{CommitYear}.{CommitMonth}.{CommitDay}.{SemVer}".to_string();
+
+    repo.commit_at("0.1.0-pre.1", "2024-03-09T12:34:56Z");
+
+    repo.assert()
+        .informational_version("2024.03.09.0.1.0-pre.1");
+}
+
+#[rstest]
+fn test_year_minor_counts_unique_major_minor_releases_within_commit_year(repo: TestRepo) {
+    repo.commit_at("0.9.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.tag("v0.9.0");
+
+    repo.commit_at("1.0.0-pre.1", "2024-01-10T12:00:00Z");
+    repo.tag("v1.0.0");
+    repo.commit_at("1.0.1-pre.1", "2024-02-10T12:00:00Z");
+    repo.tag("v1.0.1");
+    repo.commit_at("1.1.0-pre.1", "2024-03-10T12:00:00Z");
+    repo.tag("v1.1.0");
+
+    repo.commit_at("1.2.0-pre.1", "2024-04-10T12:00:00Z");
+
+    repo.assert().year_minor(2);
+}
+
+#[rstest]
+fn test_year_minor_is_available_for_assembly_informational_format(mut repo: TestRepo) {
+    repo.config.assembly_informational_format =
+        "{CommitYear}.{YearMinor}.{Patch}{PreReleaseTagWithDash}".to_string();
+
+    repo.commit_at("1.0.0-pre.1", "2024-01-10T12:00:00Z");
+    repo.tag("v1.0.0");
+    repo.commit_at("1.1.0-pre.1", "2024-02-10T12:00:00Z");
+    repo.tag("v1.1.0");
+
+    repo.commit_at("1.2.0-pre.1", "2024-03-10T12:00:00Z");
+
+    repo.assert().informational_version("2024.2.0-pre.1");
+}
+
+#[rstest]
 fn test_informational_version_template_supports_default_for_known_variable(mut repo: TestRepo) {
     repo.config.assembly_informational_format =
         "{Major}.{Minor}.{Patch}.{WeightedPreReleaseNumber ?? 0}".to_string();
