@@ -33,10 +33,10 @@ exit_code: 0
   "VersionSourceSha": "",
   "MajorMinorPatchVersionSourceSha": "",
   "CommitsSinceVersionSource": 0,
-  "CommitDate": "####-##-##",
-  "CommitYear": "####",
-  "CommitMonth": "##",
-  "CommitDay": "##",
+  "CommitDate": "2024-03-09",
+  "CommitYear": "2024",
+  "CommitMonth": "03",
+  "CommitDay": "09",
   "YearMinor": 0,
   "UncommittedChanges": 0
 }

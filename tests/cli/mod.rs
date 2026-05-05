@@ -8,6 +8,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
+pub const COMMIT_DATE: &str = "2024-03-09T12:34:56Z";
+
 #[fixture]
 pub fn cmd() -> Command {
     Command::new(get_cargo_bin(env!("CARGO_PKG_NAME")))
@@ -17,7 +19,7 @@ pub fn cmd() -> Command {
 pub fn repo(#[default(MAIN_BRANCH)] main: &str, mut cmd: Command) -> ConfiguredTestRepo {
     let repo = TestRepo::initialize(main);
     let config_file = ConfigurationFile::default();
-    repo.commit("0.1.0-pre.1");
+    repo.commit_at("0.1.0-pre.1", COMMIT_DATE);
     cmd.current_dir(&repo.config.path).env_clear();
 
     ConfiguredTestRepo {
