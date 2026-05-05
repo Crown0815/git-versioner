@@ -27,7 +27,7 @@ jobs:
       version-source-sha: ${{ steps.determine-version.outputs.GitVersion_VersionSourceSha }}
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
           lfs: false
@@ -50,7 +50,7 @@ jobs:
       determine-version
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -149,7 +149,7 @@ jobs:
     needs: determine-version
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install MUSL-libc dependencies (Linux)
         if: endsWith(matrix.build.target, 'musl')
@@ -244,7 +244,7 @@ jobs:
     if: github.event.inputs.as-draft == 'false'
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
