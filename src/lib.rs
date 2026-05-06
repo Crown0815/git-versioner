@@ -257,13 +257,10 @@ impl GitVersioner {
 
     fn tag_id_for(&self, name: &str) -> Option<Oid> {
         match self.repo.revparse_single(&format!("refs/tags/{name}")) {
-            Ok(tag_obj) => {
-                if let Some(tag) = tag_obj.as_tag() {
-                    Some(tag.target_id())
-                } else {
-                    Some(tag_obj.id())
-                }
-            }
+            Ok(tag_obj) => match tag_obj.as_tag() {
+                Some(tag) => Some(tag.target_id()),
+                None => Some(tag_obj.id()),
+            },
             Err(_) => None,
         }
     }
