@@ -119,12 +119,15 @@ mod without_commit_message_incrementing {
     }
 
     #[rstest]
-    fn test_cal_ver_minor_remains_1_for_patches_to_the_first_feature_release(repo: TestRepo) {
+    fn test_cal_ver_minor_remains_equal_for_patches_to_a_feature_release(repo: TestRepo) {
         repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
         repo.tag("v0.1.0");
         repo.commit_at("0.2.0-pre.1", "2023-12-31T12:00:00Z");
         repo.tag("v0.1.1");
         repo.assert().cal_ver_minor(1);
+        repo.branch("release/0.1.0");
+        repo.commit_at("0.1.2-pre.1", "2024-01-01T12:00:00Z");
+        repo.assert().commit_year("2024").cal_ver_minor(1);
     }
 
     #[rstest]
@@ -135,7 +138,7 @@ mod without_commit_message_incrementing {
         repo.tag("v0.2.0");
         repo.commit_at("0.2.1-pre.1", "2024-01-01T12:00:00Z");
         repo.tag("v0.2.1");
-        repo.assert().cal_ver_minor(2);
+        repo.assert().commit_year("2024").cal_ver_minor(2);
     }
 
     #[rstest]
