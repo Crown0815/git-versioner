@@ -20,6 +20,19 @@ mod with_commit_message_incrementing {
     }
 
     #[rstest]
+    fn test_cal_ver_date_parts_match_commit_date_parts_for_feature_releases(repo: TestRepo) {
+        repo.commit_at("feat: 0.1.0-pre.1", "2023-12-31T12:00:00Z");
+
+        repo.assert()
+            .commit_year("2023")
+            .commit_month("12")
+            .commit_day("31")
+            .cal_ver_year("2023")
+            .cal_ver_month("12")
+            .cal_ver_day("31");
+    }
+
+    #[rstest]
     fn test_cal_ver_minor_is_one_at_the_first_feature_release_within_a_year(repo: TestRepo) {
         repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
         repo.tag("v0.1.0");
@@ -54,7 +67,14 @@ mod with_commit_message_incrementing {
         repo.tag("v0.2.0");
         repo.assert().cal_ver_minor(2);
         repo.commit_at("fix: 0.2.1-pre.1", "2024-01-01T12:00:00Z");
-        repo.assert().cal_ver_minor(2);
+        repo.assert()
+            .commit_year("2024")
+            .commit_month("01")
+            .commit_day("01")
+            .cal_ver_year("2023")
+            .cal_ver_month("12")
+            .cal_ver_day("31")
+            .cal_ver_minor(2);
     }
 }
 
@@ -75,7 +95,10 @@ mod without_commit_message_incrementing {
         repo.assert()
             .commit_year("2024")
             .commit_month("03")
-            .commit_day("09");
+            .commit_day("09")
+            .cal_ver_year("2024")
+            .cal_ver_month("03")
+            .cal_ver_day("09");
     }
 
     #[rstest]
@@ -131,6 +154,25 @@ mod without_commit_message_incrementing {
     }
 
     #[rstest]
+    fn test_cal_ver_date_parts_come_from_corresponding_feature_release_for_patch_releases(
+        repo: TestRepo,
+    ) {
+        repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
+        repo.tag("v0.1.0");
+        repo.branch("release/0.1.0");
+        repo.commit_at("0.1.1-pre.1", "2024-01-01T12:00:00Z");
+
+        repo.assert()
+            .commit_year("2024")
+            .commit_month("01")
+            .commit_day("01")
+            .cal_ver_year("2023")
+            .cal_ver_month("12")
+            .cal_ver_day("31")
+            .cal_ver_minor(1);
+    }
+
+    #[rstest]
     fn test_cal_ver_minor_remains_equal_for_patches_to_last_years_feature_release(repo: TestRepo) {
         repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
         repo.tag("v0.1.0");
@@ -149,5 +191,18 @@ mod without_commit_message_incrementing {
         repo.commit_at("1.0.0-pre.1", "2024-01-10T12:00:00Z");
 
         repo.assert().informational_version("2024.1.0-pre.1");
+    }
+
+    #[rstest]
+    fn test_cal_ver_date_parts_are_available_for_assembly_informational_format(mut repo: TestRepo) {
+        repo.config.assembly_informational_format =
+            "{CalVerYear}.{CalVerMonth}.{CalVerDay}.{Patch}{PreReleaseTagWithDash}".to_string();
+
+        repo.commit_at("1.0.0-pre.1", "2023-12-31T12:00:00Z");
+        repo.tag("v1.0.0");
+        repo.branch("release/1.0.0");
+        repo.commit_at("1.0.1-pre.1", "2024-01-01T12:00:00Z");
+
+        repo.assert().informational_version("2023.12.31.1-pre.1");
     }
 }

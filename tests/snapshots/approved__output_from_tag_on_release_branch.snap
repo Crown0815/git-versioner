@@ -36,6 +36,9 @@ exit_code: 0
   "CommitYear": "2024",
   "CommitMonth": "03",
   "CommitDay": "09",
+  "CalVerYear": "2024",
+  "CalVerMonth": "03",
+  "CalVerDay": "09",
   "CalVerMinor": 2,
   "UncommittedChanges": 0
 }

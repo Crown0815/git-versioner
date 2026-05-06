@@ -85,6 +85,9 @@ pub struct GitVersion {
     pub commit_year: String,
     pub commit_month: String,
     pub commit_day: String,
+    pub cal_ver_year: String,
+    pub cal_ver_month: String,
+    pub cal_ver_day: String,
     pub cal_ver_minor: u64,
     pub uncommitted_changes: u64,
 }
@@ -92,6 +95,12 @@ pub struct GitVersion {
 struct FoundBranch {
     branch_type: BranchType,
     distance: i64,
+}
+
+struct CalVerDate {
+    year: String,
+    month: String,
+    day: String,
 }
 
 impl GitVersioner {
@@ -116,6 +125,7 @@ impl GitVersioner {
 
         let head_commit = head.peel_to_commit()?;
         let commit_year = Self::commit_year_for(&head_commit);
+        let cal_ver_date = versioner.calculate_cal_ver_date_for(&version, &head_commit)?;
         let cal_ver_minor = versioner.calculate_cal_ver_minor_for(
             &commit_year,
             &version,
@@ -130,6 +140,7 @@ impl GitVersioner {
             major_minor_patch_source.commit_id,
             prerelease_weight,
             head,
+            cal_ver_date,
             cal_ver_minor,
             config.assembly_informational_format(),
         ))
@@ -305,6 +316,46 @@ impl GitVersioner {
         };
 
         Ok((releases.len() + current_slot) as u64)
+    }
+
+    fn calculate_cal_ver_date_for(
+        &self,
+        version: &Version,
+        head_commit: &git2::Commit,
+    ) -> Result<CalVerDate> {
+        let date_time = if version.patch > 0 {
+            self.feature_release_date_time_for_patch_release(version)?
+                .unwrap_or_else(|| Self::commit_date_time_for(head_commit))
+        } else {
+            Self::commit_date_time_for(head_commit)
+        };
+
+        Ok(CalVerDate {
+            year: date_time.format("%Y").to_string(),
+            month: date_time.format("%m").to_string(),
+            day: date_time.format("%d").to_string(),
+        })
+    }
+
+    fn feature_release_date_time_for_patch_release(
+        &self,
+        version: &Version,
+    ) -> Result<Option<DateTime<Utc>>> {
+        let tag_names = self.repo.tag_names(None)?;
+
+        for tag_name in tag_names.iter().flatten() {
+            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+                && tag_version.major == version.major
+                && tag_version.minor == version.minor
+                && tag_version.patch == 0
+                && let Some(commit_id) = self.tag_id_for(tag_name)
+                && let Ok(commit) = self.repo.find_commit(commit_id)
+            {
+                return Ok(Some(Self::commit_date_time_for(&commit)));
+            }
+        }
+
+        Ok(None)
     }
 
     fn cal_ver_minor_for_stable_major_minor_line(
@@ -877,6 +928,7 @@ impl GitVersion {
         major_minor_patch_source: Oid,
         prerelease_weight: u64,
         head: Reference,
+        cal_ver_date: CalVerDate,
         cal_ver_minor: u64,
         assembly_informational_format: &str,
     ) -> Self {
@@ -954,6 +1006,9 @@ impl GitVersion {
             commit_year,
             commit_month,
             commit_day,
+            cal_ver_year: cal_ver_date.year,
+            cal_ver_month: cal_ver_date.month,
+            cal_ver_day: cal_ver_date.day,
             cal_ver_minor,
             branch_name,
             full_build_meta_data: "".to_string(),
