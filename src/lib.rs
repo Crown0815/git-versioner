@@ -85,7 +85,7 @@ pub struct GitVersion {
     pub commit_year: String,
     pub commit_month: String,
     pub commit_day: String,
-    pub year_minor: u64,
+    pub cal_ver_minor: u64,
     pub uncommitted_changes: u64,
 }
 
@@ -116,7 +116,7 @@ impl GitVersioner {
 
         let head_commit = head.peel_to_commit()?;
         let commit_year = Self::commit_year_for(&head_commit);
-        let year_minor = versioner.calculate_year_minor_for(
+        let cal_ver_minor = versioner.calculate_cal_ver_minor_for(
             &commit_year,
             &version,
             &source,
@@ -130,7 +130,7 @@ impl GitVersioner {
             major_minor_patch_source.commit_id,
             prerelease_weight,
             head,
-            year_minor,
+            cal_ver_minor,
             config.assembly_informational_format(),
         ))
     }
@@ -263,7 +263,7 @@ impl GitVersioner {
         }
     }
 
-    fn calculate_year_minor_for(
+    fn calculate_cal_ver_minor_for(
         &self,
         year: &str,
         version: &Version,
@@ -285,10 +285,10 @@ impl GitVersioner {
         }
 
         if version.patch > 0
-            && let Some(line_year_minor) =
-                self.year_minor_for_stable_major_minor_line(version.major, version.minor)?
+            && let Some(line_cal_ver_minor) =
+                self.cal_ver_minor_for_stable_major_minor_line(version.major, version.minor)?
         {
-            return Ok(line_year_minor);
+            return Ok(line_cal_ver_minor);
         }
 
         let current_slot = if version.pre.is_empty()
@@ -307,7 +307,7 @@ impl GitVersioner {
         Ok((releases.len() + current_slot) as u64)
     }
 
-    fn year_minor_for_stable_major_minor_line(
+    fn cal_ver_minor_for_stable_major_minor_line(
         &self,
         major: u64,
         minor: u64,
@@ -877,7 +877,7 @@ impl GitVersion {
         major_minor_patch_source: Oid,
         prerelease_weight: u64,
         head: Reference,
-        year_minor: u64,
+        cal_ver_minor: u64,
         assembly_informational_format: &str,
     ) -> Self {
         let pre_release_number = version
@@ -954,7 +954,7 @@ impl GitVersion {
             commit_year,
             commit_month,
             commit_day,
-            year_minor,
+            cal_ver_minor,
             branch_name,
             full_build_meta_data: "".to_string(),
             uncommitted_changes: 0,

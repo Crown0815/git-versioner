@@ -403,5 +403,5 @@ impl Assertable {
     config_assertion!(commit_year, &str);
     config_assertion!(commit_month, &str);
     config_assertion!(commit_day, &str);
-    config_assertion!(year_minor, u64);
+    config_assertion!(cal_ver_minor, u64);
 }

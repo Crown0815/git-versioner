@@ -531,14 +531,14 @@ fn test_commit_date_parts_are_available_for_assembly_informational_format(mut re
 #[rstest]
 fn test_year_minor_is_one_before_the_first_feature_release_within_a_year(repo: TestRepo) {
     repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
-    repo.assert().year_minor(1);
+    repo.assert().cal_ver_minor(1);
 }
 
 #[rstest]
 fn test_year_minor_is_one_at_the_first_feature_release_within_a_year(repo: TestRepo) {
     repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
     repo.tag("v0.1.0");
-    repo.assert().year_minor(1);
+    repo.assert().cal_ver_minor(1);
 }
 
 #[rstest]
@@ -546,7 +546,7 @@ fn test_year_minor_is_two_after_the_first_feature_release_within_a_year(repo: Te
     repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
     repo.tag("v0.1.0");
     repo.commit_at("0.2.0-pre.1", "2023-12-31T12:00:00Z");
-    repo.assert().year_minor(2);
+    repo.assert().cal_ver_minor(2);
 }
 
 #[rstest]
@@ -554,7 +554,7 @@ fn test_year_minor_resets_to_one_with_the_first_commit_within_a_new_year(repo: T
     repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
     repo.tag("v0.1.0");
     repo.commit_at("0.2.0-pre.1", "2024-01-01T12:00:00Z");
-    repo.assert().year_minor(1);
+    repo.assert().cal_ver_minor(1);
 }
 
 #[rstest]
@@ -563,7 +563,7 @@ fn test_year_minor_remains_1_for_patches_to_the_first_feature_release(repo: Test
     repo.tag("v0.1.0");
     repo.commit_at("0.2.0-pre.1", "2023-12-31T12:00:00Z");
     repo.tag("v0.1.1");
-    repo.assert().year_minor(1);
+    repo.assert().cal_ver_minor(1);
 }
 
 #[rstest]
@@ -574,7 +574,7 @@ fn test_year_minor_remains_equal_for_patches_to_last_years_feature_release(repo:
     repo.tag("v0.2.0");
     repo.commit_at("0.2.1-pre.1", "2024-01-01T12:00:00Z");
     repo.tag("v0.2.1");
-    repo.assert().year_minor(2);
+    repo.assert().cal_ver_minor(2);
 }
 
 #[rstest]
