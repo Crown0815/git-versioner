@@ -103,7 +103,7 @@ fn test_on_main_branch_with_major_version_greater_than_zero_when_encountering_co
 }
 
 #[rstest]
-fn test_year_minor_is_one_plus_the_count_of_unique_major_minor_releases_within_commit_year(
+fn test_year_minor_is_one_plus_the_count_of_different_unique_major_minor_releases_within_commit_year(
     repo: TestRepo,
 ) {
     repo.commit_at("feat: 0.1.0-pre.1", "2024-01-10T12:00:00Z");
@@ -113,5 +113,47 @@ fn test_year_minor_is_one_plus_the_count_of_unique_major_minor_releases_within_c
     repo.commit_at("fix: 0.1.1-pre.1", "2024-01-10T12:00:00Z");
     repo.assert().year_minor(1);
     repo.commit_at("feat: 0.2.0-pre.1", "2024-01-10T12:00:00Z");
+    repo.assert().year_minor(2);
+}
+
+#[rstest]
+fn test_year_minor_is_one_before_the_first_feature_release_within_a_year(repo: TestRepo) {
+    repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.assert().year_minor(1);
+}
+
+#[rstest]
+fn test_year_minor_is_one_at_the_first_feature_release_within_a_year(repo: TestRepo) {
+    repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.tag("v0.1.0");
+    repo.assert().year_minor(1);
+}
+
+#[rstest]
+fn test_year_minor_remains_one_after_the_first_feature_release_within_a_year(repo: TestRepo) {
+    repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.tag("v0.1.0");
+    repo.commit_at("fix: 0.1.1-pre.1", "2023-12-31T12:00:00Z");
+    repo.assert().year_minor(1);
+}
+
+#[rstest]
+fn test_year_minor_bumps_at_the_first_feature_after_a_release_within_a_year(repo: TestRepo) {
+    repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.tag("v0.1.0");
+    repo.commit_at("feat: 0.2.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.assert().year_minor(2);
+}
+
+#[rstest]
+fn test_year_minor_remains_the_same_before_the_first_feature_commit_in_the_next_year(
+    repo: TestRepo,
+) {
+    repo.commit_at("0.1.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.tag("v0.1.0");
+    repo.commit_at("feat: 0.2.0-pre.1", "2023-12-31T12:00:00Z");
+    repo.tag("v0.2.0");
+    repo.assert().year_minor(2);
+    repo.commit_at("fix: 0.2.1-pre.1", "2024-01-01T12:00:00Z");
     repo.assert().year_minor(2);
 }

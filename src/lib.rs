@@ -114,8 +114,14 @@ impl GitVersioner {
             prerelease_weight = PRERELEASE_WEIGHT_TAG;
         }
 
-        let commit_year = Self::commit_year_for(&head.peel_to_commit()?);
-        let year_minor = versioner.count_unique_major_minor_releases_in_year(&commit_year)?;
+        let head_commit = head.peel_to_commit()?;
+        let commit_year = Self::commit_year_for(&head_commit);
+        let year_minor = versioner.calculate_year_minor_for(
+            &commit_year,
+            &version,
+            &source,
+            head_commit.id(),
+        )?;
 
         Ok(GitVersion::new(
             version,
@@ -257,21 +263,119 @@ impl GitVersioner {
         }
     }
 
-    fn count_unique_major_minor_releases_in_year(&self, year: &str) -> Result<u64> {
+    fn calculate_year_minor_for(
+        &self,
+        year: &str,
+        version: &Version,
+        source: &VersionSource,
+        head_id: Oid,
+    ) -> Result<u64> {
         let mut releases = HashSet::new();
         let tag_names = self.repo.tag_names(None)?;
 
         for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
                 && let Ok(commit) = self.repo.find_commit(commit_id)
                 && Self::commit_year_for(&commit) == year
+                && (tag_version.major, tag_version.minor) < (version.major, version.minor)
             {
-                releases.insert((version.major, version.minor));
+                releases.insert((tag_version.major, tag_version.minor));
             }
         }
 
-        Ok((releases.len() + 1) as u64)
+        if version.patch > 0
+            && let Some(line_year_minor) =
+                self.year_minor_for_stable_major_minor_line(version.major, version.minor)?
+        {
+            return Ok(line_year_minor);
+        }
+
+        let current_slot = if version.pre.is_empty()
+            && source.commit_id == head_id
+            && self.has_prior_pre_release_for_same_major_minor_in_year(
+                head_id,
+                year,
+                version.major,
+                version.minor,
+            )? {
+            2
+        } else {
+            1
+        };
+
+        Ok((releases.len() + current_slot) as u64)
+    }
+
+    fn year_minor_for_stable_major_minor_line(
+        &self,
+        major: u64,
+        minor: u64,
+    ) -> Result<Option<u64>> {
+        let tag_names = self.repo.tag_names(None)?;
+        let mut line_releases = Vec::new();
+
+        for tag_name in tag_names.iter().flatten() {
+            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+                && tag_version.major == major
+                && tag_version.minor == minor
+                && let Some(commit_id) = self.tag_id_for(tag_name)
+                && let Ok(commit) = self.repo.find_commit(commit_id)
+            {
+                line_releases.push((tag_version, Self::commit_year_for(&commit)));
+            }
+        }
+
+        let Some((_, line_year)) = line_releases
+            .into_iter()
+            .min_by(|(left, _), (right, _)| left.cmp(right))
+        else {
+            return Ok(None);
+        };
+
+        let mut earlier_releases_in_line_year = HashSet::new();
+        for tag_name in tag_names.iter().flatten() {
+            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+                && (tag_version.major, tag_version.minor) < (major, minor)
+                && let Some(commit_id) = self.tag_id_for(tag_name)
+                && let Ok(commit) = self.repo.find_commit(commit_id)
+                && Self::commit_year_for(&commit) == line_year
+            {
+                earlier_releases_in_line_year.insert((tag_version.major, tag_version.minor));
+            }
+        }
+
+        Ok(Some((earlier_releases_in_line_year.len() + 1) as u64))
+    }
+
+    fn has_prior_pre_release_for_same_major_minor_in_year(
+        &self,
+        head_id: Oid,
+        year: &str,
+        major: u64,
+        minor: u64,
+    ) -> Result<bool> {
+        let mut revision_walk = self.repo.revwalk()?;
+        revision_walk.push(head_id)?;
+        revision_walk.set_sorting(git2::Sort::TOPOLOGICAL)?;
+
+        for oid in revision_walk.skip(1) {
+            let commit = self.repo.find_commit(oid?)?;
+            if Self::commit_year_for(&commit) != year {
+                continue;
+            }
+
+            if let Some(message) = commit.message()
+                && let Ok(version) = Version::parse(message.trim())
+                && version.major == major
+                && version.minor == minor
+                && !version.pre.is_empty()
+            {
+                return Ok(true);
+            }
+        }
+
+        Ok(false)
     }
 
     fn commit_year_for(commit: &git2::Commit) -> String {
