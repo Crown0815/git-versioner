@@ -97,12 +97,6 @@ struct FoundBranch {
     distance: i64,
 }
 
-struct CalVerDate {
-    year: String,
-    month: String,
-    day: String,
-}
-
 impl GitVersioner {
     pub fn calculate_version<T: Configuration>(config: &T) -> Result<GitVersion> {
         let versioner = Self::new(config)?;
@@ -322,19 +316,14 @@ impl GitVersioner {
         &self,
         version: &Version,
         head_commit: &git2::Commit,
-    ) -> Result<CalVerDate> {
+    ) -> Result<DateTime<Utc>> {
         let date_time = if version.patch > 0 {
             self.feature_release_date_time_for_patch_release(version)?
                 .unwrap_or_else(|| Self::commit_date_time_for(head_commit))
         } else {
             Self::commit_date_time_for(head_commit)
         };
-
-        Ok(CalVerDate {
-            year: date_time.format("%Y").to_string(),
-            month: date_time.format("%m").to_string(),
-            day: date_time.format("%d").to_string(),
-        })
+        Ok(date_time)
     }
 
     fn feature_release_date_time_for_patch_release(
@@ -928,7 +917,7 @@ impl GitVersion {
         major_minor_patch_source: Oid,
         prerelease_weight: u64,
         head: Reference,
-        cal_ver_date: CalVerDate,
+        cal_ver_date: DateTime<Utc>,
         cal_ver_minor: u64,
         assembly_informational_format: &str,
     ) -> Self {
@@ -1006,14 +995,15 @@ impl GitVersion {
             commit_year,
             commit_month,
             commit_day,
-            cal_ver_year: cal_ver_date.year,
-            cal_ver_month: cal_ver_date.month,
-            cal_ver_day: cal_ver_date.day,
+            cal_ver_year: cal_ver_date.format("%Y").to_string(),
+            cal_ver_month: cal_ver_date.format("%m").to_string(),
+            cal_ver_day: cal_ver_date.format("%d").to_string(),
             cal_ver_minor,
             branch_name,
             full_build_meta_data: "".to_string(),
             uncommitted_changes: 0,
         };
+
         result.informational_version = result.format(assembly_informational_format);
         result
     }
