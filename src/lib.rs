@@ -50,6 +50,7 @@ pub struct GitVersioner {
     feature_pattern: Regex,
     version_pattern: Regex,
     prerelease_tag: String,
+    patch_prerelease_tag: String,
     continuous_delivery: bool,
     is_commit_message_incrementing: bool,
 }
@@ -148,6 +149,7 @@ impl GitVersioner {
             feature_pattern: Regex::new(config.feature_branch())?,
             version_pattern: Regex::new(&format!("^{}(?<Version>.+)", config.tag_prefix()))?,
             prerelease_tag: config.pre_release_tag().to_string(),
+            patch_prerelease_tag: config.patch_pre_release_tag().to_string(),
             continuous_delivery: *config.continuous_delivery(),
             is_commit_message_incrementing: match config.commit_message_incrementing() {
                 "Enabled" => true,
@@ -524,7 +526,7 @@ impl GitVersioner {
             }
         };
 
-        version.pre = self.pre_release(pre_release_number)?;
+        version.pre = self.pre_release(&version, pre_release_number)?;
         Ok((
             version,
             source,
@@ -549,15 +551,21 @@ impl GitVersioner {
         let highest_prerelease = pre_release_versions
             .into_iter()
             .filter_map(|source| {
-                Self::extract_pre_release_number(&source.version, &self.prerelease_tag)
+                self.extract_pre_release_number(&source.version)
                     .map(|number| (number, source))
             })
             .max_by_key(|(number, _)| *number);
         Ok(highest_prerelease)
     }
 
-    fn extract_pre_release_number(version: &Version, pre_release_tag: &str) -> Option<i64> {
+    fn extract_pre_release_number(&self, version: &Version) -> Option<i64> {
         let pre = version.pre.as_str();
+
+        let pre_release_tag = if version.patch > 0 && !self.patch_prerelease_tag.is_empty() {
+            &self.patch_prerelease_tag
+        } else {
+            &self.prerelease_tag
+        };
 
         let expected_prefix = format!("{}.", pre_release_tag);
         if !pre.starts_with(&expected_prefix) {
@@ -568,11 +576,14 @@ impl GitVersioner {
         integer_part.parse::<i64>().ok()
     }
 
-    fn pre_release(&self, count: i64) -> Result<Prerelease> {
-        Ok(Prerelease::new(&format!(
-            "{}.{}",
-            self.prerelease_tag, count
-        ))?)
+    fn pre_release(&self, version: &Version, count: i64) -> Result<Prerelease> {
+        let pre_release_tag = if version.patch > 0 && !self.patch_prerelease_tag.is_empty() {
+            &self.patch_prerelease_tag
+        } else {
+            &self.prerelease_tag
+        };
+
+        Ok(Prerelease::new(&format!("{}.{}", pre_release_tag, count))?)
     }
 
     fn calculate_version_for_release(
@@ -610,8 +621,7 @@ impl GitVersioner {
                     (commit_count, source)
                 }
             };
-
-            new_version.pre = self.pre_release(pre_release_number)?;
+            new_version.pre = self.pre_release(&new_version, pre_release_number)?;
 
             Ok((
                 new_version,
@@ -641,7 +651,7 @@ impl GitVersioner {
 
             let mut new_version = release_version.clone();
             new_version.patch += 0;
-            new_version.pre = self.pre_release(pre_release_number)?;
+            new_version.pre = self.pre_release(&new_version, pre_release_number)?;
             Ok((
                 new_version,
                 source,
@@ -674,7 +684,7 @@ impl GitVersioner {
             };
 
             let mut version = source.version.clone();
-            version.pre = self.pre_release(pre_release_number)?;
+            version.pre = self.pre_release(&version, pre_release_number)?;
             Ok((
                 version,
                 source,

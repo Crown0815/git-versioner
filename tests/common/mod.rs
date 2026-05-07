@@ -26,6 +26,7 @@ pub struct TestConfig {
     pub feature_branch: String,
     pub tag_prefix: String,
     pub pre_release_tag: String,
+    pub patch_pre_release_tag: String,
     pub commit_message_incrementing: String,
     pub assembly_informational_format: String,
     pub continuous_delivery: bool,
@@ -47,6 +48,7 @@ impl Configuration for TestConfig {
     config_getter!(feature_branch, str);
     config_getter!(tag_prefix, str);
     config_getter!(pre_release_tag, str);
+    config_getter!(patch_pre_release_tag, str);
     config_getter!(commit_message_incrementing, str);
     config_getter!(assembly_informational_format, str);
     config_getter!(continuous_delivery, bool);
@@ -63,6 +65,7 @@ impl Default for TestConfig {
             feature_branch: default.feature_branch,
             tag_prefix: default.tag_prefix,
             pre_release_tag: default.pre_release_tag,
+            patch_pre_release_tag: default.patch_pre_release_tag,
             commit_message_incrementing: default.commit_message_incrementing,
             assembly_informational_format: default.assembly_informational_format,
             continuous_delivery: default.continuous_delivery,

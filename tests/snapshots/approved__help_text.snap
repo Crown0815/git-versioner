@@ -24,7 +24,9 @@ Options:
       --tag-prefix <TAG_PREFIX>
           Regex to detect version tag(s)
       --pre-release-tag <PRE_RELEASE_TAG>
-          Regex to detect pre-release version tag(s)
+          Label used to mark pre-release versions (e.g., pre, alpha, beta, rc, etc.), default: pre
+      --patch-pre-release-tag <PATCH_PRE_RELEASE_TAG>
+          Label to be used to mark patch (Patch > 0) pre-release versions (e.g., rc, hotfix, patch, etc.), default: <PRE_RELEASE_TAG> 
       --continuous-delivery
           Calculate version using continuous delivery mode
       --commit-message-incrementing <COMMIT_MESSAGE_INCREMENTING>

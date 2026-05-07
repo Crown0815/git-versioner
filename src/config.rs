@@ -12,6 +12,7 @@ pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
 pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
+pub const PATCH_PRE_RELEASE_TAG: &str = "";
 pub const COMMIT_MESSAGE_INCREMENTING: &str = "Disabled";
 pub const ASSEMBLY_INFORMATIONAL_FORMAT: &str = "{InformationalVersion}";
 
@@ -28,6 +29,7 @@ pub trait Configuration {
     fn feature_branch(&self) -> &str;
     fn tag_prefix(&self) -> &str;
     fn pre_release_tag(&self) -> &str;
+    fn patch_pre_release_tag(&self) -> &str;
     fn commit_message_incrementing(&self) -> &str;
     fn assembly_informational_format(&self) -> &str {
         ASSEMBLY_INFORMATIONAL_FORMAT
@@ -53,6 +55,7 @@ pub trait Configuration {
             feature_branch: self.feature_branch().to_string(),
             tag_prefix: self.tag_prefix().to_string(),
             pre_release_tag: self.pre_release_tag().to_string(),
+            patch_pre_release_tag: self.patch_pre_release_tag().to_string(),
             commit_message_incrementing: self.commit_message_incrementing().to_string(),
             assembly_informational_format: self.assembly_informational_format().to_string(),
             continuous_delivery: *self.continuous_delivery(),
@@ -69,6 +72,7 @@ pub struct DefaultConfig {
     pub feature_branch: String,
     pub tag_prefix: String,
     pub pre_release_tag: String,
+    pub patch_pre_release_tag: String,
     pub commit_message_incrementing: String,
     pub assembly_informational_format: String,
     pub continuous_delivery: bool,
@@ -82,6 +86,7 @@ pub struct ConfigurationFile {
     pub feature_branch: Option<String>,
     pub tag_prefix: Option<String>,
     pub pre_release_tag: Option<String>,
+    pub patch_pre_release_tag: Option<String>,
     pub commit_message_incrementing: Option<String>,
     #[serde(alias = "assembly-informational-format")]
     pub assembly_informational_format: Option<String>,
@@ -113,9 +118,15 @@ pub struct Args {
     #[arg(
         long,
         value_parser,
-        help = "Regex to detect pre-release version tag(s)"
+        help = "Label used to mark pre-release versions (e.g., pre, alpha, beta, rc, etc.), default: pre"
     )]
     pre_release_tag: Option<String>,
+    #[arg(
+        long,
+        value_parser,
+        help = "Label to be used to mark patch (Patch > 0) pre-release versions (e.g., rc, hotfix, patch, etc.), default: <PRE_RELEASE_TAG> "
+    )]
+    patch_pre_release_tag: Option<String>,
 
     #[arg(
         long,
@@ -179,6 +190,7 @@ impl Default for DefaultConfig {
             feature_branch: FEATURE_BRANCH.to_string(),
             tag_prefix: TAG_PREFIX.to_string(),
             pre_release_tag: PRE_RELEASE_TAG.to_string(),
+            patch_pre_release_tag: PATCH_PRE_RELEASE_TAG.to_string(),
             commit_message_incrementing: COMMIT_MESSAGE_INCREMENTING.to_string(),
             assembly_informational_format: ASSEMBLY_INFORMATIONAL_FORMAT.to_string(),
             continuous_delivery: false,
@@ -204,6 +216,9 @@ impl Configuration for DefaultConfig {
     }
     fn pre_release_tag(&self) -> &str {
         &self.pre_release_tag
+    }
+    fn patch_pre_release_tag(&self) -> &str {
+        &self.patch_pre_release_tag
     }
     fn commit_message_incrementing(&self) -> &str {
         &self.commit_message_incrementing
@@ -299,6 +314,7 @@ impl Configuration for ConfigurationLayers {
     config_getter!(feature_branch, str, arg > file > default);
     config_getter!(tag_prefix, str, arg > file > default);
     config_getter!(pre_release_tag, str, arg > file > default);
+    config_getter!(patch_pre_release_tag, str, arg > file > default);
     config_getter!(commit_message_incrementing, str, arg > file > default);
     config_getter!(assembly_informational_format, str, arg > file > default);
     config_getter!(continuous_delivery, bool, arg);
