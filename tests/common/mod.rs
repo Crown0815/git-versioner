@@ -410,4 +410,18 @@ impl Assertable {
     config_assertion!(cal_ver_month, &str);
     config_assertion!(cal_ver_day, &str);
     config_assertion!(cal_ver_minor, u64);
+
+    pub fn previous_pre_releases(self, expected: &[&str]) -> Self {
+        let actual = &self.result.previous_pre_releases;
+        let expected = expected
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<Vec<_>>();
+        let context = &self.context;
+        assert_eq!(
+            actual, &expected,
+            "Expected previous_pre_releases: {expected:?}, found: {actual:?}\n{context}",
+        );
+        self
+    }
 }

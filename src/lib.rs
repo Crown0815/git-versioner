@@ -61,6 +61,7 @@ pub struct GitVersion {
     pub major: u64,
     pub minor: u64,
     pub patch: u64,
+    pub previous_pre_releases: Vec<String>,
     pub pre_release_tag: String,
     pub pre_release_tag_with_dash: String,
     pub pre_release_label: String,
@@ -127,9 +128,11 @@ impl GitVersioner {
             &source,
             head_commit.id(),
         )?;
+        let previous_pre_releases = versioner.previous_pre_releases_for(&version)?;
 
         Ok(GitVersion::new(
             version,
+            previous_pre_releases,
             branch_name,
             source.commit_id,
             major_minor_patch_source.commit_id,
@@ -239,6 +242,36 @@ impl GitVersioner {
             return Some(version);
         }
         None
+    }
+
+    fn previous_pre_releases_for(&self, version: &Version) -> Result<Vec<String>> {
+        if !version.pre.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let mut matching_tags = Vec::new();
+        let tag_names = self.repo.tag_names(None)?;
+        for tag_name in tag_names.iter().flatten() {
+            if let Some(tag_version) = self.version_matching_in(tag_name, &|tag_version| {
+                tag_version.major == version.major
+                    && tag_version.minor == version.minor
+                    && tag_version.patch == version.patch
+                    && !tag_version.pre.is_empty()
+            }) {
+                matching_tags.push((tag_version, tag_name.to_string()));
+            }
+        }
+
+        matching_tags.sort_by(|(left_version, left_name), (right_version, right_name)| {
+            left_version
+                .cmp(right_version)
+                .then_with(|| left_name.cmp(right_name))
+        });
+
+        Ok(matching_tags
+            .into_iter()
+            .map(|(_, tag_name)| tag_name)
+            .collect())
     }
 
     fn loose<S: AsRef<str> + ToString>(semantic_version_string: S) -> String {
@@ -919,6 +952,7 @@ impl GitVersion {
     #[allow(clippy::too_many_arguments)]
     fn new(
         version: Version,
+        previous_pre_releases: Vec<String>,
         branch_name: String,
         source: Oid,
         major_minor_patch_source: Oid,
@@ -962,6 +996,7 @@ impl GitVersion {
             major: version.major,
             minor: version.minor,
             patch: version.patch,
+            previous_pre_releases,
             major_minor_patch: format!("{}.{}.{}", version.major, version.minor, version.patch),
             pre_release_tag: version.pre.to_string(),
             pre_release_tag_with_dash: if version.pre.is_empty() {

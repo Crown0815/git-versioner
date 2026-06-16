@@ -29,6 +29,7 @@ GitVersion_PreReleaseLabelWithDash=-pre
 GitVersion_PreReleaseNumber=1
 GitVersion_PreReleaseTag=pre.1
 GitVersion_PreReleaseTagWithDash=-pre.1
+GitVersion_PreviousPreReleases=[]
 GitVersion_SemVer=0.1.0-pre.1
 GitVersion_Sha=########################################
 GitVersion_ShortSha=#######

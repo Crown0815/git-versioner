@@ -11,6 +11,7 @@ exit_code: 0
   "Major": 0,
   "Minor": 1,
   "Patch": 0,
+  "PreviousPreReleases": [],
   "PreReleaseTag": "my-feature.1",
   "PreReleaseTagWithDash": "-my-feature.1",
   "PreReleaseLabel": "my-feature",

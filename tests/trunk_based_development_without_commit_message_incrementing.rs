@@ -434,6 +434,32 @@ fn test_weighted_prerelease_number_for_main_branch_as_release(mut repo: TestRepo
 }
 
 #[rstest]
+fn test_full_release_on_main_branch_lists_previous_pre_releases(mut repo: TestRepo) {
+    repo.commit("0.1.0-pre.1");
+    repo.tag("v0.1.0-pre.1");
+    repo.commit("0.1.0-pre.2");
+    repo.tag("v0.1.0-pre.2");
+    repo.commit("0.2.0-pre.1");
+    repo.tag("v0.2.0-pre.1");
+
+    repo.config.as_release = true;
+    repo.assert()
+        .full_sem_ver("0.1.0")
+        .previous_pre_releases(&["v0.1.0-pre.1", "v0.1.0-pre.2"]);
+}
+
+#[rstest]
+fn test_pre_release_on_main_branch_has_empty_previous_pre_releases(repo: TestRepo) {
+    repo.commit("0.1.0-pre.1");
+    repo.tag("v0.1.0-pre.1");
+    repo.commit("0.1.0-pre.2");
+
+    repo.assert()
+        .full_sem_ver("0.1.0-pre.2")
+        .previous_pre_releases(&[]);
+}
+
+#[rstest]
 fn test_weighted_prerelease_number_for_release_branch_adds_55000(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1");
     repo.branch("release/0.1.0");
@@ -460,6 +486,33 @@ fn test_weighted_prerelease_number_for_release_branch_as_release_adds_60000(mut 
     repo.config.as_release = true;
     repo.commit_and_assert("0.1.0")
         .weighted_pre_release_number(60000);
+}
+
+#[rstest]
+fn test_full_release_on_release_branch_lists_previous_pre_releases(mut repo: TestRepo) {
+    repo.commit("0.1.0-pre.1");
+    repo.tag("v0.1.0-pre.1");
+    repo.branch("release/0.1.0");
+    repo.commit("0.1.0-pre.2");
+    repo.tag("v0.1.0-pre.2");
+    repo.commit("0.1.1-pre.1");
+    repo.tag("v0.1.1-pre.1");
+
+    repo.config.as_release = true;
+    repo.assert()
+        .full_sem_ver("0.1.0")
+        .previous_pre_releases(&["v0.1.0-pre.1", "v0.1.0-pre.2"]);
+}
+
+#[rstest]
+fn test_pre_release_on_release_branch_has_empty_previous_pre_releases(repo: TestRepo) {
+    repo.commit("0.1.0-pre.1");
+    repo.tag("v0.1.0-pre.1");
+    repo.commit("0.1.0-pre.2");
+
+    repo.assert()
+        .full_sem_ver("0.1.0-pre.2")
+        .previous_pre_releases(&[]);
 }
 
 #[rstest]
