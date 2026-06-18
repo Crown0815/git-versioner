@@ -28,18 +28,25 @@ jobs:
         fetch-depth: 0
     - name: Run tests
       run: cargo test
-    - name: Run GitHub Action
-      id: versioner
-      uses: ./
-      with:
-        as-release: true
-    - name: Assert GitHub Action outputs
-      run: |
-        echo "${{ fromJSON(steps.versioner.outputs) }}"
-        test -n "${{ steps.versioner.outputs.SemVer }}"
-        test -n "${{ steps.versioner.outputs.GitVersion_SemVer }}"
     - name: Determine version
       run: | 
         cargo run
         echo "Contents of GITHUB_OUTPUT:"
         cat $GITHUB_OUTPUT
+
+  test-action:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+    - name: Run GitHub Action
+      id: versioner
+      uses: ./
+    - name: Assert GitHub Action outputs
+      run: |
+        test -n "${{ steps.versioner.outputs.SemVer }}"
+        test -n "${{ steps.versioner.outputs.GitVersion_SemVer }}"
+    - name: Print GitHub Action outputs
+      run: |
+        echo "${{ toJSON(steps.versioner.outputs) }}"
