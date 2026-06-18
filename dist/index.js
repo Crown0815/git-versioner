@@ -139,6 +139,9 @@ function buildArgs() {
   const preReleaseTag = getInput('pre-release-tag');
   if (preReleaseTag) args.push('--pre-release-tag', preReleaseTag);
 
+  const patchPreReleaseTag = getInput('patch-pre-release-tag');
+  if (patchPreReleaseTag) args.push('--patch-pre-release-tag', patchPreReleaseTag);
+
   if (isTrue(getInput('continuous-delivery'))) args.push('--continuous-delivery');
 
   const commitMessageIncrementing = getInput('commit-message-incrementing');
@@ -146,7 +149,16 @@ function buildArgs() {
     args.push('--commit-message-incrementing', commitMessageIncrementing);
   }
 
+  const assemblyInformationalFormat = getInput('assembly-informational-format');
+  if (assemblyInformationalFormat) {
+    args.push('--assembly-informational-format', assemblyInformationalFormat);
+  }
+
   if (isTrue(getInput('as-release'))) args.push('--as-release');
+
+  if (isTrue(getInput('show-config'))) args.push('--show-config');
+
+  if (isTrue(getInput('verbose'))) args.push('--verbose');
 
   const config = getInput('config');
   if (config) args.push('--config', config);
