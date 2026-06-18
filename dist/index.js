@@ -121,47 +121,30 @@ function download(url, destination, redirectCount = 0) {
 function buildArgs() {
   const args = [];
 
-  const pathInput = getInput('path');
-  if (pathInput) args.push('--path', pathInput);
+  [
+    'path',
+    'main-branch',
+    'release-branch',
+    'feature-branch',
+    'tag-prefix',
+    'pre-release-tag',
+    'patch-pre-release-tag',
+    'commit-message-incrementing',
+    'assembly-informational-format',
+    'config',
+  ].forEach((name) => {
+    const value = getInput(name);
+    if (value) args.push(`--${name}`, value);
+  });
 
-  const mainBranch = getInput('main-branch');
-  if (mainBranch) args.push('--main-branch', mainBranch);
-
-  const releaseBranch = getInput('release-branch');
-  if (releaseBranch) args.push('--release-branch', releaseBranch);
-
-  const featureBranch = getInput('feature-branch');
-  if (featureBranch) args.push('--feature-branch', featureBranch);
-
-  const tagPrefix = getInput('tag-prefix');
-  if (tagPrefix) args.push('--tag-prefix', tagPrefix);
-
-  const preReleaseTag = getInput('pre-release-tag');
-  if (preReleaseTag) args.push('--pre-release-tag', preReleaseTag);
-
-  const patchPreReleaseTag = getInput('patch-pre-release-tag');
-  if (patchPreReleaseTag) args.push('--patch-pre-release-tag', patchPreReleaseTag);
-
-  if (isTrue(getInput('continuous-delivery'))) args.push('--continuous-delivery');
-
-  const commitMessageIncrementing = getInput('commit-message-incrementing');
-  if (commitMessageIncrementing) {
-    args.push('--commit-message-incrementing', commitMessageIncrementing);
-  }
-
-  const assemblyInformationalFormat = getInput('assembly-informational-format');
-  if (assemblyInformationalFormat) {
-    args.push('--assembly-informational-format', assemblyInformationalFormat);
-  }
-
-  if (isTrue(getInput('as-release'))) args.push('--as-release');
-
-  if (isTrue(getInput('show-config'))) args.push('--show-config');
-
-  if (isTrue(getInput('verbose'))) args.push('--verbose');
-
-  const config = getInput('config');
-  if (config) args.push('--config', config);
+  [
+    'continuous-delivery',
+    'as-release',
+    'show-config',
+    'verbose',
+  ].forEach((name) => {
+    if (isTrue(getInput(name))) args.push(`--${name}`);
+  });
 
   return args;
 }
@@ -208,8 +191,7 @@ async function main() {
     fs.chmodSync(binary, 0o755);
   }
 
-  const code = await run(binary, buildArgs());
-  process.exitCode = code;
+  process.exitCode = await run(binary, buildArgs());
 }
 
 main().catch((error) => {
