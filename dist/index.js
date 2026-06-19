@@ -1,0 +1,199 @@
+const fs = require('fs');
+const https = require('https');
+const os = require('os');
+const path = require('path');
+const { spawn } = require('child_process');
+
+const CLI_NAME = 'git-versioner';
+
+function info(message) {
+  console.log(message);
+}
+
+function fail(message) {
+  console.error(`::error::${message}`);
+  process.exitCode = 1;
+}
+
+function getInput(name) {
+  const key = `INPUT_${name.replace(/-/g, '_').toUpperCase()}`;
+  return (process.env[key] || '').trim();
+}
+
+function isTrue(value) {
+  return value.toLowerCase() === 'true';
+}
+
+function targetTriple() {
+  const platform = process.platform;
+  const arch = process.arch;
+
+  if (platform === 'linux') {
+    if (arch === 'x64') return 'x86_64-unknown-linux-gnu';
+    if (arch === 'ia32') return 'i686-unknown-linux-gnu';
+    if (arch === 'arm64') return 'aarch64-unknown-linux-gnu';
+  }
+
+  if (platform === 'darwin') {
+    if (arch === 'x64') return 'x86_64-apple-darwin';
+    if (arch === 'arm64') return 'aarch64-apple-darwin';
+  }
+
+  if (platform === 'win32') {
+    if (arch === 'x64') return 'x86_64-pc-windows-msvc';
+    if (arch === 'ia32') return 'i686-pc-windows-msvc';
+    if (arch === 'arm64') return 'aarch64-pc-windows-msvc';
+  }
+
+  throw new Error(`Unsupported runner platform: ${platform}/${arch}`);
+}
+
+function normalizeActionRef(ref) {
+  if (!ref) return '';
+  return ref.replace(/^refs\/tags\//, '').replace(/^refs\/heads\//, '');
+}
+
+function releaseDownloadUrl(ownerRepo, tag, assetName) {
+  const [owner, repo] = ownerRepo.split('/');
+  if (!owner || !repo) {
+    throw new Error(`Invalid GitHub repository name: ${ownerRepo}`);
+  }
+
+  const encodedOwner = encodeURIComponent(owner);
+  const encodedRepo = encodeURIComponent(repo);
+  const encodedAsset = encodeURIComponent(assetName);
+
+  if (tag) {
+    return `https://github.com/${encodedOwner}/${encodedRepo}/releases/download/${encodeURIComponent(tag)}/${encodedAsset}`;
+  }
+
+  return `https://github.com/${encodedOwner}/${encodedRepo}/releases/latest/download/${encodedAsset}`;
+}
+
+function download(url, destination, redirectCount = 0) {
+  if (redirectCount > 10) {
+    return Promise.reject(new Error('Too many redirects while downloading release asset'));
+  }
+
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
+  const headers = {
+    'User-Agent': 'git-versioner-action',
+    Accept: 'application/octet-stream',
+  };
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  return new Promise((resolve, reject) => {
+    const request = https.get(url, { headers }, (response) => {
+      const status = response.statusCode || 0;
+
+      if ([301, 302, 303, 307, 308].includes(status)) {
+        response.resume();
+        const location = response.headers.location;
+        if (!location) {
+          reject(new Error(`Release asset redirect did not include a Location header (${status})`));
+          return;
+        }
+
+        const nextUrl = new URL(location, url).toString();
+        download(nextUrl, destination, redirectCount + 1).then(resolve, reject);
+        return;
+      }
+
+      if (status < 200 || status >= 300) {
+        response.resume();
+        reject(new Error(`Failed to download release asset: HTTP ${status}`));
+        return;
+      }
+
+      const file = fs.createWriteStream(destination, { mode: 0o755 });
+      response.pipe(file);
+      file.on('finish', () => file.close(resolve));
+      file.on('error', reject);
+    });
+
+    request.on('error', reject);
+  });
+}
+
+function buildArgs() {
+  const args = [];
+
+  [
+    'path',
+    'main-branch',
+    'release-branch',
+    'feature-branch',
+    'tag-prefix',
+    'pre-release-tag',
+    'patch-pre-release-tag',
+    'commit-message-incrementing',
+    'assembly-informational-format',
+    'config',
+  ].forEach((name) => {
+    const value = getInput(name);
+    if (value) args.push(`--${name}`, value);
+  });
+
+  [
+    'continuous-delivery',
+    'as-release',
+    'show-config',
+    'verbose',
+  ].forEach((name) => {
+    if (isTrue(getInput(name))) args.push(`--${name}`);
+  });
+
+  return args;
+}
+
+function run(binary, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(binary, args, {
+      env: process.env,
+      stdio: 'inherit',
+      windowsHide: true,
+    });
+
+    child.on('error', reject);
+    child.on('close', (code, signal) => {
+      if (signal) {
+        reject(new Error(`${CLI_NAME} exited due to signal ${signal}`));
+        return;
+      }
+
+      resolve(code || 0);
+    });
+  });
+}
+
+async function main() {
+  const target = targetTriple();
+  const executableSuffix = process.platform === 'win32' ? '.exe' : '';
+  const assetName = `${CLI_NAME}-${target}${executableSuffix}`;
+  const ownerRepo = process.env.GITHUB_ACTION_REPOSITORY || process.env.GITHUB_REPOSITORY || 'Crown0815/git-versioner';
+  const actionRef = normalizeActionRef(process.env.GITHUB_ACTION_REF || '');
+  const url = releaseDownloadUrl(ownerRepo, actionRef, assetName);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `${CLI_NAME}-`));
+  const binary = path.join(tempDir, `${CLI_NAME}${executableSuffix}`);
+
+  if (actionRef) {
+    info(`Downloading ${assetName} from ${ownerRepo}@${actionRef}`);
+  } else {
+    info(`Downloading ${assetName} from the latest ${ownerRepo} release`);
+  }
+
+  await download(url, binary);
+
+  if (process.platform !== 'win32') {
+    fs.chmodSync(binary, 0o755);
+  }
+
+  process.exitCode = await run(binary, buildArgs());
+}
+
+main().catch((error) => {
+  fail(error instanceof Error ? error.message : String(error));
+});

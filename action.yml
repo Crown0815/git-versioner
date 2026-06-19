@@ -1,8 +1,8 @@
 name: 'Git Versioner'
 description: 'Automatically calculate version numbers for Git repositories'
 branding:
-  icon: 'tag'
-  color: 'blue'
+  icon: 'git-pull-request'
+  color: 'orange'
 inputs:
   path:
     description: 'Path to the repository to calculate the version for'
@@ -21,22 +21,36 @@ inputs:
     description: 'Regex to detect version tag(s)'
     required: false
   pre-release-tag:
-    description: 'Regex to detect pre-release version tag(s)'
+    description: 'Label used to mark pre-release versions (e.g., pre, alpha, beta, rc, etc.), default: pre'
+    required: false
+  patch-pre-release-tag:
+    description: 'Label to be used to mark patch (Patch > 0) pre-release versions (e.g., rc, hotfix, patch, etc.), default: <PRE_RELEASE_TAG>'
     required: false
   continuous-delivery:
     description: 'Calculate version using continuous delivery mode'
     required: false
     default: 'false'
   commit-message-incrementing:
-    description: "Increment based on conventional commits (set to 'Enabled' or 'Disabled')"
+    description: "Increment considering conventional commits (values: 'Disabled' (default) or 'Enabled')"
+    required: false
+  assembly-informational-format:
+    description: 'Format string for InformationalVersion output'
     required: false
   as-release:
     description: 'Forces release generation instead of pre-release'
+    required: false
+    default: 'false'
+  show-config:
+    description: 'Print effective configuration and exit'
+    required: false
+    default: 'false'
+  verbose:
+    description: 'Enable verbose output'
     required: false
     default: 'false'
   config:
     description: 'Path to a configuration file (TOML or YAML)'
     required: false
 runs:
-  using: 'docker'
-  image: 'Dockerfile'
+  using: node24
+  main: dist/index.js
