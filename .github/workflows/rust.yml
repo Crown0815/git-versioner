@@ -41,12 +41,27 @@ jobs:
       with:
         fetch-depth: 0
     - name: Run GitHub Action
-      id: versioner
+      id: basic
       uses: ./
+      with:
+        main-branch: ${{ github.ref_name }}
+
+    - name: Run GitHub Action (as release)
+      id: release
+      uses: ./
+      with:
+        as-release: 'true'
+        main-branch: ${{ github.ref_name }}
+
+    - name: Run GitHub Action (customized)
+      id: customized
+      uses: ./
+      with:
+        pre-release-tag: 'alpha'
+        main-branch: ${{ github.ref_name }}
+
     - name: Assert GitHub Action outputs
       run: |
-        test -n "${{ steps.versioner.outputs.SemVer }}"
-        test -n "${{ steps.versioner.outputs.GitVersion_SemVer }}"
-    - name: Print GitHub Action outputs
-      run: |
-        echo "${{ toJSON(steps.versioner.outputs) }}"
+        test "${{ steps.basic.outputs.PreReleaseLabel }}" = "pre"
+        test "${{ steps.release.outputs.PreReleaseLabel }}" = ""
+        test "${{ steps.customized.outputs.PreReleaseLabel }}" = "alpha"
