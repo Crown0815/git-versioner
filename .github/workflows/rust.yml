@@ -41,12 +41,32 @@ jobs:
       with:
         fetch-depth: 0
     - name: Run GitHub Action
-      id: versioner
+      id: basic
       uses: ./
     - name: Assert GitHub Action outputs
       run: |
-        test -n "${{ steps.versioner.outputs.SemVer }}"
-        test -n "${{ steps.versioner.outputs.GitVersion_SemVer }}"
-    - name: Print GitHub Action outputs
+        test -n "${{ steps.basic.outputs.SemVer }}"
+        test -n "${{ steps.basic.outputs.GitVersion_SemVer }}"
+        echo "${{ toJSON(steps.basic.outputs) }}"
+
+    - name: Run GitHub Action (as release)
+      id: release
+      uses: ./
+      with:
+        as-release: 'true'
+    - name: Assert GitHub Action outputs
       run: |
-        echo "${{ toJSON(steps.versioner.outputs) }}"
+        test -n "${{ steps.release.outputs.SemVer }}"
+        test -n "${{ steps.release.outputs.GitVersion_SemVer }}"
+        echo "${{ toJSON(steps.release.outputs) }}"
+
+    - name: Run GitHub Action (customized)
+      id: customized
+      uses: ./
+      with:
+        pre-release-tag: 'alpha'
+    - name: Assert GitHub Action outputs
+      run: |
+        test -n "${{ steps.customized.outputs.SemVer }}"
+        test -n "${{ steps.customized.outputs.GitVersion_SemVer }}"
+        echo "${{ toJSON(steps.customized.outputs) }}"
