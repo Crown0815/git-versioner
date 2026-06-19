@@ -45,11 +45,6 @@ jobs:
       uses: ./
       with:
         main-branch: ${{ github.ref_name }}
-    - name: Assert GitHub Action outputs
-      run: |
-        test -n "${{ steps.basic.outputs.SemVer }}"
-        test -n "${{ steps.basic.outputs.GitVersion_SemVer }}"
-        echo "${{ toJSON(steps.basic.outputs) }}"
 
     - name: Run GitHub Action (as release)
       id: release
@@ -57,11 +52,6 @@ jobs:
       with:
         as-release: 'true'
         main-branch: ${{ github.ref_name }}
-    - name: Assert GitHub Action outputs
-      run: |
-        test -n "${{ steps.release.outputs.SemVer }}"
-        test -n "${{ steps.release.outputs.GitVersion_SemVer }}"
-        echo "${{ toJSON(steps.release.outputs) }}"
 
     - name: Run GitHub Action (customized)
       id: customized
@@ -69,8 +59,9 @@ jobs:
       with:
         pre-release-tag: 'alpha'
         main-branch: ${{ github.ref_name }}
+
     - name: Assert GitHub Action outputs
       run: |
-        test -n "${{ steps.customized.outputs.SemVer }}"
-        test -n "${{ steps.customized.outputs.GitVersion_SemVer }}"
-        echo "${{ toJSON(steps.customized.outputs) }}"
+        test "${{ steps.basic.outputs.PreReleaseLabel }}" = "pre"
+        test "${{ steps.release.outputs.PreReleaseLabel }}" = ""
+        test "${{ steps.customized.outputs.PreReleaseLabel }}" = "alpha"
