@@ -163,9 +163,15 @@ jobs:
           toolchain: ${{ matrix.build.toolchain }}
           targets: ${{ matrix.build.target }}
 
+      - name: Install cargo-edit
+        uses: taiki-e/cache-cargo-install-action@v3
+        with:
+          tool: cargo-edit
+          no-default-features: true
+          features: set-version
+
       - name: Set version in Cargo.toml
         run: |
-          cargo install cargo-edit -f --no-default-features --features "set-version"
           cargo set-version ${{ needs.determine-version.outputs.sem-ver }}
 
       - name: Create Cross.toml (Linux)
