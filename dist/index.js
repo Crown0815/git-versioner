@@ -191,7 +191,11 @@ async function main() {
     fs.chmodSync(binary, 0o755);
   }
 
-  process.exitCode = await run(binary, buildArgs());
+  const args = buildArgs();
+
+  info(`Env variables ${JSON.stringify(process.env)}`);
+  info(`Running ${binary} with args ${args.join(' ')}`);
+  process.exitCode = await run(binary, args);
 }
 
 main().catch((error) => {
