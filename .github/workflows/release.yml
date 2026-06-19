@@ -269,7 +269,7 @@ jobs:
 
   release:
     needs: [build, determine-version, determine-changelog, publish]
-    if: always() && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
+    if: always() && (needs.publish.result == 'success' || github.event.inputs.as-draft == 'true')
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
