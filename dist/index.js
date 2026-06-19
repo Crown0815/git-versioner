@@ -193,7 +193,6 @@ async function main() {
 
   const args = buildArgs();
 
-  info(`Env variables ${JSON.stringify(process.env)}`);
   info(`Running ${binary} with args ${args.join(' ')}`);
   process.exitCode = await run(binary, args);
 }
