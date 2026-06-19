@@ -16,7 +16,7 @@ function fail(message) {
 }
 
 function getInput(name) {
-  const key = `INPUT_${name.replace(/-/g, '_').toUpperCase()}`;
+  const key = `INPUT_${name.toUpperCase()}`;
   return (process.env[key] || '').trim();
 }
 
