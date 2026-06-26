@@ -1,5 +1,5 @@
 <div align=center>
-  <img src="logo.png" alt="Description of image" height="256">
+  <img src="docs/public/logo.png" alt="Description of image" height="256">
 </div>
 
 # Git Versioner
