@@ -6,7 +6,7 @@ hero:
   text: Version numbers derived from Git history.
   tagline: A Rust CLI and GitHub Action for trunk-based repositories with release branches.
   image:
-    src: /docs/public/logo.png
+    src: /logo.png
     alt: Git Versioner logo
   actions:
     - theme: brand

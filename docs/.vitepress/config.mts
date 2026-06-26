@@ -8,9 +8,9 @@ export default defineConfig({
   cleanUrls: true,
   lastUpdated: true,
   ignoreDeadLinks: false,
-  head: [['link', { rel: 'icon', href: '/git-versioner/docs/public/logo.png' }]],
+  head: [['link', { rel: 'icon', href: '/git-versioner/logo.png' }]],
   themeConfig: {
-    logo: '/docs/public/logo.png',
+    logo: '/logo.png',
     siteTitle: 'Git Versioner',
     nav: [
       { text: 'Guide', link: '/' },
