@@ -264,7 +264,7 @@ impl ConfigurationFile {
 
     fn from_yaml_file<P: AsRef<Path>>(path: P) -> anyhow::Result<Self> {
         let content = fs::read_to_string(path)?;
-        let config: Self = serde_yaml::from_str(&content)?;
+        let config: Self = serde_saphyr::from_str(&content)?;
         Ok(config)
     }
 }

@@ -5,8 +5,8 @@ expression: default_config_file_content
 MainBranch: ^(trunk|main|master)$
 ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
 FeatureBranch: ^features?[/-](?<BranchName>.+)$
-TagPrefix: '[vV]?'
+TagPrefix: "[vV]?"
 PreReleaseTag: pre
-PatchPreReleaseTag: ''
+PatchPreReleaseTag: ""
 CommitMessageIncrementing: Disabled
-AssemblyInformationalFormat: '{InformationalVersion}'
+AssemblyInformationalFormat: "{InformationalVersion}"

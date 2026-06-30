@@ -45,7 +45,7 @@ impl ConfiguredTestRepo {
     pub fn serialize_config(&self, extension: &str) -> anyhow::Result<String> {
         match extension {
             "toml" => Ok(toml::to_string(&self.config_file)?),
-            "yaml" | "yml" => Ok(serde_yaml::to_string(&self.config_file)?),
+            "yaml" | "yml" => Ok(serde_saphyr::to_string(&self.config_file)?),
             &_ => Err(anyhow!("Unsupported file extension {extension}")),
         }
     }
