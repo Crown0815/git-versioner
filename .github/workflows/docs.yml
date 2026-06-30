@@ -6,8 +6,6 @@ on:
       - main
     paths:
       - docs/**
-      - package.json
-      - package-lock.json
       - .github/workflows/docs.yml
   workflow_dispatch:
 
@@ -32,14 +30,17 @@ jobs:
         with:
           node-version: 22
           cache: npm
+          cache-dependency-path: docs/package-lock.json
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Install dependencies
+        working-directory: docs
         run: npm ci
 
       - name: Build documentation
+        working-directory: docs
         run: npm run docs:build
 
       - name: Upload Pages artifact

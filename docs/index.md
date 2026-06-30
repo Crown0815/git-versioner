@@ -169,6 +169,7 @@ That keeps documentation authoring simple while providing a polished static site
 ## Build locally
 
 ```bash
+cd docs
 npm install
 npm run docs:dev
 ```
