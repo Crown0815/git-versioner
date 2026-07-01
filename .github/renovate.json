@@ -3,6 +3,11 @@
   "extends": [
     "config:recommended"
   ],
+  "baseBranches": [
+    "main"
+  ],
+  "dependencyDashboardApproval": false,
+  "prCreation": "immediate",
   "labels": [
     "dependencies"
   ],
