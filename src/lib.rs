@@ -177,8 +177,8 @@ impl GitVersioner {
         }
 
         match reference.shorthand() {
-            None => Err(anyhow!("Name for branch could not be determined")),
-            Some(name) => Ok(name.to_string()),
+            Err(_) => Err(anyhow!("Name for branch could not be determined")),
+            Ok(name) => Ok(name.to_string()),
         }
     }
 
@@ -216,7 +216,8 @@ impl GitVersioner {
         let mut version_tags = HashSet::new();
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(version) = self.version_matching_in(tag_name, condition)
+            if let Some(tag_name) = tag_name
+                && let Some(version) = self.version_matching_in(tag_name, condition)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
             {
                 version_tags.insert(VersionSource {
@@ -252,12 +253,14 @@ impl GitVersioner {
         let mut matching_tags = Vec::new();
         let tag_names = self.repo.tag_names(None)?;
         for tag_name in tag_names.iter().flatten() {
-            if let Some(tag_version) = self.version_matching_in(tag_name, &|tag_version| {
-                tag_version.major == version.major
-                    && tag_version.minor == version.minor
-                    && tag_version.patch == version.patch
-                    && !tag_version.pre.is_empty()
-            }) {
+            if let Some(tag_name) = tag_name
+                && let Some(tag_version) = self.version_matching_in(tag_name, &|tag_version| {
+                    tag_version.major == version.major
+                        && tag_version.minor == version.minor
+                        && tag_version.patch == version.patch
+                        && !tag_version.pre.is_empty()
+                })
+            {
                 matching_tags.push((tag_version, tag_name.to_string()));
             }
         }
@@ -311,7 +314,8 @@ impl GitVersioner {
         let tag_names = self.repo.tag_names(None)?;
 
         for tag_name in tag_names.iter().flatten() {
-            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+            if let Some(tag_name) = tag_name
+                && let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
                 && let Ok(commit) = self.repo.find_commit(commit_id)
                 && Self::commit_year_for(&commit) == year
@@ -365,7 +369,8 @@ impl GitVersioner {
         let tag_names = self.repo.tag_names(None)?;
 
         for tag_name in tag_names.iter().flatten() {
-            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+            if let Some(tag_name) = tag_name
+                && let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
                 && tag_version.major == version.major
                 && tag_version.minor == version.minor
                 && tag_version.patch == 0
@@ -388,7 +393,8 @@ impl GitVersioner {
         let mut line_releases = Vec::new();
 
         for tag_name in tag_names.iter().flatten() {
-            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+            if let Some(tag_name) = tag_name
+                && let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
                 && tag_version.major == major
                 && tag_version.minor == minor
                 && let Some(commit_id) = self.tag_id_for(tag_name)
@@ -407,7 +413,8 @@ impl GitVersioner {
 
         let mut earlier_releases_in_line_year = HashSet::new();
         for tag_name in tag_names.iter().flatten() {
-            if let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
+            if let Some(tag_name) = tag_name
+                && let Some(tag_version) = self.version_matching_in(tag_name, &IS_STABLE_VERSION)
                 && (tag_version.major, tag_version.minor) < (major, minor)
                 && let Some(commit_id) = self.tag_id_for(tag_name)
                 && let Ok(commit) = self.repo.find_commit(commit_id)
@@ -437,7 +444,7 @@ impl GitVersioner {
                 continue;
             }
 
-            if let Some(message) = commit.message()
+            if let Ok(message) = commit.message()
                 && let Ok(version) = Version::parse(message.trim())
                 && version.major == major
                 && version.minor == minor
@@ -483,7 +490,7 @@ impl GitVersioner {
     fn remote_version_branches(&self) -> Result<HashSet<VersionSource>> {
         let mut version_branches = HashSet::new();
 
-        for remote in self.repo.remotes()?.iter().flatten() {
+        for remote in self.repo.remotes()?.iter().flatten().flatten() {
             let branches = self.repo.branches(Some(git2::BranchType::Remote))?;
             for branch in branches {
                 let (branch, _) = branch?;
@@ -695,7 +702,7 @@ impl GitVersioner {
             let version = release_version.clone();
             let source = VersionSource {
                 version,
-                commit_id: Oid::zero(),
+                commit_id: Oid::ZERO_SHA1,
                 is_tag: false,
             };
             let major_minor_patch_source = source.clone();
@@ -752,12 +759,12 @@ impl GitVersioner {
             Version::new(0, 1, 0),
             VersionSource {
                 version: Version::new(0, 1, 0),
-                commit_id: Oid::zero(),
+                commit_id: Oid::ZERO_SHA1,
                 is_tag: false,
             },
             VersionSource {
                 version: Version::new(0, 1, 0),
-                commit_id: Oid::zero(),
+                commit_id: Oid::ZERO_SHA1,
                 is_tag: false,
             },
             0,
@@ -774,7 +781,7 @@ impl GitVersioner {
         .unwrap_or(fallback);
 
         let distance = match closest_branch {
-            None => self.count_commits_between(head_id, Oid::zero())?,
+            None => self.count_commits_between(head_id, Oid::ZERO_SHA1)?,
             Some(branch) => branch.distance,
         };
 
@@ -856,7 +863,7 @@ impl GitVersioner {
             }
             if let CommitBump::Patch = commit_bump
                 && let Ok(commit) = self.repo.find_commit(oid)
-                && let Some(message) = commit.message()
+                && let Ok(message) = commit.message()
                 && let Ok(conventional_commit) = parse(message.trim())
             {
                 if conventional_commit.is_breaking_change {
@@ -925,7 +932,7 @@ impl GitVersioner {
 fn no_source() -> VersionSource {
     VersionSource {
         version: Version::parse("0.0.0").unwrap(),
-        commit_id: Oid::zero(),
+        commit_id: Oid::ZERO_SHA1,
         is_tag: false,
     }
 }
