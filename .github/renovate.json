@@ -16,13 +16,15 @@
       "matchManagers": [
         "cargo"
       ],
-      "groupName": "cargo dependencies"
+      "groupName": "cargo dependencies",
+      "commitMessagePrefix": "build(cargo): "
     },
     {
       "matchManagers": [
         "github-actions"
       ],
-      "groupName": "github actions"
+      "groupName": "github actions",
+      "commitMessagePrefix": "ci(deps): "
     }
   ]
 }
