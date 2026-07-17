@@ -4,14 +4,19 @@ on:
   schedule:
     - cron: '0 3 * * *'  # Run once per day at 03:00 UTC
   workflow_dispatch:
+  issues:
+    types: [edited]  # Trigger when checkboxes are checked in the Dependency Dashboard
 
 concurrency:
   group: renovate
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   renovate:
     runs-on: ubuntu-latest
+    if: >-
+      github.event_name != 'issues' ||
+      github.event.issue.title == 'Dependency Dashboard'
     steps:
       - name: Checkout
         uses: actions/checkout@v7
