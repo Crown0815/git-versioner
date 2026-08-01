@@ -85,18 +85,25 @@ Useful options:
 | `--assembly-informational-format <FORMAT>` | Format string for `InformationalVersion`. |
 | `-a, --as-release` | Force release generation instead of pre-release generation. |
 | `--show-config` | Print the effective configuration and exit. |
+| `-v, --verbose` | Print the effective configuration before calculating the version. |
 | `-c, --config <CONFIG_FILE>` | Path to a TOML or YAML configuration file. |
+
+Run `git-versioner --help` for the full, authoritative list of options and their extended descriptions.
 
 ## CI outputs
 
-The GitHub Action exports values with a `GitVersion_` prefix and also exposes PascalCase output names without the prefix.
+Git Versioner always prints the calculated version as JSON to `stdout`, and additionally exports every field to the current CI system when the `CI` environment variable is `true`:
+
+- **GitHub Actions** (`GITHUB_OUTPUT`): each field with a `GitVersion_` prefix (e.g. `GitVersion_SemVer`) and in PascalCase without the prefix (e.g. `SemVer`).
+- **GitLab CI** (`GITLAB_ENV`): each field with a `GitVersion_` prefix.
+- **TeamCity**: each field as `GitVersion.<Field>` and `system.GitVersion.<Field>` service messages.
 
 ```yaml
 - name: Use Version
   run: echo "The version is ${{ steps.versioner.outputs.SemVer }}"
 ```
 
-The GitLab environment output follows the same GitVersion-style naming pattern:
+The example below shows a representative set of the exported GitVersion-style variables (additional fields such as `Sha`, `ShortSha`, `VersionSourceSha`, and `UncommittedChanges` are also emitted):
 
 ```text
 GitVersion_AssemblySemFileVer=0.1.0.55001
@@ -140,9 +147,21 @@ ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
 FeatureBranch: ^features?[/-](?<BranchName>.+)$
 TagPrefix: '[vV]?'
 PreReleaseTag: pre
+PatchPreReleaseTag: ''
 CommitMessageIncrementing: Disabled
 AssemblyInformationalFormat: '{InformationalVersion}'
 ```
+
+| Field | Description | Default |
+| --- | --- | --- |
+| `MainBranch` | Regex to detect the main branch. | `^(trunk\|main\|master)$` |
+| `ReleaseBranch` | Regex to detect release branches. | `^releases?[/-](?<BranchName>.+)$` |
+| `FeatureBranch` | Regex to detect feature branches. | `^features?[/-](?<BranchName>.+)$` |
+| `TagPrefix` | Regex prefix for version tags. | `[vV]?` |
+| `PreReleaseTag` | Label for pre-release versions. | `pre` |
+| `PatchPreReleaseTag` | Label for patch (Patch > 0) pre-release versions. | value of `PreReleaseTag` |
+| `CommitMessageIncrementing` | Conventional-commit increments: `Disabled` or `Enabled`. | `Disabled` |
+| `AssemblyInformationalFormat` | Template for `InformationalVersion`. | `{InformationalVersion}` |
 
 The same option can also be set in kebab case for TOML and YAML compatibility:
 

@@ -70,6 +70,7 @@ A Rust application designed to automatically calculate version numbers for Git r
 - [Installation](#installation)
 - [Usage](#usage)
 - [Configuration](#configuration)
+- [CI/CD outputs](#cicd-outputs)
 - [Contributing](#contributing)
 - [License](#license)
 - [Inspiration](#inspiration)
@@ -88,9 +89,12 @@ It draws inspiration from established versioning tools while focusing on simplic
 - **Automated Version Calculation**: Derives version numbers based on commit history, branch structure, and existing tags.
 - **Support for Trunk-Based Development**: Recognizes the "trunk" as the main branch and handles release branches (e.g., "release/1.0.0") for patch and minor updates.
 - **Semantic Versioning Compliance**: Generates versions in the format `MAJOR.MINOR.PATCH-pre.X` for pre-releases and `MAJOR.MINOR.PATCH` for stable tags.
+- **Conventional Commit Incrementing**: Optionally derives increments from `feat:`/`fix:` commit messages (see `CommitMessageIncrementing`).
+- **Continuous Delivery Mode**: Supports a continuous delivery versioning scheme via `--continuous-delivery`.
 - **Tag Management**: Identifies and applies tags for stable releases (e.g., "v1.0.0").
-- **Configurable Branch Naming**: Allows customization of the main branch name (default: "trunk").
-- **Integration-Friendly**: Suitable for use in continuous integration/continuous deployment (CI/CD) pipelines.
+- **Fully Configurable**: Branch patterns, tag prefixes, pre-release labels, and informational version templates are configurable via CLI flags, a TOML/YAML file, or GitHub Action inputs.
+- **Flexible Informational Versions**: Supports GitVersion-style placeholders and environment variables in the `AssemblyInformationalFormat` template.
+- **Integration-Friendly**: Emits GitVersion-style variables for GitHub Actions, GitLab CI, and TeamCity out of the box.
 
 ## Installation
 
@@ -142,6 +146,31 @@ jobs:
         run: echo "The version is ${{ steps.versioner.outputs.SemVer }}"
 ```
 
+#### Action inputs
+
+All inputs are optional and mirror the [command-line options](#command-line-options) and [configuration fields](#configuration).
+
+| Input | Description | Default |
+| --- | --- | --- |
+| `path` | Path to the repository to calculate the version for. | `.` |
+| `main-branch` | Regex to detect the main branch. | `^(trunk\|main\|master)$` |
+| `release-branch` | Regex to detect the release branch(es). | `^releases?[/-](?<BranchName>.+)$` |
+| `feature-branch` | Regex to detect the feature branch(es). | `^features?[/-](?<BranchName>.+)$` |
+| `tag-prefix` | Regex to detect version tag(s). | `[vV]?` |
+| `pre-release-tag` | Label used to mark pre-release versions (e.g. `pre`, `alpha`, `beta`, `rc`). | `pre` |
+| `patch-pre-release-tag` | Label used to mark patch (Patch > 0) pre-release versions (e.g. `rc`, `hotfix`, `patch`). | value of `pre-release-tag` |
+| `continuous-delivery` | Calculate the version using continuous delivery mode. | `false` |
+| `commit-message-incrementing` | Increment based on conventional commits (`Disabled` or `Enabled`). | `Disabled` |
+| `assembly-informational-format` | Format string for the `InformationalVersion` output. | `{InformationalVersion}` |
+| `as-release` | Force release generation instead of pre-release. | `false` |
+| `show-config` | Print the effective configuration and exit. | `false` |
+| `verbose` | Print the effective configuration before calculating the version. | `false` |
+| `config` | Path to a configuration file (TOML or YAML). | none |
+
+#### Action outputs
+
+Every field of the calculated version is exported to `GITHUB_OUTPUT`, both with a `GitVersion_` prefix (e.g. `GitVersion_SemVer`) and in `PascalCase` without the prefix (e.g. `SemVer`). See [CI/CD outputs](#cicd-outputs) for the full list of available values.
+
 ### From Source
 
 1. Clone the repository:
@@ -169,14 +198,8 @@ This command will output the calculated version string based on the repository's
 
 ### Command-Line Options
 
-- `--config <PATH>`: Specify a custom configuration file (default: none).
-- `--main-branch <PATTERN>`: Override the main branch pattern.
-- `--assembly-informational-format <FORMAT>`: Override `InformationalVersion` output using a template.
-- `--help`: Display usage information.
-
-For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
-
-The command line options allow overwriting of configuration options using (see also [Configuration](#configuration)) and some additional options:
+Every configuration option (see also [Configuration](#configuration)) can be overridden on the command line, and a few additional options are available.
+Run `git-versioner --help` to print the full, authoritative reference:
 
 ```shell
   -p, --path <PATH>
@@ -190,11 +213,13 @@ The command line options allow overwriting of configuration options using (see a
       --tag-prefix <TAG_PREFIX>
           Regex to detect version tag(s)
       --pre-release-tag <PRE_RELEASE_TAG>
-          Regex to detect pre-release version tag(s)
+          Label used to mark pre-release versions (e.g., pre, alpha, beta, rc, etc.), default: pre
+      --patch-pre-release-tag <PATCH_PRE_RELEASE_TAG>
+          Label to be used to mark patch (Patch > 0) pre-release versions (e.g., rc, hotfix, patch, etc.), default: <PRE_RELEASE_TAG>
       --continuous-delivery
           Calculate version using continuous delivery mode
       --commit-message-incrementing <COMMIT_MESSAGE_INCREMENTING>
-          Increment based on conventional commits (set to 'Enabled' or 'Disabled')
+          Increment considering conventional commits (values: 'Disabled' (default) or 'Enabled')
       --assembly-informational-format <ASSEMBLY_INFORMATIONAL_FORMAT>
           Format string for InformationalVersion output
   -a, --as-release
@@ -202,7 +227,7 @@ The command line options allow overwriting of configuration options using (see a
       --show-config
           Print effective configuration and exit
   -v, --verbose
-          
+          Print the effective configuration before calculating the version
   -c, --config <CONFIG_FILE>
           Path to a configuration file (TOML or YAML)
   -h, --help
@@ -210,6 +235,9 @@ The command line options allow overwriting of configuration options using (see a
   -V, --version
           Print version
 ```
+
+> `--commit-message-incrementing` accepts `Disabled` (default) or `Enabled`.
+> Use `--help` (instead of `-h`) to see the extended explanation of each mode.
 
 For integration in scripts or CI/CD, capture the output for use in build artifacts or tags.
 
@@ -227,6 +255,7 @@ ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
 FeatureBranch: ^features?[/-](?<BranchName>.+)$
 TagPrefix: '[vV]?'
 PreReleaseTag: pre
+PatchPreReleaseTag: ''
 CommitMessageIncrementing: Disabled
 AssemblyInformationalFormat: '{InformationalVersion}'
 ```
@@ -235,8 +264,10 @@ AssemblyInformationalFormat: '{InformationalVersion}'
 - **MainBranch**: Specifies the pattern of the main development branch (default: `^(trunk|main|master)$`).
 - **ReleaseBranch**: Defines the pattern for release branches (default: `^releases?[/-](?<BranchName>.+)$`).
 - **FeatureBranch**: Defines the pattern for feature branches (default: `^features?[/-](?<BranchName>.+)$`).
-- **TagPrefix**: Defines the prefix of versions on tags and release branches' `BranchName` (default: `^[vV]?`).
-- **PreReleaseTag**: The identifier used for pre-release versions (default: `pre`).
+- **TagPrefix**: Defines the prefix of versions on tags and release branches' `BranchName` (default: `[vV]?`).
+- **PreReleaseTag**: The label used to mark pre-release versions, e.g. `pre`, `alpha`, `beta`, or `rc` (default: `pre`).
+- **PatchPreReleaseTag**: The label used to mark patch (Patch > 0) pre-release versions, e.g. `rc`, `hotfix`, or `patch` (default: the value of `PreReleaseTag`).
+- **CommitMessageIncrementing**: Controls whether versions are incremented based on conventional commits. Either `Disabled` (default, increment based on tags and release branches only) or `Enabled` (also increment based on `feat:`/`fix:` commits).
 - **AssemblyInformationalFormat**: Template for `InformationalVersion` output (default: `{InformationalVersion}`).
   - Supports GitVersion-style placeholders in `{...}`.
   - Supports environment variables via `env:` prefix, e.g. `{env:BUILD_NUMBER}`.
@@ -254,6 +285,55 @@ Example templates:
 ```
 
 Additional options may be added in future releases to support advanced versioning rules.
+
+## CI/CD outputs
+
+Git Versioner prints the calculated version as JSON to `stdout` and, when running on a supported CI system, exports every field as a build variable.
+
+- **GitHub Actions** (`GITHUB_OUTPUT`): each field is exported with a `GitVersion_` prefix (e.g. `GitVersion_SemVer`) and in `PascalCase` without the prefix (e.g. `SemVer`).
+- **GitLab CI** (`GITLAB_ENV`): each field is exported with a `GitVersion_` prefix (e.g. `GitVersion_SemVer`).
+- **TeamCity**: each field is exported as `GitVersion.<Field>` and `system.GitVersion.<Field>` service messages.
+
+Exporting only happens when the `CI` environment variable is set to `true`.
+
+The following fields are available (shown in `PascalCase`):
+
+| Field | Description |
+| --- | --- |
+| `Major` | Major version number. |
+| `Minor` | Minor version number. |
+| `Patch` | Patch version number. |
+| `PreviousPreReleases` | List of previous pre-release identifiers for this version. |
+| `PreReleaseTag` | Pre-release tag including its number, e.g. `pre.1`. |
+| `PreReleaseTagWithDash` | Pre-release tag prefixed with a dash, e.g. `-pre.1`. |
+| `PreReleaseLabel` | Pre-release label without a number, e.g. `pre`. |
+| `PreReleaseLabelWithDash` | Pre-release label prefixed with a dash, e.g. `-pre`. |
+| `PreReleaseNumber` | Numeric part of the pre-release tag. |
+| `WeightedPreReleaseNumber` | Pre-release number weighted by branch type for ordering. |
+| `BuildMetadata` | Build metadata component of the version. |
+| `FullBuildMetaData` | Full build metadata component of the version. |
+| `MajorMinorPatch` | `Major.Minor.Patch` string. |
+| `SemVer` | Semantic version, e.g. `0.1.0-pre.1`. |
+| `AssemblySemVer` | Assembly semantic version, e.g. `0.1.0.0`. |
+| `AssemblySemFileVer` | Assembly semantic file version, e.g. `0.1.0.55001`. |
+| `InformationalVersion` | Informational version produced from `AssemblyInformationalFormat`. |
+| `FullSemVer` | Full semantic version including pre-release information. |
+| `BranchName` | Name of the current branch. |
+| `EscapedBranchName` | Branch name escaped for use in version strings. |
+| `Sha` | Full commit SHA of `HEAD`. |
+| `ShortSha` | Shortened commit SHA of `HEAD`. |
+| `VersionSourceSha` | SHA of the commit used as the version source. |
+| `MajorMinorPatchVersionSourceSha` | SHA of the commit used as the `Major.Minor.Patch` version source. |
+| `CommitsSinceVersionSource` | Number of commits since the version source. |
+| `CommitDate` | Commit date of `HEAD` (`YYYY-MM-DD`). |
+| `CommitYear` | Year of the `HEAD` commit. |
+| `CommitMonth` | Month of the `HEAD` commit. |
+| `CommitDay` | Day of the `HEAD` commit. |
+| `CalVerYear` | Calendar-versioning year. |
+| `CalVerMonth` | Calendar-versioning month. |
+| `CalVerDay` | Calendar-versioning day. |
+| `CalVerMinor` | Calendar-versioning minor number. |
+| `UncommittedChanges` | Number of uncommitted changes in the working tree. |
 
 ## Contributing
 

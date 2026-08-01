@@ -163,7 +163,11 @@ pub struct Args {
     #[arg(long, help = "Print effective configuration and exit")]
     show_config: bool,
 
-    #[arg(short, long)]
+    #[arg(
+        short,
+        long,
+        help = "Print the effective configuration before calculating the version"
+    )]
     verbose: bool,
 
     #[arg(

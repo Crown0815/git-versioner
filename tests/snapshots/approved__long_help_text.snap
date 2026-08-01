@@ -57,7 +57,7 @@ Options:
           Print effective configuration and exit
 
   -v, --verbose
-          
+          Print the effective configuration before calculating the version
 
   -c, --config <CONFIG_FILE>
           Path to a configuration file (TOML or YAML)
