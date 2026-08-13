@@ -19,9 +19,9 @@ anyhow = "1.0.75"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.141"
 toml = "1.0.0"
-serde-saphyr = "0.0.29"
+serde-saphyr = "1.0.0"
 chrono = "0.4.41"
-stringcase = "0.4.0"
+stringcase = "1.0.0"
 conventional_commit_parser = "0.9.4"
 inflection-rs = "0.2.2"
 
