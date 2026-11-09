@@ -113,7 +113,7 @@ Outputs are available with a `GitVersion_` prefix (e.g., `GitVersion_SemVer`) an
 
 ```yaml
 - name: Determine Version
-  uses: crown0815/git-versioner@main
+  uses: crown0815/git-versioner@0.20.1
   id: versioner
   with:
     # Optional configuration (see below for available inputs)
