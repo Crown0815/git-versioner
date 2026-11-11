@@ -1,5 +1,5 @@
 <div align=center>
-  <img src="docs/public/logo.png" alt="Description of image" height="256">
+  <img src="docs/public/banner.png" alt="Git Versioner: versioning for trunk-based development, with release stabilization branches">
 </div>
 
 # Git Versioner
@@ -11,6 +11,7 @@
 [![](https://img.shields.io/github/issues/crown0815/git-versioner)](https://github.com/Crown0815/git-versioner/issues/)
 [![](https://img.shields.io/github/license/crown0815/git-versioner)](https://github.com/Crown0815/git-versioner/blob/-/LICENSE.txt)
 ![](https://img.shields.io/github/downloads/crown0815/git-versioner/total)
+[![](https://img.shields.io/twitter/follow/gitversioner?style=flat&logo=x)](https://x.com/gitversioner)
 
 ```mermaid
 ---
