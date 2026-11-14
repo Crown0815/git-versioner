@@ -414,6 +414,40 @@ fn test_non_matching_branches_are_treated_as_feature_branches(repo: TestRepo) {
 }
 
 #[rstest]
+fn test_feature_branch_version_name_is_not_limited_by_default(repo: TestRepo) {
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("feature/this-is-a-very-long-feature-branch-name");
+    repo.commit_and_assert("0.1.0-this-is-a-very-long-feature-branch-name.1");
+}
+
+#[rstest]
+fn test_feature_branch_version_name_is_truncated_to_configured_limit(mut repo: TestRepo) {
+    repo.config.feature_branch_name_limit = 10;
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("feature/this-is-a-very-long-feature-branch-name");
+    repo.commit_and_assert("0.1.0-this-is-a-.1");
+}
+
+#[rstest]
+fn test_feature_branch_version_name_shorter_than_or_equal_to_limit_is_unchanged(
+    mut repo: TestRepo,
+) {
+    repo.config.feature_branch_name_limit = 20;
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.branch("feature/short-name");
+    repo.commit_and_assert("0.1.0-short-name.1");
+}
+
+#[rstest]
+fn test_feature_branch_version_name_limit_applies_to_non_matching_branches(mut repo: TestRepo) {
+    repo.config.feature_branch_name_limit = 10;
+    repo.commit_and_assert("0.1.0-pre.1");
+    repo.tag_and_assert("v", "1.0.0");
+    repo.branch("refactor/abcdefghijk");
+    repo.commit_and_assert("1.1.0-refactor-a.1");
+}
+
+#[rstest]
 fn test_weighted_prerelease_number_for_main_branch_adds_55000(repo: TestRepo) {
     repo.commit_and_assert("0.1.0-pre.1")
         .weighted_pre_release_number(55001);

@@ -24,6 +24,7 @@ pub struct TestConfig {
     pub main_branch: String,
     pub release_branch: String,
     pub feature_branch: String,
+    pub feature_branch_name_limit: u64,
     pub tag_prefix: String,
     pub pre_release_tag: String,
     pub patch_pre_release_tag: String,
@@ -46,6 +47,7 @@ impl Configuration for TestConfig {
     config_getter!(main_branch, str);
     config_getter!(release_branch, str);
     config_getter!(feature_branch, str);
+    config_getter!(feature_branch_name_limit, u64);
     config_getter!(tag_prefix, str);
     config_getter!(pre_release_tag, str);
     config_getter!(patch_pre_release_tag, str);
@@ -63,6 +65,7 @@ impl Default for TestConfig {
             main_branch: default.main_branch,
             release_branch: default.release_branch,
             feature_branch: default.feature_branch,
+            feature_branch_name_limit: default.feature_branch_name_limit,
             tag_prefix: default.tag_prefix,
             pre_release_tag: default.pre_release_tag,
             patch_pre_release_tag: default.patch_pre_release_tag,

@@ -77,6 +77,7 @@ Useful options:
 | `--main-branch <MAIN_BRANCH>` | Regex to detect the main branch. |
 | `--release-branch <RELEASE_BRANCH>` | Regex to detect release branches. |
 | `--feature-branch <FEATURE_BRANCH>` | Regex to detect feature branches. |
+| `--feature-branch-name-limit <LIMIT>` | Maximum length of the escaped feature branch name used in pre-release versions. `0` means no limit (default). |
 | `--tag-prefix <TAG_PREFIX>` | Regex to detect version tags. |
 | `--pre-release-tag <PRE_RELEASE_TAG>` | Label for pre-release versions, for example `pre`, `alpha`, `beta`, or `rc`. |
 | `--patch-pre-release-tag <PATCH_PRE_RELEASE_TAG>` | Label for patch pre-release versions. Defaults to `PreReleaseTag`. |
@@ -138,11 +139,16 @@ All fields are optional.
 MainBranch: ^(trunk|main|master)$
 ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
 FeatureBranch: ^features?[/-](?<BranchName>.+)$
+FeatureBranchNameLimit: 0
 TagPrefix: '[vV]?'
 PreReleaseTag: pre
 CommitMessageIncrementing: Disabled
 AssemblyInformationalFormat: '{InformationalVersion}'
 ```
+
+`FeatureBranchNameLimit` caps the escaped feature branch name that is inserted into the pre-release version (for example, `0.1.0-this-is-a-.1` when the limit is `10`).
+Use this when versions are embedded in file names and a long branch name could exceed path length limits, such as on Windows.
+A value of `0` disables the limit and preserves the full escaped name.
 
 The same option can also be set in kebab case for TOML and YAML compatibility:
 

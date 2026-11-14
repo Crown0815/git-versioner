@@ -53,6 +53,17 @@ fn test_feature_branch_with_custom_pattern(mut repo: ConfiguredTestRepo) {
 }
 
 #[rstest]
+fn test_feature_branch_name_limit(mut repo: ConfiguredTestRepo) {
+    repo.inner.commit("0.1.0+1");
+    repo.inner
+        .branch("feature/this-is-a-very-long-feature-branch-name");
+    repo.inner.commit("0.1.0-this-is-a-.1");
+
+    repo.inner.config.feature_branch_name_limit = 10;
+    repo.execute_and_verify(["--feature-branch-name-limit", "10"], None);
+}
+
+#[rstest]
 fn test_option_custom_main_branch(#[with("custom-main")] mut repo: ConfiguredTestRepo) {
     repo.inner.config.main_branch = "custom-main".to_string();
     repo.execute_and_verify(["--main-branch", "custom-main"], None);

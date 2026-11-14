@@ -126,6 +126,7 @@ function buildArgs() {
     'main-branch',
     'release-branch',
     'feature-branch',
+    'feature-branch-name-limit',
     'tag-prefix',
     'pre-release-tag',
     'patch-pre-release-tag',

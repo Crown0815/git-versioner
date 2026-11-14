@@ -96,6 +96,39 @@ fn test_that_cli_argument_overrides_configuration_of_feature_branch_pattern(
 }
 
 #[apply(default)]
+fn test_that_config_file_overrides_default_feature_branch_name_limit(
+    mut repo: TestRepo,
+    ext: &str,
+) {
+    repo.config_file.feature_branch_name_limit = Some(10);
+    repo.inner.commit("0.1.0+1");
+    repo.inner
+        .branch("feature/this-is-a-very-long-feature-branch-name");
+    repo.inner.commit("0.1.0-this-is-a-.1");
+
+    repo.inner.config.feature_branch_name_limit = 10;
+    repo.execute_and_verify([], Some((DEFAULT_CONFIG, ext)));
+}
+
+#[apply(default)]
+fn test_that_cli_argument_overrides_configuration_of_feature_branch_name_limit(
+    mut repo: TestRepo,
+    ext: &str,
+) {
+    repo.config_file.feature_branch_name_limit = Some(4);
+    repo.inner.commit("0.1.0+1");
+    repo.inner
+        .branch("feature/this-is-a-very-long-feature-branch-name");
+    repo.inner.commit("0.1.0-this-is-a-.1");
+
+    repo.inner.config.feature_branch_name_limit = 10;
+    repo.execute_and_verify(
+        ["--feature-branch-name-limit", "10"],
+        Some((DEFAULT_CONFIG, ext)),
+    );
+}
+
+#[apply(default)]
 fn test_that_config_file_overrides_default_version_pattern(mut repo: TestRepo, ext: &str) {
     repo.config_file.tag_prefix = Some("my/v".to_string());
     repo.inner.commit("0.1.0+1");
