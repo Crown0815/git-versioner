@@ -17,6 +17,9 @@ inputs:
   feature-branch:
     description: 'Regex to detect the feature branch(es)'
     required: false
+  feature-branch-name-limit:
+    description: 'Maximum length of the escaped feature branch name used in pre-release versions, 0 means no limit (default)'
+    required: false
   tag-prefix:
     description: 'Regex to detect version tag(s)'
     required: false
