@@ -188,6 +188,8 @@ The command line options allow overwriting of configuration options using (see a
           Regex to detect the release branch(es)
       --feature-branch <FEATURE_BRANCH>
           Regex to detect the feature branch(es)
+      --feature-branch-name-limit <FEATURE_BRANCH_NAME_LIMIT>
+          Maximum length of the escaped feature branch name used in pre-release versions, 0 means no limit (default)
       --tag-prefix <TAG_PREFIX>
           Regex to detect version tag(s)
       --pre-release-tag <PRE_RELEASE_TAG>
@@ -226,6 +228,7 @@ The *default* configuration is as follows:
 MainBranch: ^(trunk|main|master)$
 ReleaseBranch: ^releases?[/-](?<BranchName>.+)$
 FeatureBranch: ^features?[/-](?<BranchName>.+)$
+FeatureBranchNameLimit: 0
 TagPrefix: '[vV]?'
 PreReleaseTag: pre
 CommitMessageIncrementing: Disabled
@@ -236,6 +239,7 @@ AssemblyInformationalFormat: '{InformationalVersion}'
 - **MainBranch**: Specifies the pattern of the main development branch (default: `^(trunk|main|master)$`).
 - **ReleaseBranch**: Defines the pattern for release branches (default: `^releases?[/-](?<BranchName>.+)$`).
 - **FeatureBranch**: Defines the pattern for feature branches (default: `^features?[/-](?<BranchName>.+)$`).
+- **FeatureBranchNameLimit**: Maximum length of the escaped feature branch name used in pre-release versions (default: `0`, meaning no limit).
 - **TagPrefix**: Defines the prefix of versions on tags and release branches' `BranchName` (default: `^[vV]?`).
 - **PreReleaseTag**: The identifier used for pre-release versions (default: `pre`).
 - **AssemblyInformationalFormat**: Template for `InformationalVersion` output (default: `{InformationalVersion}`).
