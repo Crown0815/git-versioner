@@ -5,6 +5,7 @@ expression: default_config_file_content
 MainBranch = "^(trunk|main|master)$"
 ReleaseBranch = "^releases?[/-](?<BranchName>.+)$"
 FeatureBranch = "^features?[/-](?<BranchName>.+)$"
+FeatureBranchNameLimit = 0
 TagPrefix = "[vV]?"
 PreReleaseTag = "pre"
 PatchPreReleaseTag = ""

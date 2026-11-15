@@ -48,6 +48,7 @@ pub struct GitVersioner {
     trunk_pattern: Regex,
     release_pattern: Regex,
     feature_pattern: Regex,
+    feature_branch_name_limit: u64,
     version_pattern: Regex,
     prerelease_tag: String,
     patch_prerelease_tag: String,
@@ -150,6 +151,7 @@ impl GitVersioner {
             trunk_pattern: Regex::new(config.main_branch())?,
             release_pattern: Regex::new(config.release_branch())?,
             feature_pattern: Regex::new(config.feature_branch())?,
+            feature_branch_name_limit: *config.feature_branch_name_limit(),
             version_pattern: Regex::new(&format!("^{}(?<Version>.+)", config.tag_prefix()))?,
             prerelease_tag: config.pre_release_tag().to_string(),
             patch_prerelease_tag: config.patch_pre_release_tag().to_string(),
@@ -207,6 +209,14 @@ impl GitVersioner {
     fn escaped(name: &str) -> String {
         const ESCAPE_CHARACTER: &str = "-";
         name.replace(|c: char| !c.is_alphanumeric(), ESCAPE_CHARACTER)
+    }
+
+    fn escaped_feature_branch_name(&self, name: &str) -> String {
+        let escaped = Self::escaped(name);
+        match self.feature_branch_name_limit {
+            0 => escaped,
+            limit => escaped.chars().take(limit as usize).collect(),
+        }
     }
 
     fn version_tags_matching<F>(&self, condition: &F) -> Result<HashSet<VersionSource>>
@@ -791,7 +801,11 @@ impl GitVersioner {
 
         let (mut base_version, source, major_minor_patch_source, _) = base;
 
-        base_version.pre = Prerelease::new(&format!("{}.{}", Self::escaped(name), distance))?;
+        base_version.pre = Prerelease::new(&format!(
+            "{}.{}",
+            self.escaped_feature_branch_name(name),
+            distance
+        ))?;
         Ok((
             base_version,
             source,

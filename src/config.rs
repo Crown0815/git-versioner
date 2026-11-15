@@ -10,6 +10,7 @@ const CONFIG_FILE_EXTENSIONS: [&str; 3] = ["toml", "yaml", "yml"];
 pub const MAIN_BRANCH: &str = r"^(trunk|main|master)$";
 pub const RELEASE_BRANCH: &str = r"^releases?[/-](?<BranchName>.+)$";
 pub const FEATURE_BRANCH: &str = r"^features?[/-](?<BranchName>.+)$";
+pub const FEATURE_BRANCH_NAME_LIMIT: u64 = 0;
 pub const TAG_PREFIX: &str = r"[vV]?";
 pub const PRE_RELEASE_TAG: &str = "pre";
 pub const PATCH_PRE_RELEASE_TAG: &str = "";
@@ -27,6 +28,7 @@ pub trait Configuration {
     fn main_branch(&self) -> &str;
     fn release_branch(&self) -> &str;
     fn feature_branch(&self) -> &str;
+    fn feature_branch_name_limit(&self) -> &u64;
     fn tag_prefix(&self) -> &str;
     fn pre_release_tag(&self) -> &str;
     fn patch_pre_release_tag(&self) -> &str;
@@ -53,6 +55,7 @@ pub trait Configuration {
             main_branch: self.main_branch().to_string(),
             release_branch: self.release_branch().to_string(),
             feature_branch: self.feature_branch().to_string(),
+            feature_branch_name_limit: *self.feature_branch_name_limit(),
             tag_prefix: self.tag_prefix().to_string(),
             pre_release_tag: self.pre_release_tag().to_string(),
             patch_pre_release_tag: self.patch_pre_release_tag().to_string(),
@@ -70,6 +73,7 @@ pub struct DefaultConfig {
     pub main_branch: String,
     pub release_branch: String,
     pub feature_branch: String,
+    pub feature_branch_name_limit: u64,
     pub tag_prefix: String,
     pub pre_release_tag: String,
     pub patch_pre_release_tag: String,
@@ -84,6 +88,7 @@ pub struct ConfigurationFile {
     pub main_branch: Option<String>,
     pub release_branch: Option<String>,
     pub feature_branch: Option<String>,
+    pub feature_branch_name_limit: Option<u64>,
     pub tag_prefix: Option<String>,
     pub pre_release_tag: Option<String>,
     pub patch_pre_release_tag: Option<String>,
@@ -111,6 +116,13 @@ pub struct Args {
 
     #[arg(long, value_parser, help = "Regex to detect the feature branch(es)")]
     feature_branch: Option<String>,
+
+    #[arg(
+        long,
+        value_parser,
+        help = "Maximum length of the escaped feature branch name used in pre-release versions, 0 means no limit (default)"
+    )]
+    feature_branch_name_limit: Option<u64>,
 
     #[arg(long, value_parser, help = "Regex to detect version tag(s)")]
     tag_prefix: Option<String>,
@@ -188,6 +200,7 @@ impl Default for DefaultConfig {
             main_branch: MAIN_BRANCH.to_string(),
             release_branch: RELEASE_BRANCH.to_string(),
             feature_branch: FEATURE_BRANCH.to_string(),
+            feature_branch_name_limit: FEATURE_BRANCH_NAME_LIMIT,
             tag_prefix: TAG_PREFIX.to_string(),
             pre_release_tag: PRE_RELEASE_TAG.to_string(),
             patch_pre_release_tag: PATCH_PRE_RELEASE_TAG.to_string(),
@@ -210,6 +223,9 @@ impl Configuration for DefaultConfig {
     }
     fn feature_branch(&self) -> &str {
         &self.feature_branch
+    }
+    fn feature_branch_name_limit(&self) -> &u64 {
+        &self.feature_branch_name_limit
     }
     fn tag_prefix(&self) -> &str {
         &self.tag_prefix
@@ -312,6 +328,7 @@ impl Configuration for ConfigurationLayers {
     config_getter!(main_branch, str, arg > file > default);
     config_getter!(release_branch, str, arg > file > default);
     config_getter!(feature_branch, str, arg > file > default);
+    config_getter!(feature_branch_name_limit, u64, arg > file > default);
     config_getter!(tag_prefix, str, arg > file > default);
     config_getter!(pre_release_tag, str, arg > file > default);
     config_getter!(patch_pre_release_tag, str, arg > file > default);
