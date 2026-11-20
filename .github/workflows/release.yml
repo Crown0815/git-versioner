@@ -271,6 +271,8 @@ jobs:
     needs: [build, determine-version, determine-changelog, publish]
     if: always() && (needs.publish.result == 'success' || github.event.inputs.as-draft == 'true')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v8
@@ -306,7 +308,17 @@ jobs:
           files: release-artifacts/*
           tag_name: "v${{ needs.determine-version.outputs.sem-ver }}"
           draft: ${{ github.event.inputs.as-draft }}
-          prerelease: ${{ steps.determine-version.outputs.pre-release-label != '' }}
+          prerelease: ${{ needs.determine-version.outputs.pre-release-label != '' }}
           body: |
             ${{ needs.determine-changelog.outputs.changelog }}
           fail_on_unmatched_files: true
+
+      - name: Create or update v<MAJOR> release
+        if: github.event.inputs.as-draft != 'true' && needs.determine-version.outputs.pre-release-label == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SEMVER: ${{ needs.determine-version.outputs.sem-ver }}
+        run: |
+          major="v${SEMVER%%.*}"
+          gh release delete "$major" --cleanup-tag --yes || true
+          gh release create "$major" release-artifacts/* --title "$major" --notes "v${SEMVER}" --latest=false
