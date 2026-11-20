@@ -13,11 +13,6 @@ on:
         required: false
         type: boolean
         default: false
-      also-move-tag:
-        description: 'Optional extra moving tag (e.g. v1) to point at this stable release, in addition to v<MAJOR>'
-        required: false
-        type: string
-        default: ''
 
 env:
   CLI_NAME: git-versioner
@@ -318,31 +313,12 @@ jobs:
             ${{ needs.determine-changelog.outputs.changelog }}
           fail_on_unmatched_files: true
 
-  update-major-tag:
-    name: Update moving major tag
-    needs: [release, determine-version]
-    if: >-
-      always() &&
-      needs.release.result == 'success' &&
-      github.event.inputs.as-draft != 'true' &&
-      needs.determine-version.outputs.pre-release-label == ''
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Update v<MAJOR> tag
+      - name: Create or update v<MAJOR> release
+        if: github.event.inputs.as-draft != 'true' && needs.determine-version.outputs.pre-release-label == ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RELEASE_TAG: v${{ needs.determine-version.outputs.sem-ver }}
-          EXTRA_MAJOR_TAG: ${{ github.event.inputs.also-move-tag }}
+          SEMVER: ${{ needs.determine-version.outputs.sem-ver }}
         run: |
-          set -euo pipefail
-          MAJOR_TAG="$(printf '%s' "$RELEASE_TAG" | sed -E 's/^v?([0-9]+).*/v\1/')"
-          TAGS=("$MAJOR_TAG")
-          if [[ -n "$EXTRA_MAJOR_TAG" ]]; then
-            TAGS+=("$EXTRA_MAJOR_TAG")
-          fi
-          bash .github/scripts/update-major-tag.sh --to-release "$RELEASE_TAG" "${TAGS[@]}"
+          major="v${SEMVER%%.*}"
+          gh release delete "$major" --cleanup-tag --yes || true
+          gh release create "$major" release-artifacts/* --title "$major" --notes "v${SEMVER}" --latest=false
