@@ -89,7 +89,7 @@ It draws inspiration from established versioning tools while focusing on simplic
 - **Automated Version Calculation**: Derives version numbers based on commit history, branch structure, and existing tags.
 - **Support for Trunk-Based Development**: Recognizes the "trunk" as the main branch and handles release branches (e.g., "release/1.0.0") for patch and minor updates.
 - **Semantic Versioning Compliance**: Generates versions in the format `MAJOR.MINOR.PATCH-pre.X` for pre-releases and `MAJOR.MINOR.PATCH` for stable tags.
-- **Tag Management**: Identifies and applies tags for stable releases (e.g., "v1.0.0").
+- **Tag Detection**: Identifies existing tags for stable releases (e.g., "v1.0.0") and uses them when calculating the next version.
 - **Configurable Branch Naming**: Allows customization of the main branch name (default: "trunk").
 - **Integration-Friendly**: Suitable for use in continuous integration/continuous deployment (CI/CD) pipelines.
 
@@ -111,10 +111,11 @@ cargo install git-versioner
 Git Versioner can be used directly as a GitHub Action. 
 It will automatically export the calculated version components to `GITHUB_OUTPUT`.
 Outputs are available with a `GitVersion_` prefix (e.g., `GitVersion_SemVer`) and also in `PascalCase` without prefix (e.g., `SemVer`).
+The snippets pin the Action to `@v1`, a moving tag for the latest stable release.
 
 ```yaml
 - name: Determine Version
-  uses: crown0815/git-versioner@v0.20.1
+  uses: crown0815/git-versioner@v1
   id: versioner
   with:
     # Optional configuration (see below for available inputs)
